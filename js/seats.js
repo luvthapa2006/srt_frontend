@@ -90,18 +90,20 @@ function renderSeatLayout() {
   lowerDeck.innerHTML = '<h4 class="deck-title">Lower Deck</h4>' + renderDeck('L', 1, 20);
 }
 
-// Render a single deck
+
+// Render a single deck with proper 2-1-2-1 layout (8 rows of 5 seats = 20 seats per deck)
 function renderDeck(prefix, start, end) {
   let html = '<div class="seat-grid">';
   
   // Add driver position indicator at the start
   html += '<div class="driver-indicator">🚗 Driver</div>';
   
-  // 4 rows of 5 seats (2-1-2 layout)
+  // 4 rows of 5 seats each (2 left, 1 aisle, 2 middle, 1 right)
+  // Total: 4 rows × 5 positions = 20 seats per deck
   for (let row = 0; row < 4; row++) {
     html += '<div class="seat-row">';
     
-    // Left side (2 seats)
+    // First Left (2 seats) - Positions 1,2
     for (let col = 0; col < 2; col++) {
       const seatNum = row * 5 + col + 1;
       if (seatNum <= (end - start + 1)) {
@@ -112,7 +114,7 @@ function renderDeck(prefix, start, end) {
     // Aisle
     html += '<div class="seat-aisle"></div>';
     
-    // Right side (2 seats)
+    // First Right (2 seats) - Positions 3,4
     for (let col = 2; col < 4; col++) {
       const seatNum = row * 5 + col + 1;
       if (seatNum <= (end - start + 1)) {
@@ -120,10 +122,11 @@ function renderDeck(prefix, start, end) {
       }
     }
     
-    // Last seat (single)
+    // Last position (sleeper or 7th seat) - Position 5
     const seatNum = row * 5 + 5;
     if (seatNum <= (end - start + 1)) {
-      html += createSeatButton(prefix, seatNum);
+      const isSleeper = (seatNum === 5 || seatNum === 10); // Rows 1-2 are sleepers
+      html += createSeatButton(prefix, seatNum, isSleeper);
     }
     
     html += '</div>';
@@ -134,7 +137,7 @@ function renderDeck(prefix, start, end) {
 }
 
 // Create individual seat button
-function createSeatButton(prefix, number) {
+function createSeatButton(prefix, number, isSleeper = false) {
   const seatId = `${prefix}${number}`;
   const isBooked = currentSchedule.bookedSeats?.includes(seatId);
   const isSelected = selectedSeats.includes(seatId);
@@ -143,7 +146,19 @@ function createSeatButton(prefix, number) {
   let className = 'seat';
   if (isBooked) className += ' seat-booked';
   if (isSelected) className += ' seat-selected';
-  if (seatCategories.window.includes(seatId)) className += ' seat-window';
+  if (isSleeper) className += ' seat-sleeper'; // Add sleeper styling
+  
+  // Determine zone color
+  if (seatPricingZones.firstRight.includes(seatId) || 
+      seatPricingZones.firstRight_L.includes(seatId)) {
+    className += ' zone-first-right';
+  } else if (seatPricingZones.lastRightSleeper.includes(seatId) || 
+             seatPricingZones.lastRightSleeper_L.includes(seatId)) {
+    className += ' zone-sleeper';
+  } else if (seatPricingZones.lastLeft7th.includes(seatId) || 
+             seatPricingZones.lastLeft7th_L.includes(seatId)) {
+    className += ' zone-last-left';
+  }
   
   return `
     <button 
@@ -151,9 +166,10 @@ function createSeatButton(prefix, number) {
       data-seat="${seatId}"
       ${isBooked ? 'disabled' : ''}
       onclick="toggleSeat('${seatId}')"
-      title="${seatId} - ${formatCurrency(seatPrice)}"
+      title="${seatId}${isSleeper ? ' (Sleeper)' : ''} - ${formatCurrency(seatPrice)}"
     >
       <span class="seat-number">${seatId}</span>
+      ${isSleeper ? '<span class="seat-type">💤</span>' : ''}
       ${!isBooked ? `<span class="seat-price">${formatCurrency(seatPrice)}</span>` : ''}
     </button>
   `;

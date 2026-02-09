@@ -118,10 +118,106 @@
           <div class="form-group">
             <label class="form-label">Base Price (₹)</label>
             <input type="number" class="form-input" id="price" min="100" required>
+            <small class="text-muted">This is the base price. Individual seat prices will be calculated based on zone multipliers below.</small>
+          </div>
+
+          <!-- Seat Pricing Multipliers -->
+          <div style="grid-column: 1 / -1; padding: 1.5rem; background: var(--slate-50); border-radius: 0.75rem; margin-top: 1.5rem; border: 1px solid var(--slate-200);">
+            <h4 style="margin-bottom: 0.5rem; color: var(--secondary); font-size: 1.125rem; font-weight: 600;">Seat Pricing Zones</h4>
+            <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.875rem;">
+              Base price will be multiplied by these factors for different seat zones. Adjust these values to control pricing for each section of the bus.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-weight: 500;">
+                  🔵 First Right (2×6) - Premium
+                </label>
+                <input type="number" class="form-input" id="pricing-first-right" 
+                       step="0.1" min="0.5" max="2.5" value="1.2" required
+                       style="border-color: #3b82f6;">
+                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
+                  <strong>Seats:</strong> 3, 4, 8, 9, 13, 14, 18, 19<br>
+                  <strong>Example:</strong> ₹100 base × 1.2 = ₹120
+                </small>
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-weight: 500;">
+                  ⚪ First Left (2×6) - Standard
+                </label>
+                <input type="number" class="form-input" id="pricing-first-left" 
+                       step="0.1" min="0.5" max="2.5" value="1.0" required
+                       style="border-color: #6b7280;">
+                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
+                  <strong>Seats:</strong> 1, 2, 6, 7, 11, 12, 16, 17<br>
+                  <strong>Example:</strong> ₹100 base × 1.0 = ₹100
+                </small>
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-weight: 500;">
+                  🟢 Last Left 7th Seat - Budget
+                </label>
+                <input type="number" class="form-input" id="pricing-last-left" 
+                       step="0.1" min="0.5" max="2.5" value="0.9" required
+                       style="border-color: #10b981;">
+                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
+                  <strong>Seats:</strong> 15, 20<br>
+                  <strong>Example:</strong> ₹100 base × 0.9 = ₹90
+                </small>
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-weight: 500;">
+                  🟡 Last Right Sleeper - Luxury
+                </label>
+                <input type="number" class="form-input" id="pricing-sleeper" 
+                       step="0.1" min="0.5" max="3.0" value="1.5" required
+                       style="border-color: #f59e0b;">
+                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
+                  <strong>Seats:</strong> 5, 10 (double sleeper seats)<br>
+                  <strong>Example:</strong> ₹100 base × 1.5 = ₹150
+                </small>
+              </div>
+            </div>
+
+            <!-- Pricing Preview -->
+            <div style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 0.5rem; border: 1px dashed var(--slate-300);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                  <small class="text-muted" style="display: block; margin-bottom: 0.25rem;">Pricing Preview (based on base price)</small>
+                  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.875rem;">
+                    <div>
+                      <span style="color: #3b82f6;">●</span> 
+                      <strong>First Right:</strong> 
+                      <span id="preview-first-right">₹120</span>
+                    </div>
+                    <div>
+                      <span style="color: #6b7280;">●</span> 
+                      <strong>First Left:</strong> 
+                      <span id="preview-first-left">₹100</span>
+                    </div>
+                    <div>
+                      <span style="color: #10b981;">●</span> 
+                      <strong>Last Left:</strong> 
+                      <span id="preview-last-left">₹90</span>
+                    </div>
+                    <div>
+                      <span style="color: #f59e0b;">●</span> 
+                      <strong>Sleeper:</strong> 
+                      <span id="preview-sleeper">₹150</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <button type="submit" class="btn btn-primary">Save Schedule</button>
-          <button type="button" class="btn btn-outline" onclick="document.getElementById('schedule-form').reset(); document.getElementById('schedule-id').value = ''; document.getElementById('form-title').textContent = 'Add New Schedule';">Cancel</button>
+          <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Save Schedule</button>
+            <button type="button" class="btn btn-outline" onclick="resetScheduleForm()">Cancel</button>
+          </div>
         </form>
       </div>
 
@@ -170,31 +266,68 @@
 
     <!-- Tab: Pricing -->
     <div id="tab-pricing" class="admin-tab-content">
-      <div class="card" style="max-width: 600px;">
-        <h3 class="summary-title">Seat Pricing Multipliers</h3>
-        <p class="text-muted" style="margin-bottom: 1.5rem;">Adjust pricing based on seat categories. These multipliers are applied to the base price.</p>
+      <div class="card" style="max-width: 800px;">
+        <h3 class="summary-title">Global Seat Pricing Multipliers</h3>
+        <p class="text-muted" style="margin-bottom: 1.5rem;">
+          These are default pricing multipliers applied to all new schedules. You can override these when creating individual schedules.
+        </p>
         
         <form id="pricing-form">
-          <div class="form-group">
-            <label class="form-label">Window Seats Multiplier</label>
-            <input type="number" class="form-input" id="window-multiplier" step="0.1" min="0.5" max="2" value="1.2" required>
-            <small class="text-muted">Current: 1.2x (20% premium)</small>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div class="form-group">
+              <label class="form-label">🔵 First Right (Premium)</label>
+              <input type="number" class="form-input" id="global-first-right" 
+                     step="0.1" min="0.5" max="2.5" value="1.2" required>
+              <small class="text-muted">Default multiplier for first right seats (3,4,8,9...)</small>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">⚪ First Left (Standard)</label>
+              <input type="number" class="form-input" id="global-first-left" 
+                     step="0.1" min="0.5" max="2.5" value="1.0" required>
+              <small class="text-muted">Default multiplier for first left seats (1,2,6,7...)</small>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">🟢 Last Left 7th (Budget)</label>
+              <input type="number" class="form-input" id="global-last-left" 
+                     step="0.1" min="0.5" max="2.5" value="0.9" required>
+              <small class="text-muted">Default multiplier for last left seats (15, 20)</small>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">🟡 Last Right Sleeper (Luxury)</label>
+              <input type="number" class="form-input" id="global-sleeper" 
+                     step="0.1" min="0.5" max="3.0" value="1.5" required>
+              <small class="text-muted">Default multiplier for sleeper seats (5, 10)</small>
+            </div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label">Front Seats Multiplier</label>
-            <input type="number" class="form-input" id="front-multiplier" step="0.1" min="0.5" max="2" value="1.1" required>
-            <small class="text-muted">Current: 1.1x (10% premium)</small>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Back Seats Multiplier</label>
-            <input type="number" class="form-input" id="back-multiplier" step="0.1" min="0.5" max="2" value="0.9" required>
-            <small class="text-muted">Current: 0.9x (10% discount)</small>
-          </div>
-          
-          <button type="submit" class="btn btn-primary">Update Pricing</button>
+          <button type="submit" class="btn btn-primary">Update Global Pricing</button>
         </form>
+
+        <!-- Seat Layout Reference -->
+        <div style="margin-top: 2rem; padding: 1.5rem; background: var(--slate-50); border-radius: 0.75rem;">
+          <h4 style="margin-bottom: 1rem; color: var(--secondary);">Seat Layout Reference</h4>
+          <div style="font-family: monospace; font-size: 0.75rem; line-height: 1.6; color: var(--slate-700);">
+            <div style="text-align: center; margin-bottom: 0.5rem;">🚗 DRIVER</div>
+            <div>┌──────────────────────────────────────┐</div>
+            <div>│ [1][2]  AISLE  [3][4]  [5-SLEEPER]  │ Row 1</div>
+            <div>│ [6][7]  AISLE  [8][9]  [10-SLEEPER] │ Row 2</div>
+            <div>│[11][12] AISLE [13][14] [15-7TH]     │ Row 3</div>
+            <div>│[16][17] AISLE [18][19] [20-7TH]     │ Row 4</div>
+            <div>└──────────────────────────────────────┘</div>
+          </div>
+          <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.75rem;">
+            <div><span style="color: #3b82f6;">●</span> <strong>First Right:</strong> 3,4,8,9,13,14,18,19</div>
+            <div><span style="color: #6b7280;">●</span> <strong>First Left:</strong> 1,2,6,7,11,12,16,17</div>
+            <div><span style="color: #10b981;">●</span> <strong>Last Left:</strong> 15, 20</div>
+            <div><span style="color: #f59e0b;">●</span> <strong>Sleeper:</strong> 5, 10</div>
+          </div>
+          <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
+            * Same layout for both Upper Deck (U1-U20) and Lower Deck (L1-L20)
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -222,5 +355,47 @@
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script src="js/admin.js"></script>
+  
+  <script>
+    // Live pricing preview update
+    function updatePricingPreview() {
+      const basePrice = parseFloat(document.getElementById('price').value) || 100;
+      const firstRight = parseFloat(document.getElementById('pricing-first-right').value) || 1.2;
+      const firstLeft = parseFloat(document.getElementById('pricing-first-left').value) || 1.0;
+      const lastLeft = parseFloat(document.getElementById('pricing-last-left').value) || 0.9;
+      const sleeper = parseFloat(document.getElementById('pricing-sleeper').value) || 1.5;
+      
+      document.getElementById('preview-first-right').textContent = '₹' + Math.round(basePrice * firstRight);
+      document.getElementById('preview-first-left').textContent = '₹' + Math.round(basePrice * firstLeft);
+      document.getElementById('preview-last-left').textContent = '₹' + Math.round(basePrice * lastLeft);
+      document.getElementById('preview-sleeper').textContent = '₹' + Math.round(basePrice * sleeper);
+    }
+    
+    // Add event listeners for live preview
+    document.addEventListener('DOMContentLoaded', function() {
+      const priceInput = document.getElementById('price');
+      const firstRightInput = document.getElementById('pricing-first-right');
+      const firstLeftInput = document.getElementById('pricing-first-left');
+      const lastLeftInput = document.getElementById('pricing-last-left');
+      const sleeperInput = document.getElementById('pricing-sleeper');
+      
+      if (priceInput) priceInput.addEventListener('input', updatePricingPreview);
+      if (firstRightInput) firstRightInput.addEventListener('input', updatePricingPreview);
+      if (firstLeftInput) firstLeftInput.addEventListener('input', updatePricingPreview);
+      if (lastLeftInput) lastLeftInput.addEventListener('input', updatePricingPreview);
+      if (sleeperInput) sleeperInput.addEventListener('input', updatePricingPreview);
+      
+      // Initialize preview
+      updatePricingPreview();
+    });
+    
+    // Reset form function
+    function resetScheduleForm() {
+      document.getElementById('schedule-form').reset();
+      document.getElementById('schedule-id').value = '';
+      document.getElementById('form-title').textContent = 'Add New Schedule';
+      updatePricingPreview();
+    }
+  </script>
 </body>
 </html>

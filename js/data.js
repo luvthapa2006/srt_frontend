@@ -26,33 +26,47 @@ const ALL_SEATS = generateAllSeats();
 
 // Seat Pricing Multipliers (can be moved to backend later)
 const seatPricing = {
-  window: 1.2,
-  aisle: 1.0,
-  front: 1.1,
-  back: 0.9,
-  standard: 1.0
+  firstRight: 1.2,    // Front right 2x6 seats
+  firstLeft: 1.0,     // Front left 2x6 seats  
+  lastLeft7th: 0.9,   // Last left single seats (7th position)
+  lastRightSleeper: 1.5 // Last right sleeper seats (double)
 };
 
 // Define which seats are window/aisle/front/back
-const seatCategories = {
-  window: ['U1', 'U2', 'U5', 'U6', 'U9', 'U10', 'U13', 'U14', 'U17', 'U18',
-           'L1', 'L2', 'L5', 'L6', 'L9', 'L10', 'L13', 'L14', 'L17', 'L18'],
-  front: ['U1', 'U2', 'U3', 'U4', 'L1', 'L2', 'L3', 'L4'],
-  back: ['U17', 'U18', 'U19', 'U20', 'L17', 'L18', 'L19', 'L20']
+const seatPricingZones = {
+  // Upper Deck Zones
+  firstRight: ['U3', 'U4', 'U8', 'U9', 'U13', 'U14', 'U18', 'U19'],
+  firstLeft: ['U1', 'U2', 'U6', 'U7', 'U11', 'U12', 'U16', 'U17'],
+  lastLeft7th: ['U15', 'U20'],
+  lastRightSleeper: ['U5', 'U10'],
+  
+  // Lower Deck Zones  
+  firstRight_L: ['L3', 'L4', 'L8', 'L9', 'L13', 'L14', 'L18', 'L19'],
+  firstLeft_L: ['L1', 'L2', 'L6', 'L7', 'L11', 'L12', 'L16', 'L17'],
+  lastLeft7th_L: ['L15', 'L20'],
+  lastRightSleeper_L: ['L5', 'L10']
 };
 
 // Calculate seat price based on base price and seat category
 function calculateSeatPrice(basePrice, seatNumber) {
-  let multiplier = seatPricing.standard;
+  let multiplier = 1.0; // default
   
-  if (seatCategories.window.includes(seatNumber)) {
-    multiplier = seatPricing.window;
+  // Check which zone the seat belongs to
+  if (seatPricingZones.firstRight.includes(seatNumber) || 
+      seatPricingZones.firstRight_L.includes(seatNumber)) {
+    multiplier = seatPricing.firstRight;
   }
-  if (seatCategories.front.includes(seatNumber)) {
-    multiplier = Math.max(multiplier, seatPricing.front);
+  else if (seatPricingZones.firstLeft.includes(seatNumber) || 
+           seatPricingZones.firstLeft_L.includes(seatNumber)) {
+    multiplier = seatPricing.firstLeft;
   }
-  if (seatCategories.back.includes(seatNumber)) {
-    multiplier = Math.min(multiplier, seatPricing.back);
+  else if (seatPricingZones.lastLeft7th.includes(seatNumber) || 
+           seatPricingZones.lastLeft7th_L.includes(seatNumber)) {
+    multiplier = seatPricing.lastLeft7th;
+  }
+  else if (seatPricingZones.lastRightSleeper.includes(seatNumber) || 
+           seatPricingZones.lastRightSleeper_L.includes(seatNumber)) {
+    multiplier = seatPricing.lastRightSleeper;
   }
   
   return Math.round(basePrice * multiplier);
