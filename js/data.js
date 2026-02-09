@@ -4,7 +4,7 @@
 // ========================================
 
 // API Base URL - Update this when deploying
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://srt-backend-a5m9.onrender.com/api';
 
 // Seat Configuration (Client-side constants)
 const TOTAL_SEATS = 40;
