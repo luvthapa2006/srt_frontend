@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Timings - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link active">Bus Timings</a></li>
+          <li><a href="admin.html" class="nav-link">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="min-h-screen" style="background: var(--slate-50);">
+    <div class="container px-4 py-8">
+      <div class="mb-8">
+        <h1 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem;">Available Buses</h1>
+        <p class="text-muted" id="filter-info">Showing all scheduled buses</p>
+      </div>
+
+      <!-- Schedules List -->
+      <div class="schedules-list" id="schedules-list">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/timings.js"></script>
+</body>
+</html>

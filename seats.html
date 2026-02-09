@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Seats - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
+          <li><a href="admin.html" class="nav-link">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="min-h-screen" style="background: var(--slate-50);">
+    <div class="container px-4 py-8">
+      <button class="btn btn-outline mb-8" onclick="goBack()" style="padding-left: 0;">
+        ← Back to Schedules
+      </button>
+
+      <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+        <!-- Seat Selection Area -->
+        <div style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: var(--shadow); border: 1px solid var(--slate-100);">
+          <!-- Header -->
+          <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div id="schedule-info">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <!-- Legend -->
+            <div class="seat-legend">
+              <div class="legend-item">
+                <div class="legend-box legend-available"></div>
+                <span>Available</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-box legend-selected"></div>
+                <span>Selected</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-box legend-booked"></div>
+                <span>Booked</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seat Layout -->
+          <div class="seat-layout-container">
+            <div class="seat-deck" id="upper-deck">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="seat-deck" id="lower-deck">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Summary Sidebar -->
+        <div class="summary-sidebar">
+          <div class="summary-card">
+            <div id="journey-details">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="summary-divider"></div>
+            
+            <div id="booking-summary">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/seats.js"></script>
+</body>
+</html>

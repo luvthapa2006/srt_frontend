@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shree Ram Travels - Home</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link active">Home</a></li>
+          <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
+          <li><a href="admin.html" class="nav-link">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-bg">
+      <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=2069&auto=format&fit=crop" alt="Luxury Bus Travel">
+    </div>
+    <div class="hero-overlay"></div>
+    
+    <div class="hero-content">
+      <h1 class="hero-title">
+        Journey with <span class="highlight">Comfort</span>
+      </h1>
+      <p class="hero-subtitle">
+        Experience the finest bus travel across India. Luxury sleepers, AC coaches, and on-time service.
+      </p>
+    </div>
+  </section>
+
+  <!-- Booking Card -->
+  <section class="container px-4">
+    <div class="booking-card animate-on-scroll">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; color: var(--secondary);">
+        Search Bus Schedules
+      </h2>
+      <form class="booking-form" onsubmit="searchBuses(event)">
+        <div class="form-group">
+          <label class="form-label">From</label>
+          <select class="form-select" id="search-origin" required>
+            <option value="">Select Origin City</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">To</label>
+          <select class="form-select" id="search-destination" required>
+            <option value="">Select Destination City</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="search-date" required>
+        </div>
+        
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary btn-lg btn-block">
+            Search Buses
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-8" style="padding-top: 6rem; padding-bottom: 6rem;">
+    <div class="container px-4">
+      <div class="text-center mb-8" style="margin-bottom: 4rem;">
+        <h2 style="margin-bottom: 1rem;">Why Choose Shree Ram Travels?</h2>
+        <div style="height: 4px; width: 80px; background: var(--primary); margin: 0 auto; border-radius: 2px;"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3" style="gap: 2rem;">
+        <!-- Feature 1 -->
+        <div class="card animate-on-scroll" style="text-align: center;">
+          <div style="height: 64px; width: 64px; background: rgba(255, 107, 53, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--primary); font-size: 2rem;">
+            🛡️
+          </div>
+          <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">Safe & Secure</h3>
+          <p class="text-muted">Sanitized buses & verified drivers</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="card animate-on-scroll" style="text-align: center;">
+          <div style="height: 64px; width: 64px; background: rgba(255, 107, 53, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--primary); font-size: 2rem;">
+            ⏰
+          </div>
+          <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">On Time</h3>
+          <p class="text-muted">Punctual departures and arrivals guaranteed</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="card animate-on-scroll" style="text-align: center;">
+          <div style="height: 64px; width: 64px; background: rgba(255, 107, 53, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--primary); font-size: 2rem;">
+            📍
+          </div>
+          <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">Live Tracking</h3>
+          <p class="text-muted">Track your bus in real-time with GPS</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Track Ticket Section -->
+  <section style="background: white; padding: 6rem 0; border-top: 1px solid var(--slate-100);">
+    <div class="container px-4" style="display: grid; grid-template-columns: 1fr; gap: 3rem;">
+      <div>
+        <h2 style="margin-bottom: 1.5rem;">Track Your Ticket Status</h2>
+        <p class="text-muted" style="font-size: 1.125rem; margin-bottom: 2rem;">
+          Enter your booking token ID to check live status, view seat details, or download your ticket.
+        </p>
+        <form onsubmit="trackTicket(event)" style="max-width: 500px;">
+          <div style="display: flex; gap: 1rem;">
+            <input type="text" class="form-input" id="track-token" placeholder="Enter Token ID (e.g. TKT-123)" style="height: 3rem; font-size: 1rem;">
+            <button type="submit" class="btn btn-primary btn-lg">Track</button>
+          </div>
+        </form>
+        
+        <div id="track-result" style="margin-top: 2rem;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container px-4">
+      <div class="footer-grid">
+        <div>
+          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 60px; margin-bottom: 1rem;">
+          <p style="color: var(--slate-400); font-size: 0.875rem;">
+            Connecting cities, connecting hearts. The most trusted bus operator in the region.
+          </p>
+        </div>
+        
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="timings.html">Bus Timings</a></li>
+            <li><a href="admin.html">Operator Login</a></li>
+            <li><a href="#">Terms & Conditions</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4>Contact</h4>
+          <ul style="color: var(--slate-400); font-size: 0.875rem;">
+            <li>contact@shreeramtravels.com</li>
+            <li>+91 98765 43210</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Populate city dropdowns from available schedules
+    async function populateCityDropdowns() {
+      try {
+        showLoading();
+        const cities = await getAllCities();
+        
+        const originSelect = document.getElementById('search-origin');
+        const destinationSelect = document.getElementById('search-destination');
+        
+        // Clear existing options except the first one
+        originSelect.innerHTML = '<option value="">Select Origin City</option>';
+        destinationSelect.innerHTML = '<option value="">Select Destination City</option>';
+        
+        // Populate both dropdowns with all cities
+        cities.forEach(city => {
+          const originOption = document.createElement('option');
+          originOption.value = city;
+          originOption.textContent = city;
+          originSelect.appendChild(originOption);
+          
+          const destOption = document.createElement('option');
+          destOption.value = city;
+          destOption.textContent = city;
+          destinationSelect.appendChild(destOption);
+        });
+        
+        hideLoading();
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        hideLoading();
+        showToast('Failed to load cities. Please refresh the page.', 'error');
+      }
+    }
+    
+    // Initialize dropdowns on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      populateCityDropdowns();
+      
+      // Set minimum date to today
+      const dateInput = document.getElementById('search-date');
+      if (dateInput) {
+        dateInput.min = new Date().toISOString().split('T')[0];
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    });
+
+    function searchBuses(e) {
+      e.preventDefault();
+      const origin = document.getElementById('search-origin').value;
+      const destination = document.getElementById('search-destination').value;
+      const date = document.getElementById('search-date').value;
+      
+      if (!origin || !destination || !date) {
+        showToast('Please fill all search fields', 'warning');
+        return;
+      }
+      
+      navigateTo('timings.html', { origin, destination, date });
+    }
+
+    async function trackTicket(e) {
+      e.preventDefault();
+      const token = document.getElementById('track-token').value.trim();
+      
+      if (!token) {
+        showToast('Please enter a booking token', 'warning');
+        return;
+      }
+      
+      const resultDiv = document.getElementById('track-result');
+      
+      try {
+        showLoading();
+        const booking = await getBookingByToken(token);
+        hideLoading();
+        
+        if (booking) {
+          const schedule = booking.scheduleId ? 
+            (typeof booking.scheduleId === 'object' ? booking.scheduleId : await getScheduleById(booking.scheduleId)) 
+            : null;
+          
+          resultDiv.innerHTML = `
+            <div style="background: #D1FAE5; border: 1px solid #A7F3D0; border-radius: 0.75rem; padding: 1.5rem;">
+              <h4 style="color: #065F46; font-weight: 700; margin-bottom: 1rem;">Booking Confirmed!</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.875rem;">
+                <div>
+                  <span style="display: block; color: #047857; font-size: 0.75rem; text-transform: uppercase;">Passenger</span>
+                  <span style="font-weight: 600;">${booking.customerName}</span>
+                </div>
+                <div>
+                  <span style="display: block; color: #047857; font-size: 0.75rem; text-transform: uppercase;">Seats</span>
+                  <span style="font-weight: 600;">${booking.seatNumbers.join(', ')}</span>
+                </div>
+                <div>
+                  <span style="display: block; color: #047857; font-size: 0.75rem; text-transform: uppercase;">Amount</span>
+                  <span style="font-weight: 600;">₹${booking.totalAmount}</span>
+                </div>
+                <div>
+                  <span style="display: block; color: #047857; font-size: 0.75rem; text-transform: uppercase;">Bus</span>
+                  <span style="font-weight: 600;">${schedule ? schedule.busName : 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+          showToast('Booking found!', 'success');
+        } else {
+          resultDiv.innerHTML = `
+            <div style="background: #FEE2E2; border: 1px solid #FECACA; border-radius: 0.75rem; padding: 1.5rem; text-align: center; color: #991B1B;">
+              <strong>Booking not found!</strong><br>
+              Please check your booking token and try again.
+            </div>
+          `;
+          showToast('Booking not found', 'error');
+        }
+      } catch (error) {
+        console.error('Error tracking booking:', error);
+        hideLoading();
+        resultDiv.innerHTML = `
+          <div style="background: #FEE2E2; border: 1px solid #FECACA; border-radius: 0.75rem; padding: 1.5rem; text-align: center; color: #991B1B;">
+            <strong>Error!</strong><br>
+            Unable to track booking. Please try again.
+          </div>
+        `;
+        showToast('Error tracking booking', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

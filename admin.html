@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
+          <li><a href="admin.html" class="nav-link active">Admin</a></li>
+          <li><button class="btn btn-sm btn-outline" onclick="adminLogout()">Logout</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Admin Header -->
+  <div class="admin-header">
+    <div class="container px-4">
+      <h1 style="color: white; font-size: 2rem;">Admin Dashboard</h1>
+      <p style="color: var(--slate-300);">Manage schedules, bookings, and pricing</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container px-4 py-8">
+    <!-- Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value" id="stat-revenue">₹0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Total Bookings</div>
+        <div class="stat-value" id="stat-bookings">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Active Buses</div>
+        <div class="stat-value" id="stat-buses">0</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" onclick="switchAdminTab('schedules')">Bus Schedules</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('bookings')">Bookings</button>
+      <button class="admin-tab-btn" onclick="switchAdminTab('pricing')">Pricing</button>
+    </div>
+
+    <!-- Tab: Schedules -->
+    <div id="tab-schedules" class="admin-tab-content active">
+      <div class="card mb-8">
+        <h3 class="summary-title" id="form-title">Add New Schedule</h3>
+        <form id="schedule-form">
+          <input type="hidden" id="schedule-id">
+          
+          <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Bus Name</label>
+              <input type="text" class="form-input" id="bus-name" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Bus Type</label>
+              <select class="form-select" id="bus-type" required>
+                <option value="">Select Type</option>
+                <option value="AC Sleeper (2+1)">AC Sleeper (2+1)</option>
+                <option value="AC Sleeper (1+1)">AC Sleeper (1+1)</option>
+                <option value="Non-AC Sleeper (2+1)">Non-AC Sleeper (2+1)</option>
+                <option value="AC Seater (2+2)">AC Seater (2+2)</option>
+                <option value="AC Seater (2+1)">AC Seater (2+1)</option>
+                <option value="Non-AC Seater (2+2)">Non-AC Seater (2+2)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Origin</label>
+              <input type="text" class="form-input" id="origin" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Destination</label>
+              <input type="text" class="form-input" id="destination" required>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Departure Time</label>
+              <input type="datetime-local" class="form-input" id="departure-time" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Arrival Time</label>
+              <input type="datetime-local" class="form-input" id="arrival-time" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Base Price (₹)</label>
+            <input type="number" class="form-input" id="price" min="100" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Save Schedule</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('schedule-form').reset(); document.getElementById('schedule-id').value = ''; document.getElementById('form-title').textContent = 'Add New Schedule';">Cancel</button>
+        </form>
+      </div>
+
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Bus Details</th>
+              <th>Route</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Price</th>
+              <th>Seats Available</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="schedules-table-body">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Bookings -->
+    <div id="tab-bookings" class="admin-tab-content">
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Passenger</th>
+              <th>Contact</th>
+              <th>Bus Details</th>
+              <th>Seats</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-table-body">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Pricing -->
+    <div id="tab-pricing" class="admin-tab-content">
+      <div class="card" style="max-width: 600px;">
+        <h3 class="summary-title">Seat Pricing Multipliers</h3>
+        <p class="text-muted" style="margin-bottom: 1.5rem;">Adjust pricing based on seat categories. These multipliers are applied to the base price.</p>
+        
+        <form id="pricing-form">
+          <div class="form-group">
+            <label class="form-label">Window Seats Multiplier</label>
+            <input type="number" class="form-input" id="window-multiplier" step="0.1" min="0.5" max="2" value="1.2" required>
+            <small class="text-muted">Current: 1.2x (20% premium)</small>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Front Seats Multiplier</label>
+            <input type="number" class="form-input" id="front-multiplier" step="0.1" min="0.5" max="2" value="1.1" required>
+            <small class="text-muted">Current: 1.1x (10% premium)</small>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Back Seats Multiplier</label>
+            <input type="number" class="form-input" id="back-multiplier" step="0.1" min="0.5" max="2" value="0.9" required>
+            <small class="text-muted">Current: 0.9x (10% discount)</small>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Update Pricing</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="admin-login-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Admin Login</h2>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleAdminLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="admin-password" placeholder="Enter admin password" required>
+            <small class="text-muted">Default: admin123</small>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
