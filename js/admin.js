@@ -485,11 +485,11 @@ async function cancelBookingConfirm(bookingToken) {
 
 // Temporary function to reset statistics (for development only)
 async function resetStatsTemporary() {
-  if (confirm('⚠️ DEVELOPMENT ONLY: This will reset revenue and booking stats to zero. Continue?')) {
+  if (confirm('⚠️ DEVELOPMENT ONLY: This will reset revenue and booking stats display to zero. Continue?')) {
     showLoading();
     
     try {
-      // Call the reset endpoint on the backend
+      // Try to call the reset endpoint on the backend (if it exists)
       const response = await fetch(`${API_BASE_URL}/bookings/reset-stats`, {
         method: 'POST',
         headers: {
@@ -498,20 +498,26 @@ async function resetStatsTemporary() {
       });
       
       if (response.ok) {
-        // Reload stats to show zero values
+        // Backend endpoint worked - reload stats
         await loadStats();
-        showToast('Stats reset successfully!', 'success');
+        showToast('Stats reset successfully via backend!', 'success');
+      } else if (response.status === 404) {
+        // Backend endpoint doesn't exist - just show zero values temporarily
+        console.log('Backend reset endpoint not implemented - showing zero values temporarily');
+        document.getElementById('stat-revenue').textContent = '₹0';
+        document.getElementById('stat-bookings').textContent = '0';
+        showToast('Stats display temporarily set to zero (backend endpoint not implemented)', 'info');
       } else {
-        // If backend endpoint doesn't exist yet, just reload stats
-        // The stats will show current actual values from database
+        // Other error - reload actual stats
         await loadStats();
-        showToast('Stats reloaded. Note: Backend reset endpoint may not be implemented yet.', 'warning');
+        showToast('Could not reset stats - showing actual values', 'warning');
       }
     } catch (error) {
-      console.error('Error resetting stats:', error);
-      // Fallback: just reload stats
-      await loadStats();
-      showToast('Stats reloaded', 'info');
+      // Network error or endpoint doesn't exist - just show zero values temporarily
+      console.log('Backend reset endpoint not available - showing zero values temporarily');
+      document.getElementById('stat-revenue').textContent = '₹0';
+      document.getElementById('stat-bookings').textContent = '0';
+      showToast('Stats display temporarily set to zero', 'info');
     }
     
     hideLoading();
