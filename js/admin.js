@@ -210,7 +210,7 @@ async function handleScheduleSubmit(e) {
     document.getElementById('schedule-id').value = '';
     // Restore fixed values after reset
     document.getElementById('bus-name').value = 'Mahalaxmi Travels';
-    document.getElementById('bus-type').value = 'DD Sleeper Coach';
+    document.getElementById('bus-type').value = 'AC Sleeper (2+1)';
     document.getElementById('form-title').textContent = 'Add New Schedule';
     await loadSchedulesTable();
     await loadStats();
@@ -228,7 +228,7 @@ async function editSchedule(id) {
   document.getElementById('schedule-id').value = schedule.id;
   // Always use fixed values for bus name and type
   document.getElementById('bus-name').value = 'Mahalaxmi Travels';
-  document.getElementById('bus-type').value = 'DD Sleeper Coach';
+  document.getElementById('bus-type').value = 'AC Sleeper (2+1)';
   document.getElementById('origin').value = schedule.origin;
   document.getElementById('destination').value = schedule.destination;
   document.getElementById('departure-time').value = schedule.departureTime.substring(0, 16);

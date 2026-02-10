@@ -189,7 +189,14 @@ async function addSchedule(scheduleData) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch (e) {
+        error = { message: errorText || 'Failed to create schedule' };
+      }
       throw new Error(error.message || 'Failed to create schedule');
     }
 
