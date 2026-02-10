@@ -70,26 +70,8 @@
         <h3 class="summary-title" id="form-title">Add New Schedule</h3>
         <form id="schedule-form">
           <input type="hidden" id="schedule-id">
-          
-          <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Bus Name</label>
-              <input type="text" class="form-input" id="bus-name" required>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">Bus Type</label>
-              <select class="form-select" id="bus-type" required>
-                <option value="">Select Type</option>
-                <option value="AC Sleeper (2+1)">AC Sleeper (2+1)</option>
-                <option value="AC Sleeper (1+1)">AC Sleeper (1+1)</option>
-                <option value="Non-AC Sleeper (2+1)">Non-AC Sleeper (2+1)</option>
-                <option value="AC Seater (2+2)">AC Seater (2+2)</option>
-                <option value="AC Seater (2+1)">AC Seater (2+1)</option>
-                <option value="Non-AC Seater (2+2)">Non-AC Seater (2+2)</option>
-              </select>
-            </div>
-          </div>
+          <input type="hidden" id="bus-name" value="Mahalaxmi Travels">
+          <input type="hidden" id="bus-type" value="DD Sleeper Coach">
           
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
