@@ -79,25 +79,24 @@ async function loadSchedulesTable() {
   const tbody = document.getElementById('schedules-table-body');
   if (!tbody) return;
   
-  tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
   
   const schedules = await getSchedules();
   
   if (schedules.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No schedules found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No schedules found</td></tr>';
     return;
   }
   
   tbody.innerHTML = schedules.map(schedule => `
     <tr>
-      <td>${schedule.id}</td>
       <td>
         <div><strong>${schedule.busName}</strong></div>
         <div class="text-muted">${schedule.type}</div>
       </td>
       <td>${schedule.origin} → ${schedule.destination}</td>
+      <td>${formatDate(schedule.departureTime)}</td>
       <td>${formatTime(schedule.departureTime)}</td>
-      <td>${formatTime(schedule.arrivalTime)}</td>
       <td>${formatCurrency(schedule.price)}</td>
       <td>
         <span class="badge badge-${(schedule.bookedSeats?.length || 0) > 30 ? 'warning' : 'success'}">
@@ -173,13 +172,20 @@ function initScheduleForm() {
 async function handleScheduleSubmit(e) {
   e.preventDefault();
   
+  const busTiming = document.getElementById('bus-timing').value;
+  
+  // Create both departureTime and arrivalTime from the same timing
+  // For simplicity, we'll set arrival time as 30 minutes after departure
+  const departureDate = new Date(busTiming);
+  const arrivalDate = new Date(departureDate.getTime() + 30 * 60000); // Add 30 minutes
+  
   const formData = {
     busName: document.getElementById('bus-name').value.trim(),
     type: document.getElementById('bus-type').value,
     origin: document.getElementById('origin').value.trim(),
     destination: document.getElementById('destination').value.trim(),
-    departureTime: document.getElementById('departure-time').value,
-    arrivalTime: document.getElementById('arrival-time').value,
+    departureTime: departureDate.toISOString(),
+    arrivalTime: arrivalDate.toISOString(),
     price: parseInt(document.getElementById('price').value)
   };
   
@@ -231,8 +237,8 @@ async function editSchedule(id) {
   document.getElementById('bus-type').value = 'AC Sleeper (2+1)';
   document.getElementById('origin').value = schedule.origin;
   document.getElementById('destination').value = schedule.destination;
-  document.getElementById('departure-time').value = schedule.departureTime.substring(0, 16);
-  document.getElementById('arrival-time').value = schedule.arrivalTime.substring(0, 16);
+  // Use only departure time for the single bus timing field
+  document.getElementById('bus-timing').value = schedule.departureTime.substring(0, 16);
   document.getElementById('price').value = schedule.price;
   
   document.getElementById('form-title').textContent = 'Edit Schedule';
@@ -259,6 +265,19 @@ async function deleteScheduleConfirm(id) {
       await loadStats();
       showToast('Schedule deleted successfully!', 'success');
     }
+  }
+}
+
+// Reset schedule form
+function resetScheduleForm() {
+  const form = document.getElementById('schedule-form');
+  if (form) {
+    form.reset();
+    document.getElementById('schedule-id').value = '';
+    // Restore fixed values after reset
+    document.getElementById('bus-name').value = 'Mahalaxmi Travels';
+    document.getElementById('bus-type').value = 'AC Sleeper (2+1)';
+    document.getElementById('form-title').textContent = 'Add New Schedule';
   }
 }
 
