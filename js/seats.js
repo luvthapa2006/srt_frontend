@@ -1,5 +1,7 @@
 // ========================================
-// SEATS.JS - Seat Selection Page Logic (NEW LAYOUT)
+// SEATS.JS - Seat Selection Page Logic (NEW 7-ROW LAYOUT)
+// Layout: Left side = 1 column (7 seats), Right side = 2 columns (13 seats)
+// Total per deck: 20 seats
 // ========================================
 
 let currentSchedule = null;
@@ -84,62 +86,94 @@ function renderSeatLayout() {
   lowerDeck.innerHTML = '';
   
   // Render upper deck (U1-U20)
-  upperDeck.innerHTML = '<h4 class="deck-title">Upper Deck</h4>' + renderDeck('U', 1, 20);
+  upperDeck.innerHTML = '<h4 class="deck-title">Upper Deck</h4>' + renderDeck('U');
   
   // Render lower deck (L1-L20)
-  lowerDeck.innerHTML = '<h4 class="deck-title">Lower Deck</h4>' + renderDeck('L', 1, 20);
+  lowerDeck.innerHTML = '<h4 class="deck-title">Lower Deck</h4>' + renderDeck('L');
 }
 
-// Render a single deck with new layout
-// Layout: 2x6 seats on left, 2x6 seats on right, 1 seat at position 15 & 20, and 2 sleeper seats at 5 & 10
-function renderDeck(prefix, start, end) {
-  let html = '<div class="seat-grid-new">';
+// Render a single deck with new 7-row layout
+// Layout: Left (1 column x 7 rows) | Aisle | Right (2 columns x 7 rows)
+// Seat mapping:
+// Left column: 1, 2, 3, 4, 5, 6, 7
+// Right columns: 8-9, 10-11, 12-13, 14-15, 16-17, 18-19, 20
+function renderDeck(prefix) {
+  let html = '<div class="seat-grid-7row">';
   
   // Add driver position indicator at the start
   html += '<div class="driver-indicator">🚗 Driver</div>';
   
-  // Row 1: U1, U2 | U3, U4 | U5 (sleeper)
-  html += '<div class="seat-row-new">';
-  html += createSeatButton(prefix, 1, 'first-left');
-  html += createSeatButton(prefix, 2, 'first-left');
+  // Define seat zones for pricing
+  const seatZones = {
+    // Left column (1-7) - Standard
+    1: 'first-left', 2: 'first-left', 3: 'first-left', 
+    4: 'first-left', 5: 'first-left', 6: 'first-left', 
+    7: 'last-left',
+    
+    // Right columns (8-20)
+    8: 'first-right', 9: 'first-right',
+    10: 'sleeper', 11: 'first-right',
+    12: 'first-right', 13: 'first-right',
+    14: 'first-right', 15: 'first-right',
+    16: 'first-right', 17: 'first-right',
+    18: 'first-right', 19: 'first-right',
+    20: 'sleeper'
+  };
+  
+  // Row 1: Seat 1 | 8, 9
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 1, seatZones[1]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 3, 'first-right');
-  html += createSeatButton(prefix, 4, 'first-right');
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 5, 'sleeper', true);
+  html += createSeatButton(prefix, 8, seatZones[8]);
+  html += createSeatButton(prefix, 9, seatZones[9]);
   html += '</div>';
   
-  // Row 2: U6, U7 | U8, U9 | U10 (sleeper)
-  html += '<div class="seat-row-new">';
-  html += createSeatButton(prefix, 6, 'first-left');
-  html += createSeatButton(prefix, 7, 'first-left');
+  // Row 2: Seat 2 | 10, 11 (10 is sleeper)
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 2, seatZones[2]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 8, 'first-right');
-  html += createSeatButton(prefix, 9, 'first-right');
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 10, 'sleeper', true);
+  html += createSeatButton(prefix, 10, seatZones[10], true);
+  html += createSeatButton(prefix, 11, seatZones[11]);
   html += '</div>';
   
-  // Row 3: U11, U12 | U13, U14 | U15 (last left)
-  html += '<div class="seat-row-new">';
-  html += createSeatButton(prefix, 11, 'first-left');
-  html += createSeatButton(prefix, 12, 'first-left');
+  // Row 3: Seat 3 | 12, 13
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 3, seatZones[3]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 13, 'first-right');
-  html += createSeatButton(prefix, 14, 'first-right');
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 15, 'last-left');
+  html += createSeatButton(prefix, 12, seatZones[12]);
+  html += createSeatButton(prefix, 13, seatZones[13]);
   html += '</div>';
   
-  // Row 4: U16, U17 | U18, U19 | U20 (last left)
-  html += '<div class="seat-row-new">';
-  html += createSeatButton(prefix, 16, 'first-left');
-  html += createSeatButton(prefix, 17, 'first-left');
+  // Row 4: Seat 4 | 14, 15
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 4, seatZones[4]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 18, 'first-right');
-  html += createSeatButton(prefix, 19, 'first-right');
+  html += createSeatButton(prefix, 14, seatZones[14]);
+  html += createSeatButton(prefix, 15, seatZones[15]);
+  html += '</div>';
+  
+  // Row 5: Seat 5 | 16, 17
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 5, seatZones[5]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 20, 'last-left');
+  html += createSeatButton(prefix, 16, seatZones[16]);
+  html += createSeatButton(prefix, 17, seatZones[17]);
+  html += '</div>';
+  
+  // Row 6: Seat 6 | 18, 19
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 6, seatZones[6]);
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 18, seatZones[18]);
+  html += createSeatButton(prefix, 19, seatZones[19]);
+  html += '</div>';
+  
+  // Row 7: Seat 7 (last-left) | 20 (sleeper)
+  html += '<div class="seat-row-7">';
+  html += createSeatButton(prefix, 7, seatZones[7]);
+  html += '<div class="seat-aisle"></div>';
+  html += '<div class="seat-spacer"></div>'; // Empty space
+  html += createSeatButton(prefix, 20, seatZones[20], true);
   html += '</div>';
   
   html += '</div>';
@@ -217,6 +251,26 @@ function toggleSeat(seatId) {
   updateSummary();
 }
 
+// Get zone for a seat number (helper function)
+function getSeatZoneByNumber(seatNumber) {
+  const num = parseInt(seatNumber.substring(1));
+  
+  const seatZones = {
+    1: 'first-left', 2: 'first-left', 3: 'first-left', 
+    4: 'first-left', 5: 'first-left', 6: 'first-left', 
+    7: 'last-left',
+    8: 'first-right', 9: 'first-right',
+    10: 'sleeper', 11: 'first-right',
+    12: 'first-right', 13: 'first-right',
+    14: 'first-right', 15: 'first-right',
+    16: 'first-right', 17: 'first-right',
+    18: 'first-right', 19: 'first-right',
+    20: 'sleeper'
+  };
+  
+  return seatZones[num] || 'first-left';
+}
+
 // Update booking summary
 function updateSummary() {
   const summarySection = document.getElementById('booking-summary');
@@ -237,18 +291,7 @@ function updateSummary() {
   const seatDetails = [];
   
   selectedSeats.forEach(seatId => {
-    // Determine zone based on seat number
-    const seatNum = parseInt(seatId.substring(1));
-    let zone = 'first-left';
-    
-    if ([5, 10].includes(seatNum)) {
-      zone = 'sleeper';
-    } else if ([15, 20].includes(seatNum)) {
-      zone = 'last-left';
-    } else if ([3, 4, 8, 9, 13, 14, 18, 19].includes(seatNum)) {
-      zone = 'first-right';
-    }
-    
+    const zone = getSeatZoneByNumber(seatId);
     const price = calculateSeatPriceByZone(currentSchedule.price, zone);
     totalAmount += price;
     seatDetails.push({ seatId, price, zone });
@@ -289,17 +332,7 @@ function proceedToPayment() {
   // Calculate total amount
   let totalAmount = 0;
   selectedSeats.forEach(seatId => {
-    const seatNum = parseInt(seatId.substring(1));
-    let zone = 'first-left';
-    
-    if ([5, 10].includes(seatNum)) {
-      zone = 'sleeper';
-    } else if ([15, 20].includes(seatNum)) {
-      zone = 'last-left';
-    } else if ([3, 4, 8, 9, 13, 14, 18, 19].includes(seatNum)) {
-      zone = 'first-right';
-    }
-    
+    const zone = getSeatZoneByNumber(seatId);
     totalAmount += calculateSeatPriceByZone(currentSchedule.price, zone);
   });
   

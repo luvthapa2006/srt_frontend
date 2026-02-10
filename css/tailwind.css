@@ -2089,3 +2089,304 @@ h6 { font-size: 1.125rem; }
   content: '🟠';
   font-size: 1rem;
 }
+.seat-grid-7row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.seat-row-7 {
+  display: grid;
+  grid-template-columns: 80px 30px 80px 80px; /* 1 seat | aisle | 2 seats */
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Seat spacer for empty spots */
+.seat-spacer {
+  width: 80px;
+  height: 100px;
+}
+
+/* Driver Indicator */
+.driver-indicator {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+/* Aisle */
+.seat-aisle {
+  width: 30px;
+  height: 100px;
+  background: linear-gradient(to bottom, 
+    rgba(203, 213, 225, 0.2) 0%, 
+    rgba(203, 213, 225, 0.5) 50%, 
+    rgba(203, 213, 225, 0.2) 100%
+  );
+  border-radius: 4px;
+  position: relative;
+}
+
+.seat-aisle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 80%;
+  background: repeating-linear-gradient(
+    to bottom,
+    #cbd5e1 0px,
+    #cbd5e1 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
+/* New Seat Button Styles */
+.seat-new {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.seat-new:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #667eea;
+}
+
+.seat-new:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Seat Number */
+.seat-new .seat-number {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+/* Seat Price */
+.seat-new .seat-price {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* Seat Type (for sleepers) */
+.seat-new .seat-type {
+  font-size: 1.25rem;
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
+/* Sleeper seats are wider */
+.seat-new.seat-sleeper {
+  width: 100px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f59e0b;
+}
+
+/* Sold Label */
+.sold-label {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Seat States */
+.seat-new.seat-selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.seat-new.seat-selected .seat-number,
+.seat-new.seat-selected .seat-price {
+  color: white;
+}
+
+.seat-new.seat-booked {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.seat-new.seat-booked .seat-number {
+  color: #9ca3af;
+}
+
+/* Zone-based seat colors */
+.seat-new.zone-first-right {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.seat-new.zone-first-right:hover:not(:disabled) {
+  border-color: #2563eb;
+}
+
+.seat-new.zone-first-left {
+  border-color: #6b7280;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.seat-new.zone-first-left:hover:not(:disabled) {
+  border-color: #475569;
+}
+
+.seat-new.zone-last-left {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.seat-new.zone-last-left:hover:not(:disabled) {
+  border-color: #059669;
+}
+
+.seat-new.zone-sleeper {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.seat-new.zone-sleeper:hover:not(:disabled) {
+  border-color: #d97706;
+}
+
+/* Deck Title */
+.deck-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .seat-grid-7row {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  
+  .seat-row-7 {
+    grid-template-columns: 70px 25px 70px 70px;
+    gap: 0.375rem;
+  }
+  
+  .seat-new {
+    width: 70px;
+    height: 90px;
+    font-size: 0.8125rem;
+  }
+  
+  .seat-new.seat-sleeper {
+    width: 90px;
+  }
+  
+  .seat-spacer {
+    width: 70px;
+    height: 90px;
+  }
+  
+  .seat-aisle {
+    width: 25px;
+    height: 90px;
+  }
+  
+  .driver-indicator {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 420px) {
+  .seat-row-7 {
+    grid-template-columns: 60px 20px 60px 60px;
+    gap: 0.25rem;
+  }
+  
+  .seat-new {
+    width: 60px;
+    height: 80px;
+    font-size: 0.75rem;
+    padding: 0.375rem;
+  }
+  
+  .seat-new.seat-sleeper {
+    width: 75px;
+  }
+  
+  .seat-new .seat-number {
+    font-size: 0.875rem;
+  }
+  
+  .seat-new .seat-price {
+    font-size: 0.6875rem;
+  }
+  
+  .seat-spacer {
+    width: 60px;
+    height: 80px;
+  }
+  
+  .seat-aisle {
+    width: 20px;
+    height: 80px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

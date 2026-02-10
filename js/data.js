@@ -33,43 +33,44 @@ const seatPricing = {
   sleeper: 150        // Last Right Sleeper - Luxury seats
 };
 
-// Define which seats belong to which zone
+// Define which seats belong to which zone (7-ROW LAYOUT)
+// Layout: Left column (1-7) | Right columns (8-20)
 const seatPricingZones = {
   // Upper Deck
-  firstRight_U: [3, 4, 8, 9, 13, 14, 18, 19],
-  firstLeft_U: [1, 2, 6, 7, 11, 12, 16, 17],
-  lastLeft_U: [15, 20],
-  sleeper_U: [5, 10],
+  firstLeft_U: [1, 2, 3, 4, 5, 6],      // Left column seats (standard)
+  lastLeft_U: [7],                       // Last left seat (budget)
+  firstRight_U: [8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19], // Right column seats (premium)
+  sleeper_U: [10, 20],                   // Sleeper seats
   
-  // Lower Deck
-  firstRight_L: [3, 4, 8, 9, 13, 14, 18, 19],
-  firstLeft_L: [1, 2, 6, 7, 11, 12, 16, 17],
-  lastLeft_L: [15, 20],
-  sleeper_L: [5, 10]
+  // Lower Deck - Same mapping
+  firstLeft_L: [1, 2, 3, 4, 5, 6],
+  lastLeft_L: [7],
+  firstRight_L: [8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  sleeper_L: [10, 20]
 };
 
-// Get zone for a seat
+// Get zone for a seat (7-ROW LAYOUT)
 function getSeatZone(seatNumber) {
   const deck = seatNumber.charAt(0); // 'U' or 'L'
   const num = parseInt(seatNumber.substring(1));
   
-  // Check sleeper seats first
-  if ([5, 10].includes(num)) {
+  // Check sleeper seats first (10, 20)
+  if ([10, 20].includes(num)) {
     return 'sleeper';
   }
   
-  // Check last left seats
-  if ([15, 20].includes(num)) {
+  // Check last left seat (7)
+  if (num === 7) {
     return 'lastLeft';
   }
   
-  // Check first right seats
-  if ([3, 4, 8, 9, 13, 14, 18, 19].includes(num)) {
-    return 'firstRight';
+  // Check first left seats (1-6)
+  if ([1, 2, 3, 4, 5, 6].includes(num)) {
+    return 'firstLeft';
   }
   
-  // Default to first left
-  return 'firstLeft';
+  // All other seats are first right (8, 9, 11-19)
+  return 'firstRight';
 }
 
 // Calculate seat price based on zone (NO LONGER USES BASE PRICE)
