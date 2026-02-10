@@ -254,18 +254,27 @@ async function deleteScheduleConfirm(id) {
   }
 }
 
+
 // Initialize pricing form
 function initPricingForm() {
   const form = document.getElementById('pricing-form');
-  if (form) {
-    // Load current pricing
-    const pricing = getSeatPricing();
-    document.getElementById('window-multiplier').value = pricing.window;
-    document.getElementById('front-multiplier').value = pricing.front;
-    document.getElementById('back-multiplier').value = pricing.back;
-    
-    form.addEventListener('submit', handlePricingSubmit);
+  if (!form) return; // Exit early if form doesn't exist
+  
+  // Load current pricing
+  const pricing = getSeatPricing();
+  
+  const windowInput = document.getElementById('window-multiplier');
+  const frontInput = document.getElementById('front-multiplier');
+  const backInput = document.getElementById('back-multiplier');
+  
+  // Check if all required elements exist before setting values
+  if (windowInput && frontInput && backInput) {
+    windowInput.value = pricing.window;
+    frontInput.value = pricing.front;
+    backInput.value = pricing.back;
   }
+  
+  form.addEventListener('submit', handlePricingSubmit);
 }
 
 // Handle pricing form submission
