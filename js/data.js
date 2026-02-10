@@ -364,6 +364,11 @@ async function cancelBooking(bookingToken) {
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        console.log('Cancel booking endpoint not implemented on backend yet');
+        showToast('Cancel booking feature requires backend implementation', 'warning');
+        return false;
+      }
       const error = await response.json();
       throw new Error(error.message || 'Failed to cancel booking');
     }
@@ -372,7 +377,11 @@ async function cancelBooking(bookingToken) {
     return true;
   } catch (error) {
     console.error('Error cancelling booking:', error);
-    showToast(error.message, 'error');
+    if (error.message.includes('Route not found') || error.message.includes('404')) {
+      showToast('Cancel booking endpoint not yet implemented on backend', 'warning');
+    } else {
+      showToast(error.message, 'error');
+    }
     return false;
   }
 }
