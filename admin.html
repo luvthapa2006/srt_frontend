@@ -85,11 +85,18 @@
             </div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label">Bus Timing</label>
-            <input type="datetime-local" class="form-input" id="bus-timing" required>
-            <small class="text-muted">Select the date and departure time for this bus</small>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Bus Date</label>
+              <input type="date" class="form-input" id="bus-date" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Departure Time</label>
+              <input type="time" class="form-input" id="bus-time" required>
+            </div>
           </div>
+          <small class="text-muted">Select the date and departure time for this bus</small>
           
           <div class="form-group">
             <label class="form-label">Base Price (₹)</label>
@@ -155,10 +162,10 @@
         
         <form id="pricing-form" class="pricing-form">
           <div class="pricing-form-group">
-            <!-- First Right (Premium) -->
+            <!-- First Right -->
             <div class="pricing-input-group first-right">
               <label for="first-right-price">
-                First Right (2×6) - Premium
+                🔵 First Right (2×6)
               </label>
               <input 
                 type="number" 
@@ -169,17 +176,17 @@
                 required
               />
               <div class="pricing-description">
-                Seats: 3, 4, 8, 9, 13, 14, 18, 19 (both decks)
+                Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)
               </div>
               <div class="pricing-example">
                 Example: ₹120 per seat
               </div>
             </div>
             
-            <!-- First Left (Standard) -->
+            <!-- First Left -->
             <div class="pricing-input-group first-left">
               <label for="first-left-price">
-                First Left (2×6) - Standard
+                ⚪ First Left (1×6)
               </label>
               <input 
                 type="number" 
@@ -190,17 +197,17 @@
                 required
               />
               <div class="pricing-description">
-                Seats: 1, 2, 6, 7, 11, 12, 16, 17 (both decks)
+                Seats: 1, 2, 3, 4, 5, 6 (both decks)
               </div>
               <div class="pricing-example">
                 Example: ₹100 per seat
               </div>
             </div>
             
-            <!-- Last Left (Budget) -->
+            <!-- Last Left 7th Seat -->
             <div class="pricing-input-group last-left">
               <label for="last-left-price">
-                Last Left 7th Seat - Budget
+                🟢 Last Left 7th Seat
               </label>
               <input 
                 type="number" 
@@ -211,17 +218,17 @@
                 required
               />
               <div class="pricing-description">
-                Seats: 15, 20 (both decks)
+                Seats: 7 (both decks)
               </div>
               <div class="pricing-example">
                 Example: ₹90 per seat
               </div>
             </div>
             
-            <!-- Sleeper (Luxury) -->
+            <!-- Last Right Sleeper -->
             <div class="pricing-input-group sleeper">
               <label for="sleeper-price">
-                Last Right Sleeper - Luxury
+                🟠 Last Right Sleeper
               </label>
               <input 
                 type="number" 
@@ -232,7 +239,7 @@
                 required
               />
               <div class="pricing-description">
-                Seats: 5, 10 (double sleeper seats, both decks)
+                Seats: 20 (sleeper seats, both decks)
               </div>
               <div class="pricing-example">
                 Example: ₹150 per seat
@@ -252,17 +259,6 @@
               🔄 Reset to Defaults
             </button>
           </div>
-          
-          <!-- Important Note -->
-          <div class="alert alert-info" style="margin-top: 1.5rem; padding: 1rem; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
-            <strong>ℹ️ Important:</strong>
-            <ul style="margin: 0.5rem 0 0 1.5rem; color: #1e40af;">
-              <li>These are <strong>fixed prices</strong>, not multipliers</li>
-              <li>Set independent prices for each zone category</li>
-              <li>Changes apply immediately to all seat selections</li>
-              <li>The "Base Price" field in schedules is now for display/reference only</li>
-            </ul>
-          </div>
         </form>
         
         <!-- Seat Layout Visualization -->
@@ -273,8 +269,8 @@
             <div class="zone-info">
               <div class="zone-color first-right"></div>
               <div>
-                <div class="zone-name">🔵 First Right (Premium)</div>
-                <div class="zone-seats">Seats: 3, 4, 8, 9, 13, 14, 18, 19</div>
+                <div class="zone-name">🔵 First Right (2×6)</div>
+                <div class="zone-seats">Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)</div>
               </div>
             </div>
             <div class="zone-price" id="preview-first-right">₹120</div>
@@ -284,8 +280,8 @@
             <div class="zone-info">
               <div class="zone-color first-left"></div>
               <div>
-                <div class="zone-name">⚪ First Left (Standard)</div>
-                <div class="zone-seats">Seats: 1, 2, 6, 7, 11, 12, 16, 17</div>
+                <div class="zone-name">⚪ First Left (1×6)</div>
+                <div class="zone-seats">Seats: 1, 2, 3, 4, 5, 6 (both decks)</div>
               </div>
             </div>
             <div class="zone-price" id="preview-first-left">₹100</div>
@@ -295,8 +291,8 @@
             <div class="zone-info">
               <div class="zone-color last-left"></div>
               <div>
-                <div class="zone-name">🟢 Last Left (Budget)</div>
-                <div class="zone-seats">Seats: 15, 20</div>
+                <div class="zone-name">🟢 Last Left 7th Seat</div>
+                <div class="zone-seats">Seats: 7 (both decks)</div>
               </div>
             </div>
             <div class="zone-price" id="preview-last-left">₹90</div>
@@ -306,8 +302,8 @@
             <div class="zone-info">
               <div class="zone-color sleeper"></div>
               <div>
-                <div class="zone-name">🟡 Sleeper (Luxury)</div>
-                <div class="zone-seats">Seats: 5, 10 (double)</div>
+                <div class="zone-name">🟠 Last Right Sleeper</div>
+                <div class="zone-seats">Seats: 20 (both decks)</div>
               </div>
             </div>
             <div class="zone-price" id="preview-sleeper">₹150</div>

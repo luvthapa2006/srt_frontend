@@ -172,11 +172,11 @@ function initScheduleForm() {
 async function handleScheduleSubmit(e) {
   e.preventDefault();
   
-  const busTiming = document.getElementById('bus-timing').value;
+  const busDate = document.getElementById('bus-date').value;
+  const busTime = document.getElementById('bus-time').value;
   
-  // Create both departureTime and arrivalTime from the same timing
-  // For simplicity, we'll set arrival time as 30 minutes after departure
-  const departureDate = new Date(busTiming);
+  // Combine date and time into ISO format
+  const departureDate = new Date(`${busDate}T${busTime}`);
   const arrivalDate = new Date(departureDate.getTime() + 30 * 60000); // Add 30 minutes
   
   const formData = {
@@ -237,8 +237,14 @@ async function editSchedule(id) {
   document.getElementById('bus-type').value = 'AC Sleeper (2+1)';
   document.getElementById('origin').value = schedule.origin;
   document.getElementById('destination').value = schedule.destination;
-  // Use only departure time for the single bus timing field
-  document.getElementById('bus-timing').value = schedule.departureTime.substring(0, 16);
+  
+  // Split departure time into date and time
+  const departureDateTime = new Date(schedule.departureTime);
+  const dateStr = departureDateTime.toISOString().split('T')[0];
+  const timeStr = departureDateTime.toTimeString().substring(0, 5);
+  
+  document.getElementById('bus-date').value = dateStr;
+  document.getElementById('bus-time').value = timeStr;
   document.getElementById('price').value = schedule.price;
   
   document.getElementById('form-title').textContent = 'Edit Schedule';
