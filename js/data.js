@@ -1,5 +1,5 @@
 // ========================================
-// DATA.JS - API Integration Layer (UPDATED PRICING)
+// DATA.JS - API Integration Layer (ROUTE-BASED PRICING)
 // Connects to Node.js + MongoDB backend
 // ========================================
 
@@ -24,62 +24,178 @@ function generateAllSeats() {
 
 const ALL_SEATS = generateAllSeats();
 
-// NEW: Independent Seat Pricing (NOT multipliers, direct prices)
-// These are the DEFAULT prices for each zone
-const seatPricing = {
-  firstRight: 120,    // First Right (2×6) - Premium seats
-  firstLeft: 100,     // First Left (2×6) - Standard seats
-  lastLeft: 90,       // Last Left 7th Seat - Budget seats
-  sleeper: 150        // Last Right Sleeper - Luxury seats
+// DEFAULT pricing (used as fallback)
+const defaultSeatPricing = {
+  firstRight: 120,
+  firstLeft: 100,
+  lastLeft: 90,
+  sleeper: 150
 };
 
 // Define which seats belong to which zone (7-ROW LAYOUT)
-// Layout: Left column (1-7) | Right columns (8-20)
 const seatPricingZones = {
-  // Upper Deck
-  firstLeft_U: [1, 2, 3, 4, 5, 6],      // Left column seats (standard)
-  lastLeft_U: [7],                       // Last left seat (budget)
-  firstRight_U: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], // Right column seats (premium)
-  sleeper_U: [20],                       // Sleeper seats
-  
-  // Lower Deck - Same mapping
+  firstLeft_U: [1, 2, 3, 4, 5, 6],
+  lastLeft_U: [7],
+  firstRight_U: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  sleeper_U: [20],
   firstLeft_L: [1, 2, 3, 4, 5, 6],
   lastLeft_L: [7],
   firstRight_L: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
   sleeper_L: [20]
 };
 
-// Get zone for a seat (7-ROW LAYOUT)
+// Get zone for a seat
 function getSeatZone(seatNumber) {
-  const deck = seatNumber.charAt(0); // 'U' or 'L'
+  const deck = seatNumber.charAt(0);
   const num = parseInt(seatNumber.substring(1));
   
-  // Check sleeper seats first (only 20 now)
-  if (num === 20) {
-    return 'sleeper';
-  }
-  
-  // Check last left seat (7)
-  if (num === 7) {
-    return 'lastLeft';
-  }
-  
-  // Check first left seats (1-6)
-  if ([1, 2, 3, 4, 5, 6].includes(num)) {
-    return 'firstLeft';
-  }
-  
-  // All other seats are first right (8-19)
+  if (num === 20) return 'sleeper';
+  if (num === 7) return 'lastLeft';
+  if ([1, 2, 3, 4, 5, 6].includes(num)) return 'firstLeft';
   return 'firstRight';
 }
 
-// Calculate seat price based on zone (NO LONGER USES BASE PRICE)
-function calculateSeatPrice(basePrice, seatNumber) {
-  const zone = getSeatZone(seatNumber);
-  const pricing = getSeatPricing();
+// ========================================
+// ROUTE-BASED PRICING SYSTEM
+// ========================================
+
+// Generate route key from origin and destination
+function getRouteKey(origin, destination) {
+  // Normalize route key (case-insensitive, trimmed)
+  const normalizedOrigin = origin.trim().toLowerCase();
+  const normalizedDestination = destination.trim().toLowerCase();
+  return `${normalizedOrigin}-${normalizedDestination}`;
+}
+
+// Get pricing for a specific route
+function getRoutePricing(origin, destination) {
+  const routeKey = getRouteKey(origin, destination);
   
-  // Return the direct price for the zone
-  return pricing[zone] || pricing.firstLeft; // fallback to firstLeft price
+  try {
+    const storedPricing = localStorage.getItem('routePricing');
+    if (storedPricing) {
+      const allRoutePricing = JSON.parse(storedPricing);
+      if (allRoutePricing[routeKey]) {
+        return allRoutePricing[routeKey];
+      }
+    }
+  } catch (e) {
+    console.error('Error reading route pricing:', e);
+  }
+  
+  // Return default pricing if no route-specific pricing found
+  return { ...defaultSeatPricing };
+}
+
+// Set pricing for a specific route
+function setRoutePricing(origin, destination, pricing) {
+  const routeKey = getRouteKey(origin, destination);
+  
+  try {
+    let allRoutePricing = {};
+    const stored = localStorage.getItem('routePricing');
+    if (stored) {
+      allRoutePricing = JSON.parse(stored);
+    }
+    
+    allRoutePricing[routeKey] = {
+      firstRight: parseInt(pricing.firstRight),
+      firstLeft: parseInt(pricing.firstLeft),
+      lastLeft: parseInt(pricing.lastLeft),
+      sleeper: parseInt(pricing.sleeper),
+      routeName: `${origin} → ${destination}`,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    localStorage.setItem('routePricing', JSON.stringify(allRoutePricing));
+    console.log(`✅ Pricing saved for route: ${routeKey}`, allRoutePricing[routeKey]);
+    return true;
+  } catch (e) {
+    console.error('Error saving route pricing:', e);
+    return false;
+  }
+}
+
+// Get all routes with custom pricing
+function getAllRoutePricing() {
+  try {
+    const stored = localStorage.getItem('routePricing');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error reading all route pricing:', e);
+  }
+  return {};
+}
+
+// Delete pricing for a specific route (revert to default)
+function deleteRoutePricing(origin, destination) {
+  const routeKey = getRouteKey(origin, destination);
+  
+  try {
+    const stored = localStorage.getItem('routePricing');
+    if (stored) {
+      const allRoutePricing = JSON.parse(stored);
+      delete allRoutePricing[routeKey];
+      localStorage.setItem('routePricing', JSON.stringify(allRoutePricing));
+      console.log(`✅ Pricing deleted for route: ${routeKey}`);
+      return true;
+    }
+  } catch (e) {
+    console.error('Error deleting route pricing:', e);
+  }
+  return false;
+}
+
+// Calculate seat price for a specific route and seat
+function calculateSeatPriceForRoute(origin, destination, seatNumber) {
+  const zone = getSeatZone(seatNumber);
+  const routePricing = getRoutePricing(origin, destination);
+  return routePricing[zone] || routePricing.firstLeft;
+}
+
+// BACKWARD COMPATIBILITY: Keep old function for existing code
+function calculateSeatPrice(basePrice, seatNumber) {
+  // This is deprecated - now we use route-based pricing
+  // But keeping for backward compatibility
+  const zone = getSeatZone(seatNumber);
+  return getSeatPricing()[zone] || getSeatPricing().firstLeft;
+}
+
+// Get current default pricing (for routes without custom pricing)
+function getSeatPricing() {
+  try {
+    const stored = localStorage.getItem('defaultSeatPricing');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error parsing default pricing:', e);
+  }
+  return { ...defaultSeatPricing };
+}
+
+// Update default pricing
+function updateSeatPricing(zone, price) {
+  const currentPricing = getSeatPricing();
+  
+  if (currentPricing.hasOwnProperty(zone)) {
+    currentPricing[zone] = parseInt(price);
+    localStorage.setItem('defaultSeatPricing', JSON.stringify(currentPricing));
+    console.log('Updated default pricing for', zone, ':', price);
+    return true;
+  }
+  
+  console.error('Invalid pricing zone:', zone);
+  return false;
+}
+
+// Reset default pricing
+function resetSeatPricing() {
+  localStorage.removeItem('defaultSeatPricing');
+  console.log('Default pricing reset to defaults');
+  return true;
 }
 
 // ========================================
@@ -145,6 +261,29 @@ async function getAllCities() {
     return data.cities || [];
   } catch (error) {
     console.error('Error fetching cities:', error);
+    return [];
+  }
+}
+
+// Get all unique routes from schedules
+async function getAllRoutes() {
+  try {
+    const schedules = await getSchedules();
+    const routesSet = new Set();
+    
+    schedules.forEach(schedule => {
+      const routeKey = getRouteKey(schedule.origin, schedule.destination);
+      routesSet.add(JSON.stringify({
+        key: routeKey,
+        origin: schedule.origin,
+        destination: schedule.destination,
+        display: `${schedule.origin} → ${schedule.destination}`
+      }));
+    });
+    
+    return Array.from(routesSet).map(r => JSON.parse(r));
+  } catch (error) {
+    console.error('Error fetching routes:', error);
     return [];
   }
 }
@@ -295,7 +434,6 @@ async function createBooking(bookingData) {
 
     console.log('Booking created:', result);
 
-    // Convert _id to id and handle populated scheduleId
     return {
       ...result,
       id: result._id || result.id,
@@ -318,7 +456,6 @@ async function getBookingByToken(token) {
     }
 
     const booking = await response.json();
-    // Handle populated scheduleId from backend
     return {
       ...booking,
       id: booking._id || booking.id,
@@ -343,7 +480,7 @@ async function getAllBookings() {
     return bookings.map(booking => ({
       ...booking,
       id: booking._id || booking.id,
-      scheduleId: booking.scheduleId // Keep populated object from backend
+      scheduleId: booking.scheduleId
     }));
   } catch (error) {
     console.error('Error fetching bookings:', error);
@@ -403,66 +540,23 @@ async function getBookingStats() {
   }
 }
 
-// Helper function for seats.js
+// Helper function for seats.js - calculate amount for route-based pricing
 async function calculateBookingAmountAsync(scheduleId, seatNumbers) {
   const schedule = await getScheduleById(scheduleId);
   if (!schedule) return 0;
   
   let total = 0;
   seatNumbers.forEach(seat => {
-    total += calculateSeatPrice(schedule.price, seat);
+    total += calculateSeatPriceForRoute(schedule.origin, schedule.destination, seat);
   });
   
   return total;
 }
 
 // ========================================
-// PRICING MANAGEMENT
-// ========================================
-
-// Get current seat pricing
-function getSeatPricing() {
-  // Try to get from localStorage first (for admin changes)
-  const stored = localStorage.getItem('seatPricing');
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error('Error parsing stored pricing:', e);
-    }
-  }
-  
-  // Return default pricing
-  return { ...seatPricing };
-}
-
-// Update seat pricing (Admin only)
-function updateSeatPricing(zone, price) {
-  const currentPricing = getSeatPricing();
-  
-  if (currentPricing.hasOwnProperty(zone)) {
-    currentPricing[zone] = parseInt(price);
-    localStorage.setItem('seatPricing', JSON.stringify(currentPricing));
-    console.log('Updated pricing for', zone, ':', price);
-    return true;
-  }
-  
-  console.error('Invalid pricing zone:', zone);
-  return false;
-}
-
-// Reset pricing to defaults
-function resetSeatPricing() {
-  localStorage.removeItem('seatPricing');
-  console.log('Pricing reset to defaults');
-  return true;
-}
-
-// ========================================
 // BACKWARD COMPATIBILITY
 // ========================================
 
-// Wrapper to make getSchedules synchronous-like for old code
 let cachedSchedules = [];
 
 async function loadAndCacheSchedules(filters = {}) {
@@ -470,5 +564,6 @@ async function loadAndCacheSchedules(filters = {}) {
   return cachedSchedules;
 }
 
-console.log('✅ Data.js loaded with independent zone pricing');
-console.log('📊 Current pricing:', getSeatPricing());
+console.log('✅ Data.js loaded with ROUTE-BASED pricing system');
+console.log('📊 Default pricing:', getSeatPricing());
+console.log('🛣️ Route pricing enabled');

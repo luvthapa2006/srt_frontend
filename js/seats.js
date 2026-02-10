@@ -1,5 +1,5 @@
 // ========================================
-// SEATS.JS - Seat Selection Page Logic (NEW 7-ROW LAYOUT)
+// SEATS.JS - Seat Selection Page Logic (ROUTE-BASED PRICING)
 // Layout: Left side = 1 column (7 seats), Right side = 2 columns (13 seats)
 // Total per deck: 20 seats
 // ========================================
@@ -93,24 +93,17 @@ function renderSeatLayout() {
 }
 
 // Render a single deck with new 7-row layout
-// Layout: Left (1 column x 7 rows) | Aisle | Right (2 columns x 7 rows)
-// Seat mapping:
-// Left column: 1, 2, 3, 4, 5, 6, 7
-// Right columns: 8-9, 10-11, 12-13, 14-15, 16-17, 18-19, 20
 function renderDeck(prefix) {
   let html = '<div class="seat-grid-7row">';
   
-  // Add driver position indicator at the start with steering wheel icon
+  // Add driver position indicator
   html += '<div class="driver-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="9"></line><line x1="12" y1="15" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="9" y2="12"></line><line x1="15" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line></svg> Driver</div>';
   
   // Define seat zones for pricing
   const seatZones = {
-    // Left column (1-7) - Standard
     1: 'first-left', 2: 'first-left', 3: 'first-left', 
     4: 'first-left', 5: 'first-left', 6: 'first-left', 
     7: 'last-left',
-    
-    // Right columns (8-20)
     8: 'first-right', 9: 'first-right',
     10: 'first-right', 11: 'first-right',
     12: 'first-right', 13: 'first-right',
@@ -179,19 +172,23 @@ function renderDeck(prefix) {
   return html;
 }
 
-// Create individual seat button with zone-based pricing
+// Create individual seat button with route-based pricing
 function createSeatButton(prefix, number, zone, isSleeper = false) {
   const seatId = `${prefix}${number}`;
   const isBooked = currentSchedule.bookedSeats?.includes(seatId);
   const isSelected = selectedSeats.includes(seatId);
-  const seatPrice = calculateSeatPriceByZone(currentSchedule.price, zone);
+  
+  // Use route-based pricing
+  const seatPrice = calculateSeatPriceForRoute(
+    currentSchedule.origin, 
+    currentSchedule.destination, 
+    seatId
+  );
   
   let className = 'seat-new';
   if (isBooked) className += ' seat-booked';
   if (isSelected) className += ' seat-selected';
   if (isSleeper) className += ' seat-sleeper';
-  
-  // Add zone-specific styling
   className += ` zone-${zone}`;
   
   return `
@@ -210,24 +207,6 @@ function createSeatButton(prefix, number, zone, isSleeper = false) {
   `;
 }
 
-// Calculate seat price based on zone
-function calculateSeatPriceByZone(basePrice, zone) {
-  const pricing = getSeatPricing();
-  
-  switch(zone) {
-    case 'first-right':
-      return pricing.firstRight;
-    case 'first-left':
-      return pricing.firstLeft;
-    case 'last-left':
-      return pricing.lastLeft;
-    case 'sleeper':
-      return pricing.sleeper;
-    default:
-      return basePrice; // fallback to base price
-  }
-}
-
 // Toggle seat selection
 function toggleSeat(seatId) {
   const isBooked = currentSchedule.bookedSeats?.includes(seatId);
@@ -237,7 +216,6 @@ function toggleSeat(seatId) {
   if (index > -1) {
     selectedSeats.splice(index, 1);
   } else {
-    // Limit to max 6 seats
     if (selectedSeats.length >= 6) {
       showToast('Maximum 6 seats can be selected', 'warning');
       return;
@@ -245,29 +223,8 @@ function toggleSeat(seatId) {
     selectedSeats.push(seatId);
   }
   
-  // Update UI
   renderSeatLayout();
   updateSummary();
-}
-
-// Get zone for a seat number (helper function)
-function getSeatZoneByNumber(seatNumber) {
-  const num = parseInt(seatNumber.substring(1));
-  
-  const seatZones = {
-    1: 'first-left', 2: 'first-left', 3: 'first-left', 
-    4: 'first-left', 5: 'first-left', 6: 'first-left', 
-    7: 'last-left',
-    8: 'first-right', 9: 'first-right',
-    10: 'first-right', 11: 'first-right',
-    12: 'first-right', 13: 'first-right',
-    14: 'first-right', 15: 'first-right',
-    16: 'first-right', 17: 'first-right',
-    18: 'first-right', 19: 'first-right',
-    20: 'sleeper'
-  };
-  
-  return seatZones[num] || 'first-left';
 }
 
 // Update booking summary
@@ -285,14 +242,19 @@ function updateSummary() {
     return;
   }
   
-  // Calculate total amount
+  // Calculate total amount using route-based pricing
   let totalAmount = 0;
   const seatDetails = [];
   
   selectedSeats.forEach(seatId => {
-    const zone = getSeatZoneByNumber(seatId);
-    const price = calculateSeatPriceByZone(currentSchedule.price, zone);
+    const price = calculateSeatPriceForRoute(
+      currentSchedule.origin,
+      currentSchedule.destination,
+      seatId
+    );
     totalAmount += price;
+    
+    const zone = getSeatZone(seatId);
     seatDetails.push({ seatId, price, zone });
   });
   
@@ -328,11 +290,14 @@ function proceedToPayment() {
     return;
   }
   
-  // Calculate total amount
+  // Calculate total amount using route-based pricing
   let totalAmount = 0;
   selectedSeats.forEach(seatId => {
-    const zone = getSeatZoneByNumber(seatId);
-    totalAmount += calculateSeatPriceByZone(currentSchedule.price, zone);
+    totalAmount += calculateSeatPriceForRoute(
+      currentSchedule.origin,
+      currentSchedule.destination,
+      seatId
+    );
   });
   
   navigateTo('payment.html', {

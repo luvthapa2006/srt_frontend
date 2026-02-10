@@ -109,9 +109,14 @@
           <small class="text-muted">Select the date and departure time for this bus</small>
           
           <div class="form-group">
-            <label class="form-label">Base Price (₹)</label>
+            <label class="form-label">Base Price (₹) <span class="required">*</span></label>
             <input type="number" class="form-input" id="price" min="100" required>
             <small class="text-muted">This is for display/reference only. Actual seat prices are set in the Pricing tab.</small>
+          </div>
+
+          <!-- NEW: Pricing Preview Section -->
+          <div id="schedule-pricing-preview" style="display: none; margin-top: 1rem;">
+            <!-- Pricing preview will be dynamically populated here -->
           </div>
 
           <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
@@ -163,193 +168,259 @@
       </div>
     </div>
 
-    <!-- Tab: Pricing (NEW INDEPENDENT PRICING SECTION) -->
+    <!-- Tab: Pricing (UPDATED WITH ROUTE-BASED PRICING) -->
     <div id="tab-pricing" class="admin-tab-content">
-      <div class="admin-section">
-        <h2 class="section-title">Seat Pricing Configuration</h2>
-        <p class="section-description">
-          Set independent prices for different seat zones. These prices will apply to all buses.
+      <div class="tab-header">
+        <h2>Seat Pricing Configuration</h2>
+        <p class="tab-description">
+          Set independent prices for different seat zones. Configure pricing per route or set default pricing.
         </p>
-        
-        <form id="pricing-form" class="pricing-form">
-          <div class="pricing-form-group">
-            <!-- First Right -->
-            <div class="pricing-input-group first-right">
-              <label for="first-right-price">
-                🔵 First Right (2×6)
-              </label>
-              <input 
-                type="number" 
-                id="first-right-price" 
-                min="0" 
-                step="10"
-                placeholder="120"
-                required
-              />
-              <div class="pricing-description">
-                Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)
-              </div>
-              <div class="pricing-example">
-                Example: ₹120 per seat
-              </div>
-            </div>
-            
-            <!-- First Left -->
-            <div class="pricing-input-group first-left">
-              <label for="first-left-price">
-                ⚪ First Left (1×6)
-              </label>
-              <input 
-                type="number" 
-                id="first-left-price" 
-                min="0" 
-                step="10"
-                placeholder="100"
-                required
-              />
-              <div class="pricing-description">
-                Seats: 1, 2, 3, 4, 5, 6 (both decks)
-              </div>
-              <div class="pricing-example">
-                Example: ₹100 per seat
-              </div>
-            </div>
-            
-            <!-- Last Left 7th Seat -->
-            <div class="pricing-input-group last-left">
-              <label for="last-left-price">
-                🟢 Last Left 7th Seat
-              </label>
-              <input 
-                type="number" 
-                id="last-left-price" 
-                min="0" 
-                step="10"
-                placeholder="90"
-                required
-              />
-              <div class="pricing-description">
-                Seats: 7 (both decks)
-              </div>
-              <div class="pricing-example">
-                Example: ₹90 per seat
-              </div>
-            </div>
-            
-            <!-- Last Right Sleeper -->
-            <div class="pricing-input-group sleeper">
-              <label for="sleeper-price">
-                🟠 Last Right Sleeper
-              </label>
-              <input 
-                type="number" 
-                id="sleeper-price" 
-                min="0" 
-                step="10"
-                placeholder="150"
-                required
-              />
-              <div class="pricing-description">
-                Seats: 20 (sleeper seats, both decks)
-              </div>
-              <div class="pricing-example">
-                Example: ₹150 per seat
-              </div>
-            </div>
+      </div>
+
+      <!-- ROUTE SELECTOR SECTION (NEW) -->
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <h3>Select Route</h3>
+          <p class="card-description">
+            Choose a route to set custom pricing, or leave unselected to modify default pricing.
+          </p>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="route-selector">Route</label>
+            <select id="route-selector" class="form-control">
+              <option value="">Select a route...</option>
+              <!-- Options will be populated dynamically -->
+            </select>
+            <small class="form-help">
+              Routes marked with ⭐ have custom pricing. Select a route to view/edit its pricing.
+            </small>
           </div>
           
-          <!-- Pricing Preview -->
-          <div id="pricing-preview"></div>
-          
-          <!-- Form Actions -->
-          <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button type="submit" class="btn btn-primary">
-              💾 Save Pricing
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="resetPricing()">
-              🔄 Reset to Defaults
-            </button>
-          </div>
-        </form>
-        
-        <!-- Seat Layout Visualization -->
-        <div class="pricing-zones-legend">
-          <h4>Seat Zone Visualization</h4>
-          
-          <div class="pricing-zone-item">
-            <div class="zone-info">
-              <div class="zone-color first-right"></div>
-              <div>
-                <div class="zone-name">🔵 First Right (2×6)</div>
-                <div class="zone-seats">Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)</div>
-              </div>
+          <!-- Pricing Status Display -->
+          <div id="pricing-status" style="margin-top: 1rem;">
+            <div class="alert alert-secondary">
+              <strong>Select a route</strong> to set custom pricing, or modify default pricing below.
             </div>
-            <div class="zone-price" id="preview-first-right">₹120</div>
-          </div>
-          
-          <div class="pricing-zone-item">
-            <div class="zone-info">
-              <div class="zone-color first-left"></div>
-              <div>
-                <div class="zone-name">⚪ First Left (1×6)</div>
-                <div class="zone-seats">Seats: 1, 2, 3, 4, 5, 6 (both decks)</div>
-              </div>
-            </div>
-            <div class="zone-price" id="preview-first-left">₹100</div>
-          </div>
-          
-          <div class="pricing-zone-item">
-            <div class="zone-info">
-              <div class="zone-color last-left"></div>
-              <div>
-                <div class="zone-name">🟢 Last Left 7th Seat</div>
-                <div class="zone-seats">Seats: 7 (both decks)</div>
-              </div>
-            </div>
-            <div class="zone-price" id="preview-last-left">₹90</div>
-          </div>
-          
-          <div class="pricing-zone-item">
-            <div class="zone-info">
-              <div class="zone-color sleeper"></div>
-              <div>
-                <div class="zone-name">🟠 Last Right Sleeper</div>
-                <div class="zone-seats">Seats: 20 (both decks)</div>
-              </div>
-            </div>
-            <div class="zone-price" id="preview-sleeper">₹150</div>
           </div>
         </div>
       </div>
+
+      <!-- PRICING CONFIGURATION FORM -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Seat Zone Pricing</h3>
+          <p class="card-description">
+            Set prices for different seat zones. These prices apply independently of the base price.
+          </p>
+        </div>
+        <div class="card-body">
+          <form id="pricing-form">
+            <div class="pricing-grid">
+              <!-- First Right (2×6) - Premium -->
+              <div class="pricing-card pricing-card-blue">
+                <div class="pricing-card-header">
+                  <span class="pricing-icon">🔵 🔵</span>
+                  <h4>First Right (2×6)</h4>
+                </div>
+                <div class="pricing-card-body">
+                  <label for="first-right-price">Price per seat (₹)</label>
+                  <input 
+                    type="number" 
+                    id="first-right-price" 
+                    class="form-control pricing-input"
+                    min="0" 
+                    step="1" 
+                    required
+                    placeholder="120"
+                  />
+                  <small class="pricing-help">
+                    Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)
+                  </small>
+                  <div class="pricing-example">Example: ₹120 per seat</div>
+                </div>
+              </div>
+
+              <!-- First Left (1×6) - Standard -->
+              <div class="pricing-card pricing-card-gray">
+                <div class="pricing-card-header">
+                  <span class="pricing-icon">⚪ ⚪</span>
+                  <h4>First Left (1×6)</h4>
+                </div>
+                <div class="pricing-card-body">
+                  <label for="first-left-price">Price per seat (₹)</label>
+                  <input 
+                    type="number" 
+                    id="first-left-price" 
+                    class="form-control pricing-input"
+                    min="0" 
+                    step="1" 
+                    required
+                    placeholder="100"
+                  />
+                  <small class="pricing-help">
+                    Seats: 1, 2, 3, 4, 5, 6 (both decks)
+                  </small>
+                  <div class="pricing-example">Example: ₹100 per seat</div>
+                </div>
+              </div>
+
+              <!-- Last Left 7th Seat - Budget -->
+              <div class="pricing-card pricing-card-green">
+                <div class="pricing-card-header">
+                  <span class="pricing-icon">🟢 🟢</span>
+                  <h4>Last Left 7th Seat</h4>
+                </div>
+                <div class="pricing-card-body">
+                  <label for="last-left-price">Price per seat (₹)</label>
+                  <input 
+                    type="number" 
+                    id="last-left-price" 
+                    class="form-control pricing-input"
+                    min="0" 
+                    step="1" 
+                    required
+                    placeholder="90"
+                  />
+                  <small class="pricing-help">
+                    Seats: 7 (both decks)
+                  </small>
+                  <div class="pricing-example">Example: ₹90 per seat</div>
+                </div>
+              </div>
+
+              <!-- Last Right Sleeper - Luxury -->
+              <div class="pricing-card pricing-card-orange">
+                <div class="pricing-card-header">
+                  <span class="pricing-icon">🟠 🟠</span>
+                  <h4>Last Right Sleeper</h4>
+                </div>
+                <div class="pricing-card-body">
+                  <label for="sleeper-price">Price per seat (₹)</label>
+                  <input 
+                    type="number" 
+                    id="sleeper-price" 
+                    class="form-control pricing-input"
+                    min="0" 
+                    step="1" 
+                    required
+                    placeholder="150"
+                  />
+                  <small class="pricing-help">
+                    Seats: 20 (sleeper seats, both decks)
+                  </small>
+                  <div class="pricing-example">Example: ₹150 per seat</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Preview -->
+            <div id="pricing-preview" class="pricing-preview">
+              <!-- Preview will be populated dynamically -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                💾 Save Pricing
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="resetAllPricing()">
+                🔄 Reset All to Defaults
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Info Section -->
+      <div class="alert alert-info" style="margin-top: 2rem;">
+        <h4>How Route-Based Pricing Works:</h4>
+        <ul style="margin: 0.5rem 0 0 1.5rem;">
+          <li><strong>Default Pricing:</strong> Applied to all routes that don't have custom pricing</li>
+          <li><strong>Route-Specific Pricing:</strong> Override default pricing for specific routes (e.g., Delhi → Mumbai)</li>
+          <li><strong>Automatic Application:</strong> Pricing is automatically applied when customers select seats</li>
+          <li><strong>Independent Zones:</strong> Each seat zone has its own fixed price regardless of bus type or time</li>
+        </ul>
+      </div>
     </div>
   </div>
 
-  <!-- Login Modal -->
-  <div id="admin-login-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Admin Login</h2>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="handleAdminLogin(event)">
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="admin-password" placeholder="Enter admin password" required>
-            <small class="text-muted">Default: admin123</small>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block">Login</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script src="js/data.js"></script>
-  <script src="js/main.js"></script>
   <script src="js/admin.js"></script>
-  
   <script>
-    // Reset pricing to defaults
+    // Load stats on page load
+    window.addEventListener('DOMContentLoaded', loadStats);
+    
+    // Pricing form submission handler
+    document.getElementById('pricing-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      savePricing();
+    });
+    
+    // Save pricing function
+    function savePricing() {
+      const firstRight = parseFloat(document.getElementById('first-right-price').value) || 0;
+      const firstLeft = parseFloat(document.getElementById('first-left-price').value) || 0;
+      const lastLeft = parseFloat(document.getElementById('last-left-price').value) || 0;
+      const sleeper = parseFloat(document.getElementById('sleeper-price').value) || 0;
+      
+      const selectedRoute = document.getElementById('route-selector').value;
+      
+      const pricing = {
+        firstRight: firstRight,
+        firstLeft: firstLeft,
+        lastLeft: lastLeft,
+        sleeper: sleeper
+      };
+      
+      if (selectedRoute) {
+        // Save route-specific pricing
+        let routePricing = JSON.parse(localStorage.getItem('routePricing') || '{}');
+        routePricing[selectedRoute] = pricing;
+        localStorage.setItem('routePricing', JSON.stringify(routePricing));
+        
+        alert('✅ Custom pricing saved for route: ' + selectedRoute);
+        populateRouteSelector(); // Refresh the dropdown to show ⭐
+      } else {
+        // Save default pricing
+        localStorage.setItem('seatPricing', JSON.stringify(pricing));
+        alert('✅ Default pricing saved successfully!');
+      }
+      
+      updatePricingPreview();
+    }
+    
+    // Reset all pricing to defaults
+    function resetAllPricing() {
+      if (confirm('⚠️ This will reset ALL pricing (default and route-specific) to default values. Continue?')) {
+        // Reset default pricing
+        const defaultPricing = {
+          firstRight: 120,
+          firstLeft: 100,
+          lastLeft: 90,
+          sleeper: 150
+        };
+        localStorage.setItem('seatPricing', JSON.stringify(defaultPricing));
+        
+        // Clear all route-specific pricing
+        localStorage.removeItem('routePricing');
+        
+        // Reset form
+        document.getElementById('first-right-price').value = 120;
+        document.getElementById('first-left-price').value = 100;
+        document.getElementById('last-left-price').value = 90;
+        document.getElementById('sleeper-price').value = 150;
+        
+        // Reset route selector
+        document.getElementById('route-selector').value = '';
+        updatePricingStatus();
+        populateRouteSelector();
+        
+        alert('✅ All pricing has been reset to defaults!');
+        updatePricingPreview();
+      }
+    }
+    
+    // Reset pricing (for backwards compatibility)
     function resetPricing() {
       document.getElementById('first-right-price').value = 120;
       document.getElementById('first-left-price').value = 100;
@@ -358,18 +429,206 @@
       updatePricingPreview();
     }
     
-    // Live pricing preview update
+    // Update pricing preview
     function updatePricingPreview() {
-      const firstRight = parseFloat(document.getElementById('first-right-price').value) || 120;
-      const firstLeft = parseFloat(document.getElementById('first-left-price').value) || 100;
-      const lastLeft = parseFloat(document.getElementById('last-left-price').value) || 90;
-      const sleeper = parseFloat(document.getElementById('sleeper-price').value) || 150;
+      const firstRight = parseFloat(document.getElementById('first-right-price').value) || 0;
+      const firstLeft = parseFloat(document.getElementById('first-left-price').value) || 0;
+      const lastLeft = parseFloat(document.getElementById('last-left-price').value) || 0;
+      const sleeper = parseFloat(document.getElementById('sleeper-price').value) || 0;
       
-      document.getElementById('preview-first-right').textContent = '₹' + Math.round(firstRight);
-      document.getElementById('preview-first-left').textContent = '₹' + Math.round(firstLeft);
-      document.getElementById('preview-last-left').textContent = '₹' + Math.round(lastLeft);
-      document.getElementById('preview-sleeper').textContent = '₹' + Math.round(sleeper);
+      const previewDiv = document.getElementById('pricing-preview');
+      previewDiv.innerHTML = `
+        <h4 style="margin-bottom: 1rem; font-weight: 600; color: var(--secondary);">Live Preview</h4>
+        <div class="pricing-zones-legend">
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color first-right"></div>
+              <div>
+                <div class="zone-name">First Right (2×6)</div>
+                <div class="zone-seats">12 seats per deck</div>
+              </div>
+            </div>
+            <div class="zone-price">₹${Math.round(firstRight)}</div>
+          </div>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color first-left"></div>
+              <div>
+                <div class="zone-name">First Left (1×6)</div>
+                <div class="zone-seats">6 seats per deck</div>
+              </div>
+            </div>
+            <div class="zone-price">₹${Math.round(firstLeft)}</div>
+          </div>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color last-left"></div>
+              <div>
+                <div class="zone-name">Last Left 7th Seat</div>
+                <div class="zone-seats">1 seat per deck</div>
+              </div>
+            </div>
+            <div class="zone-price">₹${Math.round(lastLeft)}</div>
+          </div>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color sleeper"></div>
+              <div>
+                <div class="zone-name">Last Right Sleeper</div>
+                <div class="zone-seats">1 seat per deck</div>
+              </div>
+            </div>
+            <div class="zone-price">₹${Math.round(sleeper)}</div>
+          </div>
+        </div>
+      `;
     }
+    
+    // Populate route selector with available routes
+    function populateRouteSelector() {
+      const schedules = JSON.parse(localStorage.getItem('schedules') || '[]');
+      const routePricing = JSON.parse(localStorage.getItem('routePricing') || '{}');
+      const selector = document.getElementById('route-selector');
+      
+      // Get unique routes
+      const routes = new Set();
+      schedules.forEach(schedule => {
+        const routeKey = `${schedule.origin} → ${schedule.destination}`;
+        routes.add(routeKey);
+      });
+      
+      // Clear and populate selector
+      selector.innerHTML = '<option value="">Default Pricing (applies to all routes)</option>';
+      
+      Array.from(routes).sort().forEach(route => {
+        const option = document.createElement('option');
+        option.value = route;
+        const hasCustomPricing = routePricing.hasOwnProperty(route);
+        option.textContent = hasCustomPricing ? `⭐ ${route}` : route;
+        selector.appendChild(option);
+      });
+    }
+    
+    // Route selector change handler
+    document.getElementById('route-selector').addEventListener('change', function() {
+      const selectedRoute = this.value;
+      
+      if (selectedRoute) {
+        // Load route-specific pricing if exists, otherwise load defaults
+        const routePricing = JSON.parse(localStorage.getItem('routePricing') || '{}');
+        const defaultPricing = JSON.parse(localStorage.getItem('seatPricing') || '{"firstRight":120,"firstLeft":100,"lastLeft":90,"sleeper":150}');
+        
+        const pricing = routePricing[selectedRoute] || defaultPricing;
+        
+        document.getElementById('first-right-price').value = pricing.firstRight;
+        document.getElementById('first-left-price').value = pricing.firstLeft;
+        document.getElementById('last-left-price').value = pricing.lastLeft;
+        document.getElementById('sleeper-price').value = pricing.sleeper;
+        
+        updatePricingStatus(selectedRoute, routePricing.hasOwnProperty(selectedRoute));
+      } else {
+        // Load default pricing
+        const defaultPricing = JSON.parse(localStorage.getItem('seatPricing') || '{"firstRight":120,"firstLeft":100,"lastLeft":90,"sleeper":150}');
+        
+        document.getElementById('first-right-price').value = defaultPricing.firstRight;
+        document.getElementById('first-left-price').value = defaultPricing.firstLeft;
+        document.getElementById('last-left-price').value = defaultPricing.lastLeft;
+        document.getElementById('sleeper-price').value = defaultPricing.sleeper;
+        
+        updatePricingStatus();
+      }
+      
+      updatePricingPreview();
+    });
+    
+    // Update pricing status display
+    function updatePricingStatus(route = null, hasCustom = false) {
+      const statusDiv = document.getElementById('pricing-status');
+      
+      if (!route) {
+        statusDiv.innerHTML = `
+          <div class="alert alert-secondary">
+            <strong>Editing Default Pricing</strong><br>
+            These prices will apply to all routes that don't have custom pricing set.
+          </div>
+        `;
+      } else if (hasCustom) {
+        statusDiv.innerHTML = `
+          <div class="alert alert-info">
+            <strong>Editing Custom Pricing for: ${route}</strong><br>
+            This route already has custom pricing. Your changes will update it.
+          </div>
+        `;
+      } else {
+        statusDiv.innerHTML = `
+          <div class="alert alert-info">
+            <strong>Creating Custom Pricing for: ${route}</strong><br>
+            Currently using default pricing. Save to set custom prices for this route.
+          </div>
+        `;
+      }
+    }
+    
+    // Update schedule pricing preview when origin/destination change
+    function updateSchedulePricingPreview() {
+      const origin = document.getElementById('origin').value.trim();
+      const destination = document.getElementById('destination').value.trim();
+      const previewDiv = document.getElementById('schedule-pricing-preview');
+      
+      if (!origin || !destination) {
+        previewDiv.style.display = 'none';
+        return;
+      }
+      
+      const routeKey = `${origin} → ${destination}`;
+      const routePricing = JSON.parse(localStorage.getItem('routePricing') || '{}');
+      const defaultPricing = JSON.parse(localStorage.getItem('seatPricing') || '{"firstRight":120,"firstLeft":100,"lastLeft":90,"sleeper":150}');
+      
+      const hasCustomPricing = routePricing.hasOwnProperty(routeKey);
+      const pricing = hasCustomPricing ? routePricing[routeKey] : defaultPricing;
+      
+      previewDiv.style.display = 'block';
+      previewDiv.innerHTML = `
+        <div class="pricing-info-box">
+          <div class="pricing-info-header">
+            <span>💺 Seat Pricing for this Route</span>
+            <span class="badge ${hasCustomPricing ? 'badge-success' : 'badge-secondary'}">
+              ${hasCustomPricing ? 'Custom Pricing' : 'Default Pricing'}
+            </span>
+          </div>
+          <div class="pricing-grid">
+            <div class="pricing-item">
+              <span class="pricing-label">🔵 First Right</span>
+              <span class="pricing-value">₹${pricing.firstRight}</span>
+            </div>
+            <div class="pricing-item">
+              <span class="pricing-label">⚪ First Left</span>
+              <span class="pricing-value">₹${pricing.firstLeft}</span>
+            </div>
+            <div class="pricing-item">
+              <span class="pricing-label">🟢 Last Left</span>
+              <span class="pricing-value">₹${pricing.lastLeft}</span>
+            </div>
+            <div class="pricing-item">
+              <span class="pricing-label">🟠 Sleeper</span>
+              <span class="pricing-value">₹${pricing.sleeper}</span>
+            </div>
+          </div>
+          <div class="pricing-note">
+            ${hasCustomPricing ? 
+              '✓ This route uses custom pricing. Go to the Pricing tab to modify.' : 
+              'ℹ️ This route uses default pricing. Go to the Pricing tab to set custom pricing.'}
+          </div>
+        </div>
+      `;
+    }
+    
+    // Add event listeners for origin/destination
+    document.getElementById('origin').addEventListener('input', updateSchedulePricingPreview);
+    document.getElementById('destination').addEventListener('input', updateSchedulePricingPreview);
     
     // Add event listeners for live preview
     document.addEventListener('DOMContentLoaded', function() {
@@ -383,8 +642,21 @@
       if (lastLeftInput) lastLeftInput.addEventListener('input', updatePricingPreview);
       if (sleeperInput) sleeperInput.addEventListener('input', updatePricingPreview);
       
-      // Initialize preview with default values
-      resetPricing();
+      // Load default pricing on page load
+      const defaultPricing = JSON.parse(localStorage.getItem('seatPricing') || '{"firstRight":120,"firstLeft":100,"lastLeft":90,"sleeper":150}');
+      document.getElementById('first-right-price').value = defaultPricing.firstRight;
+      document.getElementById('first-left-price').value = defaultPricing.firstLeft;
+      document.getElementById('last-left-price').value = defaultPricing.lastLeft;
+      document.getElementById('sleeper-price').value = defaultPricing.sleeper;
+      
+      // Initialize preview
+      updatePricingPreview();
+      
+      // Populate route selector
+      populateRouteSelector();
+      
+      // Initialize pricing status
+      updatePricingStatus();
     });
     
     // Reset form function
@@ -392,11 +664,223 @@
       document.getElementById('schedule-form').reset();
       document.getElementById('schedule-id').value = '';
       document.getElementById('form-title').textContent = 'Add New Schedule';
+      document.getElementById('schedule-pricing-preview').style.display = 'none';
     }
   </script>
 
   <style>
-    /* Additional styles for the new pricing section */
+    /* Route Selector Styles */
+    #route-selector {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background-color: white;
+      transition: all 0.2s;
+    }
+
+    #route-selector:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Pricing Status Alert */
+    #pricing-status .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0;
+    }
+
+    #pricing-status .alert-info {
+      background-color: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+
+    #pricing-status .alert-secondary {
+      background-color: #f3f4f6;
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+
+    /* Schedule Form Pricing Preview */
+    #schedule-pricing-preview .pricing-info-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #schedule-pricing-preview .pricing-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 1.125rem;
+    }
+
+    #schedule-pricing-preview .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    #schedule-pricing-preview .badge-success {
+      background-color: #10b981;
+      color: white;
+    }
+
+    #schedule-pricing-preview .badge-secondary {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    #schedule-pricing-preview .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    #schedule-pricing-preview .pricing-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    #schedule-pricing-preview .pricing-label {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    #schedule-pricing-preview .pricing-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    #schedule-pricing-preview .pricing-note {
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      opacity: 0.9;
+      font-size: 0.875rem;
+    }
+
+    /* Pricing Grid Layout */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Pricing Cards */
+    .pricing-card {
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 2px solid;
+      transition: all 0.3s ease;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .pricing-card-blue {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+    }
+
+    .pricing-card-gray {
+      background-color: #f9fafb;
+      border-color: #6b7280;
+    }
+
+    .pricing-card-green {
+      background-color: #f0fdf4;
+      border-color: #10b981;
+    }
+
+    .pricing-card-orange {
+      background-color: #fffbeb;
+      border-color: #f59e0b;
+    }
+
+    .pricing-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .pricing-icon {
+      font-size: 1.5rem;
+    }
+
+    .pricing-card-header h4 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .pricing-card-body label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    .pricing-input {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .pricing-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .pricing-help {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .pricing-example {
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* Pricing Preview */
+    .pricing-preview {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+    }
+
+    /* Additional styles for the pricing section */
     .admin-section {
       background: white;
       padding: 2rem;
@@ -414,84 +898,6 @@
     .section-description {
       color: var(--slate-600);
       margin-bottom: 2rem;
-    }
-
-    .pricing-form-group {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .pricing-input-group {
-      padding: 1.25rem;
-      border-radius: 0.75rem;
-      border: 2px solid var(--slate-200);
-      transition: all 0.3s ease;
-    }
-
-    .pricing-input-group:hover {
-      border-color: var(--primary);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-
-    .pricing-input-group.first-right {
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border-color: #3b82f6;
-    }
-
-    .pricing-input-group.first-left {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border-color: #6b7280;
-    }
-
-    .pricing-input-group.last-left {
-      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-      border-color: #10b981;
-    }
-
-    .pricing-input-group.sleeper {
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      border-color: #f59e0b;
-    }
-
-    .pricing-input-group label {
-      display: block;
-      font-weight: 600;
-      color: var(--secondary);
-      margin-bottom: 0.75rem;
-      font-size: 1rem;
-    }
-
-    .pricing-input-group input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 2px solid var(--slate-300);
-      border-radius: 0.5rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-
-    .pricing-input-group input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .pricing-description {
-      margin-top: 0.75rem;
-      font-size: 0.875rem;
-      color: var(--slate-600);
-      line-height: 1.4;
-    }
-
-    .pricing-example {
-      margin-top: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--slate-500);
-      font-style: italic;
     }
 
     .pricing-zones-legend {
@@ -592,7 +998,10 @@
     .form-actions {
       display: flex;
       gap: 1rem;
-      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e5e7eb;
     }
 
     .btn {
@@ -624,6 +1033,97 @@
 
     .btn-secondary:hover {
       background: #4b5563;
+    }
+
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+      color: var(--slate-600);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-body {
+      margin-top: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--secondary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-help {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .tab-header {
+      margin-bottom: 2rem;
+    }
+
+    .tab-header h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .tab-description {
+      color: var(--slate-600);
+      font-size: 1rem;
+    }
+
+    .required {
+      color: #ef4444;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-actions {
+        flex-direction: column;
+      }
+      
+      .form-actions button {
+        width: 100%;
+      }
     }
   </style>
 </body>
