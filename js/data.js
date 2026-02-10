@@ -39,14 +39,14 @@ const seatPricingZones = {
   // Upper Deck
   firstLeft_U: [1, 2, 3, 4, 5, 6],      // Left column seats (standard)
   lastLeft_U: [7],                       // Last left seat (budget)
-  firstRight_U: [8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19], // Right column seats (premium)
-  sleeper_U: [10, 20],                   // Sleeper seats
+  firstRight_U: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], // Right column seats (premium)
+  sleeper_U: [20],                       // Sleeper seats
   
   // Lower Deck - Same mapping
   firstLeft_L: [1, 2, 3, 4, 5, 6],
   lastLeft_L: [7],
-  firstRight_L: [8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  sleeper_L: [10, 20]
+  firstRight_L: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  sleeper_L: [20]
 };
 
 // Get zone for a seat (7-ROW LAYOUT)
@@ -54,8 +54,8 @@ function getSeatZone(seatNumber) {
   const deck = seatNumber.charAt(0); // 'U' or 'L'
   const num = parseInt(seatNumber.substring(1));
   
-  // Check sleeper seats first (10, 20)
-  if ([10, 20].includes(num)) {
+  // Check sleeper seats first (only 20 now)
+  if (num === 20) {
     return 'sleeper';
   }
   
@@ -69,7 +69,7 @@ function getSeatZone(seatNumber) {
     return 'firstLeft';
   }
   
-  // All other seats are first right (8, 9, 11-19)
+  // All other seats are first right (8-19)
   return 'firstRight';
 }
 

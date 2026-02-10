@@ -1603,6 +1603,7 @@ h6 { font-size: 1.125rem; }
 }
 
 /* Driver Indicator */
+/* Driver Indicator */
 .driver-indicator {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -1612,7 +1613,27 @@ h6 { font-size: 1.125rem; }
   font-weight: 600;
   margin-bottom: 1rem;
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
+
+.driver-indicator svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+}
+
+
+
+
+
+
+
+
+
+
 
 /* New Seat Button Styles */
 .seat-new {

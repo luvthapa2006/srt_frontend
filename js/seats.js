@@ -100,8 +100,8 @@ function renderSeatLayout() {
 function renderDeck(prefix) {
   let html = '<div class="seat-grid-7row">';
   
-  // Add driver position indicator at the start
-  html += '<div class="driver-indicator">🚗 Driver</div>';
+  // Add driver position indicator at the start with steering wheel icon
+  html += '<div class="driver-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="9"></line><line x1="12" y1="15" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="9" y2="12"></line><line x1="15" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line></svg> Driver</div>';
   
   // Define seat zones for pricing
   const seatZones = {
@@ -112,7 +112,7 @@ function renderDeck(prefix) {
     
     // Right columns (8-20)
     8: 'first-right', 9: 'first-right',
-    10: 'sleeper', 11: 'first-right',
+    10: 'first-right', 11: 'first-right',
     12: 'first-right', 13: 'first-right',
     14: 'first-right', 15: 'first-right',
     16: 'first-right', 17: 'first-right',
@@ -128,11 +128,11 @@ function renderDeck(prefix) {
   html += createSeatButton(prefix, 9, seatZones[9]);
   html += '</div>';
   
-  // Row 2: Seat 2 | 10, 11 (10 is sleeper)
+  // Row 2: Seat 2 | 10, 11
   html += '<div class="seat-row-7">';
   html += createSeatButton(prefix, 2, seatZones[2]);
   html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 10, seatZones[10], true);
+  html += createSeatButton(prefix, 10, seatZones[10]);
   html += createSeatButton(prefix, 11, seatZones[11]);
   html += '</div>';
   
@@ -259,7 +259,7 @@ function getSeatZoneByNumber(seatNumber) {
     4: 'first-left', 5: 'first-left', 6: 'first-left', 
     7: 'last-left',
     8: 'first-right', 9: 'first-right',
-    10: 'sleeper', 11: 'first-right',
+    10: 'first-right', 11: 'first-right',
     12: 'first-right', 13: 'first-right',
     14: 'first-right', 15: 'first-right',
     16: 'first-right', 17: 'first-right',
