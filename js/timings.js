@@ -1,5 +1,5 @@
 // ========================================
-// TIMINGS.JS - Bus Timings List Page Logic (FIXED VERSION)
+// TIMINGS.JS - Bus Timings List Page Logic (WORKING VERSION)
 // ========================================
 
 let currentFilters = {};
@@ -22,46 +22,22 @@ async function initTimingsPage() {
   // Display filters info
   displayFilterInfo();
   
-  // Setup filter form if exists
-  setupFilterForm();
+  // Setup filter controls if they exist
+  setupFilterControls();
   
   // Load and display schedules
   await loadSchedules();
 }
 
-// Setup filter form
-function setupFilterForm() {
-  const filterForm = document.getElementById('filter-form');
-  if (filterForm) {
-    filterForm.addEventListener('submit', handleFilterSubmit);
+// Setup filter controls
+function setupFilterControls() {
+  // Sort dropdown
+  const sortSelect = document.getElementById('sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      sortSchedules(e.target.value);
+    });
   }
-  
-  // Populate current filter values
-  if (currentFilters.origin) {
-    const originInput = document.getElementById('filter-origin');
-    if (originInput) originInput.value = currentFilters.origin;
-  }
-  
-  if (currentFilters.destination) {
-    const destInput = document.getElementById('filter-destination');
-    if (destInput) destInput.value = currentFilters.destination;
-  }
-  
-  if (currentFilters.date) {
-    const dateInput = document.getElementById('filter-date');
-    if (dateInput) dateInput.value = currentFilters.date;
-  }
-}
-
-// Handle filter form submission
-function handleFilterSubmit(e) {
-  e.preventDefault();
-  
-  const origin = document.getElementById('filter-origin')?.value || '';
-  const destination = document.getElementById('filter-destination')?.value || '';
-  const date = document.getElementById('filter-date')?.value || '';
-  
-  navigateTo('timings.html', { origin, destination, date });
 }
 
 // Display filter information
@@ -70,18 +46,13 @@ function displayFilterInfo() {
   if (!filterInfo) return;
   
   if (currentFilters.origin && currentFilters.destination) {
-    filterInfo.innerHTML = `
-      <div class="filter-info-content">
-        <span>Showing results for <strong>${currentFilters.origin}</strong> to <strong>${currentFilters.destination}</strong></span>
-        ${currentFilters.date ? `<span> on <strong>${formatDate(currentFilters.date)}</strong></span>` : ''}
-      </div>
-    `;
+    let infoText = `Showing results for ${currentFilters.origin} to ${currentFilters.destination}`;
+    if (currentFilters.date) {
+      infoText += ` on ${formatDate(currentFilters.date)}`;
+    }
+    filterInfo.innerHTML = `<h1 class="page-title" style="margin: 0; color: white;">${infoText}</h1>`;
   } else {
-    filterInfo.innerHTML = `
-      <div class="filter-info-content">
-        <span>Showing all available buses</span>
-      </div>
-    `;
+    filterInfo.innerHTML = `<h1 class="page-title" style="margin: 0; color: white;">All Available Buses</h1>`;
   }
 }
 
@@ -104,6 +75,7 @@ async function loadSchedules() {
     allSchedules = await getSchedules(currentFilters);
     
     console.log('✅ Received schedules:', allSchedules.length);
+    console.log('📊 Schedules data:', allSchedules);
     
     // Display schedules
     displaySchedules(allSchedules);
@@ -115,7 +87,7 @@ async function loadSchedules() {
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
         <h3>Error Loading Buses</h3>
-        <p>${error.message || 'Failed to load bus schedules. Please check your internet connection.'}</p>
+        <p>${error.message || 'Failed to load bus schedules. Please check your connection.'}</p>
         <button onclick="loadSchedules()" class="btn btn-primary">
           🔄 Try Again
         </button>
@@ -169,65 +141,42 @@ function displaySchedules(schedules) {
   
   // Morning buses (6 AM - 12 PM)
   if (groupedSchedules.morning.length > 0) {
-    html += `
-      <div class="schedule-group">
-        <h3 class="schedule-group-title">
-          <span class="time-icon">🌅</span>
-          Morning Buses (6 AM - 12 PM)
-        </h3>
-        <div class="schedule-group-content">
-          ${groupedSchedules.morning.map(schedule => createScheduleCard(schedule)).join('')}
-        </div>
-      </div>
-    `;
+    html += createScheduleGroup('🌅', 'Morning Buses (6 AM - 12 PM)', groupedSchedules.morning);
   }
   
   // Afternoon buses (12 PM - 6 PM)
   if (groupedSchedules.afternoon.length > 0) {
-    html += `
-      <div class="schedule-group">
-        <h3 class="schedule-group-title">
-          <span class="time-icon">☀️</span>
-          Afternoon Buses (12 PM - 6 PM)
-        </h3>
-        <div class="schedule-group-content">
-          ${groupedSchedules.afternoon.map(schedule => createScheduleCard(schedule)).join('')}
-        </div>
-      </div>
-    `;
+    html += createScheduleGroup('☀️', 'Afternoon Buses (12 PM - 6 PM)', groupedSchedules.afternoon);
   }
   
   // Evening buses (6 PM - 12 AM)
   if (groupedSchedules.evening.length > 0) {
-    html += `
-      <div class="schedule-group">
-        <h3 class="schedule-group-title">
-          <span class="time-icon">🌆</span>
-          Evening Buses (6 PM - 12 AM)
-        </h3>
-        <div class="schedule-group-content">
-          ${groupedSchedules.evening.map(schedule => createScheduleCard(schedule)).join('')}
-        </div>
-      </div>
-    `;
+    html += createScheduleGroup('🌆', 'Evening Buses (6 PM - 12 AM)', groupedSchedules.evening);
   }
   
   // Night buses (12 AM - 6 AM)
   if (groupedSchedules.night.length > 0) {
-    html += `
-      <div class="schedule-group">
-        <h3 class="schedule-group-title">
-          <span class="time-icon">🌙</span>
-          Night Buses (12 AM - 6 AM)
-        </h3>
-        <div class="schedule-group-content">
-          ${groupedSchedules.night.map(schedule => createScheduleCard(schedule)).join('')}
-        </div>
-      </div>
-    `;
+    html += createScheduleGroup('🌙', 'Night Buses (12 AM - 6 AM)', groupedSchedules.night);
   }
   
   schedulesList.innerHTML = html;
+  
+  console.log('✅ Schedules displayed successfully');
+}
+
+// Create schedule group
+function createScheduleGroup(icon, title, schedules) {
+  return `
+    <div class="schedule-group" style="margin-bottom: 2rem;">
+      <h3 class="schedule-group-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb;">
+        <span class="time-icon" style="font-size: 1.5rem;">${icon}</span>
+        ${title}
+      </h3>
+      <div class="schedule-group-content" style="display: grid; gap: 1.5rem;">
+        ${schedules.map(schedule => createScheduleCard(schedule)).join('')}
+      </div>
+    </div>
+  `;
 }
 
 // Group schedules by time of day
@@ -254,17 +203,24 @@ function groupSchedulesByTimeOfDay(schedules) {
     }
   });
   
+  console.log('📊 Grouped schedules:', {
+    morning: grouped.morning.length,
+    afternoon: grouped.afternoon.length,
+    evening: grouped.evening.length,
+    night: grouped.night.length
+  });
+  
   return grouped;
 }
 
 // Create empty state
 function createEmptyState() {
   return `
-    <div class="empty-state">
-      <div class="empty-icon">🚌</div>
-      <h3>No Buses Found</h3>
-      <p>We couldn't find any buses matching your search criteria.</p>
-      <div class="empty-state-actions">
+    <div class="empty-state" style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div class="empty-icon" style="font-size: 4rem; margin-bottom: 1rem;">🚌</div>
+      <h3 style="font-size: 1.5rem; font-weight: 600; color: #1f2937; margin-bottom: 0.5rem;">No Buses Found</h3>
+      <p style="color: #6b7280; margin-bottom: 1.5rem;">We couldn't find any buses matching your search criteria.</p>
+      <div class="empty-state-actions" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
         <button onclick="clearFilters()" class="btn btn-primary">
           Clear Filters
         </button>
@@ -276,7 +232,7 @@ function createEmptyState() {
   `;
 }
 
-// Create schedule card HTML
+// Create schedule card HTML with inline styles for guaranteed display
 function createScheduleCard(schedule) {
   const availableSeats = TOTAL_SEATS - (schedule.bookedSeats?.length || 0);
   const duration = calculateDuration(schedule.departureTime, schedule.arrivalTime);
@@ -284,30 +240,31 @@ function createScheduleCard(schedule) {
   const isToday = isDateToday(departureDate);
   
   return `
-    <div class="schedule-card animate-on-scroll" data-schedule-id="${schedule.id}">
-      <div class="schedule-info">
-        <div class="schedule-header">
-          <div class="bus-info-header">
-            <h3 class="bus-name">${schedule.busName}</h3>
-            <div class="bus-meta">
-              <span class="bus-rating">⭐ 4.${Math.floor(Math.random() * 3) + 6}</span>
-              ${isToday ? '<span class="badge-today">Today</span>' : ''}
+    <div class="schedule-card" style="display: flex; gap: 2rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease;" data-schedule-id="${schedule.id}">
+      <div class="schedule-info" style="flex: 1;">
+        <div class="schedule-header" style="margin-bottom: 0.5rem;">
+          <div class="bus-info-header" style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <h3 class="bus-name" style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0 0 0.25rem 0;">${schedule.busName}</h3>
+              <p class="bus-type" style="color: #6b7280; font-size: 0.875rem; margin: 0;">${schedule.type}</p>
+            </div>
+            <div class="bus-meta" style="display: flex; gap: 0.5rem; align-items: center;">
+              <span class="bus-rating" style="color: #f59e0b; font-size: 0.875rem; font-weight: 500;">⭐ 4.${Math.floor(Math.random() * 3) + 6}</span>
+              ${isToday ? '<span class="badge-today" style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Today</span>' : ''}
             </div>
           </div>
         </div>
         
-        <p class="bus-type">${schedule.type}</p>
-        
-        <div class="route-timeline">
-          <div class="route-point">
-            <span class="route-time">${formatTime(schedule.departureTime)}</span>
-            <span class="route-city">${schedule.origin}</span>
-            <span class="route-date">${formatDate(schedule.departureTime)}</span>
+        <div class="route-timeline" style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
+          <div class="route-point" style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span class="route-time" style="font-size: 1.125rem; font-weight: 600; color: #1f2937;">${formatTime(schedule.departureTime)}</span>
+            <span class="route-city" style="font-size: 0.875rem; color: #6b7280;">${schedule.origin}</span>
+            <span class="route-date" style="font-size: 0.75rem; color: #9ca3af;">${formatDate(schedule.departureTime)}</span>
           </div>
           
-          <div class="route-connector">
-            <div class="route-line"></div>
-            <div class="route-duration">
+          <div class="route-connector" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <div class="route-line" style="width: 100%; height: 2px; background: linear-gradient(to right, #667eea, #764ba2);"></div>
+            <div class="route-duration" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #6b7280; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px;">
               <svg class="icon-clock" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -316,60 +273,38 @@ function createScheduleCard(schedule) {
             </div>
           </div>
           
-          <div class="route-point">
-            <span class="route-time">${formatTime(schedule.arrivalTime)}</span>
-            <span class="route-city">${schedule.destination}</span>
-            <span class="route-date">${formatDate(schedule.arrivalTime)}</span>
+          <div class="route-point" style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span class="route-time" style="font-size: 1.125rem; font-weight: 600; color: #1f2937;">${formatTime(schedule.arrivalTime)}</span>
+            <span class="route-city" style="font-size: 0.875rem; color: #6b7280;">${schedule.destination}</span>
+            <span class="route-date" style="font-size: 0.75rem; color: #9ca3af;">${formatDate(schedule.arrivalTime)}</span>
           </div>
         </div>
         
-        <div class="bus-amenities">
-          <span class="amenity-badge" title="WiFi Available">
-            <svg class="amenity-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
-              <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
-              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-              <line x1="12" y1="20" x2="12.01" y2="20"></line>
-            </svg>
-            WiFi
-          </span>
-          <span class="amenity-badge" title="Charging Point">
-            <svg class="amenity-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-            </svg>
-            Charging
-          </span>
-          <span class="amenity-badge" title="Water Bottle">
-            <svg class="amenity-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-              <line x1="6" y1="1" x2="6" y2="4"></line>
-              <line x1="10" y1="1" x2="10" y2="4"></line>
-              <line x1="14" y1="1" x2="14" y2="4"></line>
-            </svg>
-            Water
-          </span>
-          ${schedule.type.includes('AC') ? '<span class="amenity-badge" title="Air Conditioned">❄️ AC</span>' : ''}
+        <div class="bus-amenities" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">📶 WiFi</span>
+          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">🔌 Charging</span>
+          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">💧 Water</span>
+          ${schedule.type.includes('AC') ? '<span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">❄️ AC</span>' : ''}
         </div>
       </div>
       
-      <div class="schedule-cta">
-        <div class="price-section">
-          <span class="price-label">Starting from</span>
-          <div class="price">${formatCurrency(schedule.price)}</div>
-          <span class="price-note">per seat</span>
+      <div class="schedule-cta" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 200px; gap: 0.75rem;">
+        <div class="price-section" style="text-align: center;">
+          <span class="price-label" style="font-size: 0.75rem; color: #6b7280; display: block;">Starting from</span>
+          <div class="price" style="font-size: 1.75rem; font-weight: 700; color: #667eea; margin: 0.25rem 0;">${formatCurrency(schedule.price)}</div>
+          <span class="price-note" style="font-size: 0.75rem; color: #9ca3af; display: block;">per seat</span>
         </div>
         
         <button 
-          class="btn btn-primary btn-lg ${availableSeats === 0 ? 'btn-disabled' : ''}" 
+          class="btn btn-primary btn-lg" 
           onclick="selectBus('${schedule.id}')"
+          style="padding: 1rem 2rem; border-radius: 6px; font-weight: 500; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 100%; ${availableSeats === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
           ${availableSeats === 0 ? 'disabled' : ''}
         >
           ${availableSeats > 0 ? 'Select Seats' : 'Fully Booked'}
         </button>
         
-        <div class="seats-left ${availableSeats < 10 ? 'seats-low' : ''}">
+        <div class="seats-left" style="font-size: 0.875rem; color: ${availableSeats < 10 ? '#f59e0b' : '#10b981'}; font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
           ${availableSeats > 0 ? 
             `<span class="seats-icon">💺</span> ${availableSeats} Seats Available` : 
             '<span class="seats-icon">❌</span> No Seats Available'
@@ -481,30 +416,6 @@ function filterByBusType(type) {
   showToast(`Showing ${filtered.length} ${type} buses`, 'info');
 }
 
-// Search schedules
-function searchSchedules(searchTerm) {
-  if (!searchTerm || searchTerm.trim() === '') {
-    displaySchedules(allSchedules);
-    return;
-  }
-  
-  const term = searchTerm.toLowerCase();
-  const filtered = allSchedules.filter(schedule => 
-    schedule.busName.toLowerCase().includes(term) ||
-    schedule.origin.toLowerCase().includes(term) ||
-    schedule.destination.toLowerCase().includes(term) ||
-    schedule.type.toLowerCase().includes(term)
-  );
-  
-  displaySchedules(filtered);
-  
-  if (filtered.length === 0) {
-    showToast('No buses found matching your search', 'warning');
-  } else {
-    showToast(`Found ${filtered.length} buses`, 'success');
-  }
-}
-
 // Refresh schedules
 async function refreshSchedules() {
   showToast('Refreshing bus schedules...', 'info');
@@ -524,4 +435,7 @@ window.debugTimings = function() {
   console.log('Current Filters:', currentFilters);
   console.log('All Schedules:', allSchedules);
   console.log('Schedules List Element:', document.getElementById('schedules-list'));
+  console.log('Filter Info Element:', document.getElementById('filter-info'));
 };
+
+console.log('✅ Timings.js loaded - Use window.debugTimings() for debugging');
