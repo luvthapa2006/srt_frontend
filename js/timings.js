@@ -14,6 +14,8 @@ function initTimingsPage() {
     date: params.date || ''
   };
   
+  console.log('Timings page initialized with filters:', currentFilters);
+  
   // Display filters info
   displayFilterInfo();
   
@@ -39,14 +41,34 @@ function displayFilterInfo() {
 // Load schedules from data
 async function loadSchedules() {
   const schedulesList = document.getElementById('schedules-list');
-  if (!schedulesList) return;
+  if (!schedulesList) {
+    console.error('schedules-list element not found');
+    return;
+  }
   
   // Show loading
   schedulesList.innerHTML = createLoadingSkeleton();
   
-  // Fetch schedules from API
-  const schedules = await getSchedules(currentFilters);
-  displaySchedules(schedules);
+  try {
+    // Fetch schedules from API
+    console.log('Fetching schedules with filters:', currentFilters);
+    const schedules = await getSchedules(currentFilters);
+    console.log('Received schedules:', schedules);
+    
+    displaySchedules(schedules);
+  } catch (error) {
+    console.error('Error loading schedules:', error);
+    schedulesList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <h3>Error Loading Buses</h3>
+        <p>${error.message || 'Failed to load bus schedules'}</p>
+        <button onclick="loadSchedules()" class="btn btn-primary">
+          Try Again
+        </button>
+      </div>
+    `;
+  }
 }
 
 // Create loading skeleton
@@ -70,7 +92,7 @@ function displaySchedules(schedules) {
   const schedulesList = document.getElementById('schedules-list');
   if (!schedulesList) return;
   
-  if (schedules.length === 0) {
+  if (!schedules || schedules.length === 0) {
     schedulesList.innerHTML = createEmptyState();
     return;
   }
@@ -159,7 +181,7 @@ function createScheduleCard(schedule) {
         </div>
         <button 
           class="btn btn-primary btn-lg" 
-          onclick="selectBus(${schedule.id})"
+          onclick="selectBus('${schedule.id}')"
         >
           Select Seats
         </button>
@@ -171,6 +193,7 @@ function createScheduleCard(schedule) {
 
 // Select bus and navigate to seats page
 function selectBus(scheduleId) {
+  console.log('Selecting bus:', scheduleId);
   navigateTo('seats.html', { id: scheduleId });
 }
 
@@ -187,11 +210,11 @@ function clearFilters() {
 }
 
 // Sort schedules
-function sortSchedules(sortBy) {
+async function sortSchedules(sortBy) {
   const schedulesList = document.getElementById('schedules-list');
   if (!schedulesList) return;
   
-  let schedules = getSchedules(currentFilters);
+  let schedules = await getSchedules(currentFilters);
   
   switch(sortBy) {
     case 'price-low':

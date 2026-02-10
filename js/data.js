@@ -91,20 +91,30 @@ async function getSchedules(filters = {}) {
       queryParams.append('date', filters.date);
     }
 
-    const response = await fetch(`${API_BASE_URL}/schedules?${queryParams}`);
+    const url = `${API_BASE_URL}/schedules?${queryParams}`;
+    console.log('Fetching schedules from:', url);
+    console.log('With filters:', filters);
+
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch schedules');
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`Failed to fetch schedules: ${response.status} ${response.statusText}`);
     }
 
     const schedules = await response.json();
+    console.log('API returned schedules:', schedules);
     
     // Convert MongoDB _id to id for compatibility with existing frontend code
-    return schedules.map(schedule => ({
+    const processedSchedules = schedules.map(schedule => ({
       ...schedule,
-      id: schedule._id,
+      id: schedule._id || schedule.id,
       bookedSeats: schedule.bookedSeats || []
     }));
+    
+    console.log('Processed schedules:', processedSchedules);
+    return processedSchedules;
   } catch (error) {
     console.error('Error fetching schedules:', error);
     showToast('Failed to load schedules. Please check your connection.', 'error');
@@ -132,6 +142,7 @@ async function getAllCities() {
 // Get single schedule by ID
 async function getScheduleById(id) {
   try {
+    console.log('Fetching schedule by ID:', id);
     const response = await fetch(`${API_BASE_URL}/schedules/${id}`);
     
     if (!response.ok) {
@@ -139,14 +150,17 @@ async function getScheduleById(id) {
     }
 
     const schedule = await response.json();
+    console.log('Fetched schedule:', schedule);
+    
     // Convert MongoDB _id to id for compatibility
     return {
       ...schedule,
-      id: schedule._id,
+      id: schedule._id || schedule.id,
       bookedSeats: schedule.bookedSeats || []
     };
   } catch (error) {
     console.error('Error fetching schedule:', error);
+    showToast('Failed to load schedule details.', 'error');
     return null;
   }
 }
@@ -154,6 +168,8 @@ async function getScheduleById(id) {
 // Add new schedule (Admin)
 async function addSchedule(scheduleData) {
   try {
+    console.log('Adding schedule:', scheduleData);
+    
     const response = await fetch(`${API_BASE_URL}/schedules`, {
       method: 'POST',
       headers: {
@@ -168,9 +184,11 @@ async function addSchedule(scheduleData) {
     }
 
     const schedule = await response.json();
+    console.log('Schedule created:', schedule);
+    
     return {
       ...schedule,
-      id: schedule._id,
+      id: schedule._id || schedule.id,
       bookedSeats: schedule.bookedSeats || []
     };
   } catch (error) {
@@ -183,6 +201,8 @@ async function addSchedule(scheduleData) {
 // Update schedule (Admin)
 async function updateSchedule(id, updates) {
   try {
+    console.log('Updating schedule:', id, updates);
+    
     const response = await fetch(`${API_BASE_URL}/schedules/${id}`, {
       method: 'PUT',
       headers: {
@@ -197,9 +217,11 @@ async function updateSchedule(id, updates) {
     }
 
     const schedule = await response.json();
+    console.log('Schedule updated:', schedule);
+    
     return {
       ...schedule,
-      id: schedule._id,
+      id: schedule._id || schedule.id,
       bookedSeats: schedule.bookedSeats || []
     };
   } catch (error) {
@@ -212,6 +234,8 @@ async function updateSchedule(id, updates) {
 // Delete schedule (Admin)
 async function deleteSchedule(id) {
   try {
+    console.log('Deleting schedule:', id);
+    
     const response = await fetch(`${API_BASE_URL}/schedules/${id}`, {
       method: 'DELETE'
     });
@@ -221,6 +245,7 @@ async function deleteSchedule(id) {
       throw new Error(error.message || 'Failed to delete schedule');
     }
 
+    console.log('Schedule deleted successfully');
     return true;
   } catch (error) {
     console.error('Error deleting schedule:', error);
@@ -232,6 +257,8 @@ async function deleteSchedule(id) {
 // Create booking
 async function createBooking(bookingData) {
   try {
+    console.log('Creating booking:', bookingData);
+    
     const response = await fetch(`${API_BASE_URL}/bookings`, {
       method: 'POST',
       headers: {
@@ -249,10 +276,12 @@ async function createBooking(bookingData) {
       };
     }
 
+    console.log('Booking created:', result);
+
     // Convert _id to id and handle populated scheduleId
     return {
       ...result,
-      id: result._id,
+      id: result._id || result.id,
       bookingToken: result.bookingToken,
       scheduleId: result.scheduleId._id || result.scheduleId
     };
@@ -275,7 +304,7 @@ async function getBookingByToken(token) {
     // Handle populated scheduleId from backend
     return {
       ...booking,
-      id: booking._id,
+      id: booking._id || booking.id,
       scheduleId: booking.scheduleId._id || booking.scheduleId
     };
   } catch (error) {
@@ -296,8 +325,8 @@ async function getAllBookings() {
     const bookings = await response.json();
     return bookings.map(booking => ({
       ...booking,
-      id: booking._id,
-      scheduleId: booking.scheduleId._id || booking.scheduleId
+      id: booking._id || booking.id,
+      scheduleId: booking.scheduleId // Keep populated object from backend
     }));
   } catch (error) {
     console.error('Error fetching bookings:', error);
