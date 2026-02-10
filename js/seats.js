@@ -1,5 +1,5 @@
 // ========================================
-// SEATS.JS - Seat Selection Page Logic
+// SEATS.JS - Seat Selection Page Logic (NEW LAYOUT)
 // ========================================
 
 let currentSchedule = null;
@@ -90,89 +90,109 @@ function renderSeatLayout() {
   lowerDeck.innerHTML = '<h4 class="deck-title">Lower Deck</h4>' + renderDeck('L', 1, 20);
 }
 
-
-// Render a single deck with proper 2-1-2-1 layout (8 rows of 5 seats = 20 seats per deck)
+// Render a single deck with new layout
+// Layout: 2x6 seats on left, 2x6 seats on right, 1 seat at position 15 & 20, and 2 sleeper seats at 5 & 10
 function renderDeck(prefix, start, end) {
-  let html = '<div class="seat-grid">';
+  let html = '<div class="seat-grid-new">';
   
   // Add driver position indicator at the start
   html += '<div class="driver-indicator">🚗 Driver</div>';
   
-  // 4 rows of 5 seats each (2 left, 1 aisle, 2 middle, 1 right)
-  // Total: 4 rows × 5 positions = 20 seats per deck
-  for (let row = 0; row < 4; row++) {
-    html += '<div class="seat-row">';
-    
-    // First Left (2 seats) - Positions 1,2
-    for (let col = 0; col < 2; col++) {
-      const seatNum = row * 5 + col + 1;
-      if (seatNum <= (end - start + 1)) {
-        html += createSeatButton(prefix, seatNum);
-      }
-    }
-    
-    // Aisle
-    html += '<div class="seat-aisle"></div>';
-    
-    // First Right (2 seats) - Positions 3,4
-    for (let col = 2; col < 4; col++) {
-      const seatNum = row * 5 + col + 1;
-      if (seatNum <= (end - start + 1)) {
-        html += createSeatButton(prefix, seatNum);
-      }
-    }
-    
-    // Last position (sleeper or 7th seat) - Position 5
-    const seatNum = row * 5 + 5;
-    if (seatNum <= (end - start + 1)) {
-      const isSleeper = (seatNum === 5 || seatNum === 10); // Rows 1-2 are sleepers
-      html += createSeatButton(prefix, seatNum, isSleeper);
-    }
-    
-    html += '</div>';
-  }
+  // Row 1: U1, U2 | U3, U4 | U5 (sleeper)
+  html += '<div class="seat-row-new">';
+  html += createSeatButton(prefix, 1, 'first-left');
+  html += createSeatButton(prefix, 2, 'first-left');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 3, 'first-right');
+  html += createSeatButton(prefix, 4, 'first-right');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 5, 'sleeper', true);
+  html += '</div>';
+  
+  // Row 2: U6, U7 | U8, U9 | U10 (sleeper)
+  html += '<div class="seat-row-new">';
+  html += createSeatButton(prefix, 6, 'first-left');
+  html += createSeatButton(prefix, 7, 'first-left');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 8, 'first-right');
+  html += createSeatButton(prefix, 9, 'first-right');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 10, 'sleeper', true);
+  html += '</div>';
+  
+  // Row 3: U11, U12 | U13, U14 | U15 (last left)
+  html += '<div class="seat-row-new">';
+  html += createSeatButton(prefix, 11, 'first-left');
+  html += createSeatButton(prefix, 12, 'first-left');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 13, 'first-right');
+  html += createSeatButton(prefix, 14, 'first-right');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 15, 'last-left');
+  html += '</div>';
+  
+  // Row 4: U16, U17 | U18, U19 | U20 (last left)
+  html += '<div class="seat-row-new">';
+  html += createSeatButton(prefix, 16, 'first-left');
+  html += createSeatButton(prefix, 17, 'first-left');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 18, 'first-right');
+  html += createSeatButton(prefix, 19, 'first-right');
+  html += '<div class="seat-aisle"></div>';
+  html += createSeatButton(prefix, 20, 'last-left');
+  html += '</div>';
   
   html += '</div>';
   return html;
 }
 
-// Create individual seat button
-function createSeatButton(prefix, number, isSleeper = false) {
+// Create individual seat button with zone-based pricing
+function createSeatButton(prefix, number, zone, isSleeper = false) {
   const seatId = `${prefix}${number}`;
   const isBooked = currentSchedule.bookedSeats?.includes(seatId);
   const isSelected = selectedSeats.includes(seatId);
-  const seatPrice = calculateSeatPrice(currentSchedule.price, seatId);
+  const seatPrice = calculateSeatPriceByZone(currentSchedule.price, zone);
   
-  let className = 'seat';
+  let className = 'seat-new';
   if (isBooked) className += ' seat-booked';
   if (isSelected) className += ' seat-selected';
-  if (isSleeper) className += ' seat-sleeper'; // Add sleeper styling
+  if (isSleeper) className += ' seat-sleeper';
   
-  // Determine zone color
-  if (seatPricingZones.firstRight.includes(seatId) || 
-      seatPricingZones.firstRight_L.includes(seatId)) {
-    className += ' zone-first-right';
-  } else if (seatPricingZones.lastRightSleeper.includes(seatId) || 
-             seatPricingZones.lastRightSleeper_L.includes(seatId)) {
-    className += ' zone-sleeper';
-  } else if (seatPricingZones.lastLeft7th.includes(seatId) || 
-             seatPricingZones.lastLeft7th_L.includes(seatId)) {
-    className += ' zone-last-left';
-  }
+  // Add zone-specific styling
+  className += ` zone-${zone}`;
   
   return `
     <button 
       class="${className}" 
       data-seat="${seatId}"
+      data-zone="${zone}"
       ${isBooked ? 'disabled' : ''}
       onclick="toggleSeat('${seatId}')"
       title="${seatId}${isSleeper ? ' (Sleeper)' : ''} - ${formatCurrency(seatPrice)}"
     >
       <span class="seat-number">${seatId}</span>
       ${isSleeper ? '<span class="seat-type">💤</span>' : ''}
-      ${!isBooked ? `<span class="seat-price">${formatCurrency(seatPrice)}</span>` : ''}
+      ${!isBooked ? `<span class="seat-price">${formatCurrency(seatPrice)}</span>` : '<span class="sold-label">Sold</span>'}
     </button>
   `;
+}
+
+// Calculate seat price based on zone
+function calculateSeatPriceByZone(basePrice, zone) {
+  const pricing = getSeatPricing();
+  
+  switch(zone) {
+    case 'first-right':
+      return pricing.firstRight;
+    case 'first-left':
+      return pricing.firstLeft;
+    case 'last-left':
+      return pricing.lastLeft;
+    case 'sleeper':
+      return pricing.sleeper;
+    default:
+      return basePrice; // fallback to base price
+  }
 }
 
 // Toggle seat selection
@@ -214,23 +234,36 @@ function updateSummary() {
   
   // Calculate total amount
   let totalAmount = 0;
-  selectedSeats.forEach(seat => {
-    totalAmount += calculateSeatPrice(currentSchedule.price, seat);
+  const seatDetails = [];
+  
+  selectedSeats.forEach(seatId => {
+    // Determine zone based on seat number
+    const seatNum = parseInt(seatId.substring(1));
+    let zone = 'first-left';
+    
+    if ([5, 10].includes(seatNum)) {
+      zone = 'sleeper';
+    } else if ([15, 20].includes(seatNum)) {
+      zone = 'last-left';
+    } else if ([3, 4, 8, 9, 13, 14, 18, 19].includes(seatNum)) {
+      zone = 'first-right';
+    }
+    
+    const price = calculateSeatPriceByZone(currentSchedule.price, zone);
+    totalAmount += price;
+    seatDetails.push({ seatId, price, zone });
   });
   
   summarySection.innerHTML = `
     <h4 class="summary-subtitle">Selected Seats</h4>
     <div class="selected-seats-list">
-      ${selectedSeats.map(seat => {
-        const price = calculateSeatPrice(currentSchedule.price, seat);
-        return `
-          <div class="selected-seat-item">
-            <span class="seat-badge">${seat}</span>
-            <span class="seat-item-price">${formatCurrency(price)}</span>
-            <button class="remove-seat-btn" onclick="toggleSeat('${seat}')" title="Remove">×</button>
-          </div>
-        `;
-      }).join('')}
+      ${seatDetails.map(({ seatId, price, zone }) => `
+        <div class="selected-seat-item">
+          <span class="seat-badge zone-${zone}">${seatId}</span>
+          <span class="seat-item-price">${formatCurrency(price)}</span>
+          <button class="remove-seat-btn" onclick="toggleSeat('${seatId}')" title="Remove">×</button>
+        </div>
+      `).join('')}
     </div>
     
     <div class="summary-divider"></div>
@@ -243,8 +276,6 @@ function updateSummary() {
     <button class="btn btn-primary btn-lg btn-block" onclick="proceedToPayment()">
       Proceed to Payment
     </button>
-    
-    <p class="summary-note">* Final amount may vary based on selected seats</p>
   `;
 }
 
@@ -257,8 +288,19 @@ function proceedToPayment() {
   
   // Calculate total amount
   let totalAmount = 0;
-  selectedSeats.forEach(seat => {
-    totalAmount += calculateSeatPrice(currentSchedule.price, seat);
+  selectedSeats.forEach(seatId => {
+    const seatNum = parseInt(seatId.substring(1));
+    let zone = 'first-left';
+    
+    if ([5, 10].includes(seatNum)) {
+      zone = 'sleeper';
+    } else if ([15, 20].includes(seatNum)) {
+      zone = 'last-left';
+    } else if ([3, 4, 8, 9, 13, 14, 18, 19].includes(seatNum)) {
+      zone = 'first-right';
+    }
+    
+    totalAmount += calculateSeatPriceByZone(currentSchedule.price, zone);
   });
   
   navigateTo('payment.html', {

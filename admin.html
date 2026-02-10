@@ -118,118 +118,23 @@
           <div class="form-group">
             <label class="form-label">Base Price (₹)</label>
             <input type="number" class="form-input" id="price" min="100" required>
-            <small class="text-muted">This is the base price. Individual seat prices will be calculated based on zone multipliers below.</small>
+            <small class="text-muted">This is for display/reference only. Actual seat prices are set in the Pricing tab.</small>
           </div>
 
-          <!-- Seat Pricing Multipliers -->
-          <div style="grid-column: 1 / -1; padding: 1.5rem; background: var(--slate-50); border-radius: 0.75rem; margin-top: 1.5rem; border: 1px solid var(--slate-200);">
-            <h4 style="margin-bottom: 0.5rem; color: var(--secondary); font-size: 1.125rem; font-weight: 600;">Seat Pricing Zones</h4>
-            <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.875rem;">
-              Base price will be multiplied by these factors for different seat zones. Adjust these values to control pricing for each section of the bus.
-            </p>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="font-weight: 500;">
-                  🔵 First Right (2×6) - Premium
-                </label>
-                <input type="number" class="form-input" id="pricing-first-right" 
-                       step="0.1" min="0.5" max="2.5" value="1.2" required
-                       style="border-color: #3b82f6;">
-                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
-                  <strong>Seats:</strong> 3, 4, 8, 9, 13, 14, 18, 19<br>
-                  <strong>Example:</strong> ₹100 base × 1.2 = ₹120
-                </small>
-              </div>
-              
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="font-weight: 500;">
-                  ⚪ First Left (2×6) - Standard
-                </label>
-                <input type="number" class="form-input" id="pricing-first-left" 
-                       step="0.1" min="0.5" max="2.5" value="1.0" required
-                       style="border-color: #6b7280;">
-                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
-                  <strong>Seats:</strong> 1, 2, 6, 7, 11, 12, 16, 17<br>
-                  <strong>Example:</strong> ₹100 base × 1.0 = ₹100
-                </small>
-              </div>
-              
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="font-weight: 500;">
-                  🟢 Last Left 7th Seat - Budget
-                </label>
-                <input type="number" class="form-input" id="pricing-last-left" 
-                       step="0.1" min="0.5" max="2.5" value="0.9" required
-                       style="border-color: #10b981;">
-                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
-                  <strong>Seats:</strong> 15, 20<br>
-                  <strong>Example:</strong> ₹100 base × 0.9 = ₹90
-                </small>
-              </div>
-              
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="font-weight: 500;">
-                  🟡 Last Right Sleeper - Luxury
-                </label>
-                <input type="number" class="form-input" id="pricing-sleeper" 
-                       step="0.1" min="0.5" max="3.0" value="1.5" required
-                       style="border-color: #f59e0b;">
-                <small class="text-muted" style="display: block; margin-top: 0.375rem;">
-                  <strong>Seats:</strong> 5, 10 (double sleeper seats)<br>
-                  <strong>Example:</strong> ₹100 base × 1.5 = ₹150
-                </small>
-              </div>
-            </div>
-
-            <!-- Pricing Preview -->
-            <div style="margin-top: 1.5rem; padding: 1rem; background: white; border-radius: 0.5rem; border: 1px dashed var(--slate-300);">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                  <small class="text-muted" style="display: block; margin-bottom: 0.25rem;">Pricing Preview (based on base price)</small>
-                  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.875rem;">
-                    <div>
-                      <span style="color: #3b82f6;">●</span> 
-                      <strong>First Right:</strong> 
-                      <span id="preview-first-right">₹120</span>
-                    </div>
-                    <div>
-                      <span style="color: #6b7280;">●</span> 
-                      <strong>First Left:</strong> 
-                      <span id="preview-first-left">₹100</span>
-                    </div>
-                    <div>
-                      <span style="color: #10b981;">●</span> 
-                      <strong>Last Left:</strong> 
-                      <span id="preview-last-left">₹90</span>
-                    </div>
-                    <div>
-                      <span style="color: #f59e0b;">●</span> 
-                      <strong>Sleeper:</strong> 
-                      <span id="preview-sleeper">₹150</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-            <button type="submit" class="btn btn-primary">Save Schedule</button>
-            <button type="button" class="btn btn-outline" onclick="resetScheduleForm()">Cancel</button>
-          </div>
+          <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
+          <button type="button" class="btn btn-secondary" onclick="resetScheduleForm()">🔄 Reset Form</button>
         </form>
       </div>
 
+      <!-- Schedules Table -->
       <div class="table-container">
         <table class="table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Bus Details</th>
+              <th>Bus Name</th>
               <th>Route</th>
               <th>Departure</th>
-              <th>Arrival</th>
+              <th>Type</th>
               <th>Price</th>
               <th>Seats Available</th>
               <th>Actions</th>
@@ -264,69 +169,173 @@
       </div>
     </div>
 
-    <!-- Tab: Pricing -->
+    <!-- Tab: Pricing (NEW INDEPENDENT PRICING SECTION) -->
     <div id="tab-pricing" class="admin-tab-content">
-      <div class="card" style="max-width: 800px;">
-        <h3 class="summary-title">Global Seat Pricing Multipliers</h3>
-        <p class="text-muted" style="margin-bottom: 1.5rem;">
-          These are default pricing multipliers applied to all new schedules. You can override these when creating individual schedules.
+      <div class="admin-section">
+        <h2 class="section-title">Seat Pricing Configuration</h2>
+        <p class="section-description">
+          Set independent prices for different seat zones. These prices will apply to all buses.
         </p>
         
-        <form id="pricing-form">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            <div class="form-group">
-              <label class="form-label">🔵 First Right (Premium)</label>
-              <input type="number" class="form-input" id="global-first-right" 
-                     step="0.1" min="0.5" max="2.5" value="1.2" required>
-              <small class="text-muted">Default multiplier for first right seats (3,4,8,9...)</small>
+        <form id="pricing-form" class="pricing-form">
+          <div class="pricing-form-group">
+            <!-- First Right (Premium) -->
+            <div class="pricing-input-group first-right">
+              <label for="first-right-price">
+                First Right (2×6) - Premium
+              </label>
+              <input 
+                type="number" 
+                id="first-right-price" 
+                min="0" 
+                step="10"
+                placeholder="120"
+                required
+              />
+              <div class="pricing-description">
+                Seats: 3, 4, 8, 9, 13, 14, 18, 19 (both decks)
+              </div>
+              <div class="pricing-example">
+                Example: ₹120 per seat
+              </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">⚪ First Left (Standard)</label>
-              <input type="number" class="form-input" id="global-first-left" 
-                     step="0.1" min="0.5" max="2.5" value="1.0" required>
-              <small class="text-muted">Default multiplier for first left seats (1,2,6,7...)</small>
+            <!-- First Left (Standard) -->
+            <div class="pricing-input-group first-left">
+              <label for="first-left-price">
+                First Left (2×6) - Standard
+              </label>
+              <input 
+                type="number" 
+                id="first-left-price" 
+                min="0" 
+                step="10"
+                placeholder="100"
+                required
+              />
+              <div class="pricing-description">
+                Seats: 1, 2, 6, 7, 11, 12, 16, 17 (both decks)
+              </div>
+              <div class="pricing-example">
+                Example: ₹100 per seat
+              </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">🟢 Last Left 7th (Budget)</label>
-              <input type="number" class="form-input" id="global-last-left" 
-                     step="0.1" min="0.5" max="2.5" value="0.9" required>
-              <small class="text-muted">Default multiplier for last left seats (15, 20)</small>
+            <!-- Last Left (Budget) -->
+            <div class="pricing-input-group last-left">
+              <label for="last-left-price">
+                Last Left 7th Seat - Budget
+              </label>
+              <input 
+                type="number" 
+                id="last-left-price" 
+                min="0" 
+                step="10"
+                placeholder="90"
+                required
+              />
+              <div class="pricing-description">
+                Seats: 15, 20 (both decks)
+              </div>
+              <div class="pricing-example">
+                Example: ₹90 per seat
+              </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">🟡 Last Right Sleeper (Luxury)</label>
-              <input type="number" class="form-input" id="global-sleeper" 
-                     step="0.1" min="0.5" max="3.0" value="1.5" required>
-              <small class="text-muted">Default multiplier for sleeper seats (5, 10)</small>
+            <!-- Sleeper (Luxury) -->
+            <div class="pricing-input-group sleeper">
+              <label for="sleeper-price">
+                Last Right Sleeper - Luxury
+              </label>
+              <input 
+                type="number" 
+                id="sleeper-price" 
+                min="0" 
+                step="10"
+                placeholder="150"
+                required
+              />
+              <div class="pricing-description">
+                Seats: 5, 10 (double sleeper seats, both decks)
+              </div>
+              <div class="pricing-example">
+                Example: ₹150 per seat
+              </div>
             </div>
           </div>
           
-          <button type="submit" class="btn btn-primary">Update Global Pricing</button>
+          <!-- Pricing Preview -->
+          <div id="pricing-preview"></div>
+          
+          <!-- Form Actions -->
+          <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">
+              💾 Save Pricing
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resetPricing()">
+              🔄 Reset to Defaults
+            </button>
+          </div>
+          
+          <!-- Important Note -->
+          <div class="alert alert-info" style="margin-top: 1.5rem; padding: 1rem; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+            <strong>ℹ️ Important:</strong>
+            <ul style="margin: 0.5rem 0 0 1.5rem; color: #1e40af;">
+              <li>These are <strong>fixed prices</strong>, not multipliers</li>
+              <li>Set independent prices for each zone category</li>
+              <li>Changes apply immediately to all seat selections</li>
+              <li>The "Base Price" field in schedules is now for display/reference only</li>
+            </ul>
+          </div>
         </form>
-
-        <!-- Seat Layout Reference -->
-        <div style="margin-top: 2rem; padding: 1.5rem; background: var(--slate-50); border-radius: 0.75rem;">
-          <h4 style="margin-bottom: 1rem; color: var(--secondary);">Seat Layout Reference</h4>
-          <div style="font-family: monospace; font-size: 0.75rem; line-height: 1.6; color: var(--slate-700);">
-            <div style="text-align: center; margin-bottom: 0.5rem;">🚗 DRIVER</div>
-            <div>┌──────────────────────────────────────┐</div>
-            <div>│ [1][2]  AISLE  [3][4]  [5-SLEEPER]  │ Row 1</div>
-            <div>│ [6][7]  AISLE  [8][9]  [10-SLEEPER] │ Row 2</div>
-            <div>│[11][12] AISLE [13][14] [15-7TH]     │ Row 3</div>
-            <div>│[16][17] AISLE [18][19] [20-7TH]     │ Row 4</div>
-            <div>└──────────────────────────────────────┘</div>
+        
+        <!-- Seat Layout Visualization -->
+        <div class="pricing-zones-legend">
+          <h4>Seat Zone Visualization</h4>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color first-right"></div>
+              <div>
+                <div class="zone-name">🔵 First Right (Premium)</div>
+                <div class="zone-seats">Seats: 3, 4, 8, 9, 13, 14, 18, 19</div>
+              </div>
+            </div>
+            <div class="zone-price" id="preview-first-right">₹120</div>
           </div>
-          <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.75rem;">
-            <div><span style="color: #3b82f6;">●</span> <strong>First Right:</strong> 3,4,8,9,13,14,18,19</div>
-            <div><span style="color: #6b7280;">●</span> <strong>First Left:</strong> 1,2,6,7,11,12,16,17</div>
-            <div><span style="color: #10b981;">●</span> <strong>Last Left:</strong> 15, 20</div>
-            <div><span style="color: #f59e0b;">●</span> <strong>Sleeper:</strong> 5, 10</div>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color first-left"></div>
+              <div>
+                <div class="zone-name">⚪ First Left (Standard)</div>
+                <div class="zone-seats">Seats: 1, 2, 6, 7, 11, 12, 16, 17</div>
+              </div>
+            </div>
+            <div class="zone-price" id="preview-first-left">₹100</div>
           </div>
-          <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
-            * Same layout for both Upper Deck (U1-U20) and Lower Deck (L1-L20)
-          </p>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color last-left"></div>
+              <div>
+                <div class="zone-name">🟢 Last Left (Budget)</div>
+                <div class="zone-seats">Seats: 15, 20</div>
+              </div>
+            </div>
+            <div class="zone-price" id="preview-last-left">₹90</div>
+          </div>
+          
+          <div class="pricing-zone-item">
+            <div class="zone-info">
+              <div class="zone-color sleeper"></div>
+              <div>
+                <div class="zone-name">🟡 Sleeper (Luxury)</div>
+                <div class="zone-seats">Seats: 5, 10 (double)</div>
+              </div>
+            </div>
+            <div class="zone-price" id="preview-sleeper">₹150</div>
+          </div>
         </div>
       </div>
     </div>
@@ -357,36 +366,42 @@
   <script src="js/admin.js"></script>
   
   <script>
+    // Reset pricing to defaults
+    function resetPricing() {
+      document.getElementById('first-right-price').value = 120;
+      document.getElementById('first-left-price').value = 100;
+      document.getElementById('last-left-price').value = 90;
+      document.getElementById('sleeper-price').value = 150;
+      updatePricingPreview();
+    }
+    
     // Live pricing preview update
     function updatePricingPreview() {
-      const basePrice = parseFloat(document.getElementById('price').value) || 100;
-      const firstRight = parseFloat(document.getElementById('pricing-first-right').value) || 1.2;
-      const firstLeft = parseFloat(document.getElementById('pricing-first-left').value) || 1.0;
-      const lastLeft = parseFloat(document.getElementById('pricing-last-left').value) || 0.9;
-      const sleeper = parseFloat(document.getElementById('pricing-sleeper').value) || 1.5;
+      const firstRight = parseFloat(document.getElementById('first-right-price').value) || 120;
+      const firstLeft = parseFloat(document.getElementById('first-left-price').value) || 100;
+      const lastLeft = parseFloat(document.getElementById('last-left-price').value) || 90;
+      const sleeper = parseFloat(document.getElementById('sleeper-price').value) || 150;
       
-      document.getElementById('preview-first-right').textContent = '₹' + Math.round(basePrice * firstRight);
-      document.getElementById('preview-first-left').textContent = '₹' + Math.round(basePrice * firstLeft);
-      document.getElementById('preview-last-left').textContent = '₹' + Math.round(basePrice * lastLeft);
-      document.getElementById('preview-sleeper').textContent = '₹' + Math.round(basePrice * sleeper);
+      document.getElementById('preview-first-right').textContent = '₹' + Math.round(firstRight);
+      document.getElementById('preview-first-left').textContent = '₹' + Math.round(firstLeft);
+      document.getElementById('preview-last-left').textContent = '₹' + Math.round(lastLeft);
+      document.getElementById('preview-sleeper').textContent = '₹' + Math.round(sleeper);
     }
     
     // Add event listeners for live preview
     document.addEventListener('DOMContentLoaded', function() {
-      const priceInput = document.getElementById('price');
-      const firstRightInput = document.getElementById('pricing-first-right');
-      const firstLeftInput = document.getElementById('pricing-first-left');
-      const lastLeftInput = document.getElementById('pricing-last-left');
-      const sleeperInput = document.getElementById('pricing-sleeper');
+      const firstRightInput = document.getElementById('first-right-price');
+      const firstLeftInput = document.getElementById('first-left-price');
+      const lastLeftInput = document.getElementById('last-left-price');
+      const sleeperInput = document.getElementById('sleeper-price');
       
-      if (priceInput) priceInput.addEventListener('input', updatePricingPreview);
       if (firstRightInput) firstRightInput.addEventListener('input', updatePricingPreview);
       if (firstLeftInput) firstLeftInput.addEventListener('input', updatePricingPreview);
       if (lastLeftInput) lastLeftInput.addEventListener('input', updatePricingPreview);
       if (sleeperInput) sleeperInput.addEventListener('input', updatePricingPreview);
       
-      // Initialize preview
-      updatePricingPreview();
+      // Initialize preview with default values
+      resetPricing();
     });
     
     // Reset form function
@@ -394,8 +409,239 @@
       document.getElementById('schedule-form').reset();
       document.getElementById('schedule-id').value = '';
       document.getElementById('form-title').textContent = 'Add New Schedule';
-      updatePricingPreview();
     }
   </script>
-</body> 
+
+  <style>
+    /* Additional styles for the new pricing section */
+    .admin-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .section-description {
+      color: var(--slate-600);
+      margin-bottom: 2rem;
+    }
+
+    .pricing-form-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-input-group {
+      padding: 1.25rem;
+      border-radius: 0.75rem;
+      border: 2px solid var(--slate-200);
+      transition: all 0.3s ease;
+    }
+
+    .pricing-input-group:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .pricing-input-group.first-right {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-color: #3b82f6;
+    }
+
+    .pricing-input-group.first-left {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-color: #6b7280;
+    }
+
+    .pricing-input-group.last-left {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border-color: #10b981;
+    }
+
+    .pricing-input-group.sleeper {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border-color: #f59e0b;
+    }
+
+    .pricing-input-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+    }
+
+    .pricing-input-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid var(--slate-300);
+      border-radius: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .pricing-input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .pricing-description {
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--slate-600);
+      line-height: 1.4;
+    }
+
+    .pricing-example {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--slate-500);
+      font-style: italic;
+    }
+
+    .pricing-zones-legend {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: var(--slate-50);
+      border-radius: 0.75rem;
+      border: 1px solid var(--slate-200);
+    }
+
+    .pricing-zones-legend h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 1rem;
+    }
+
+    .pricing-zone-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--slate-200);
+      transition: all 0.3s ease;
+    }
+
+    .pricing-zone-item:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .zone-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .zone-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .zone-color.first-right {
+      background: #3b82f6;
+    }
+
+    .zone-color.first-left {
+      background: #6b7280;
+    }
+
+    .zone-color.last-left {
+      background: #10b981;
+    }
+
+    .zone-color.sleeper {
+      background: #f59e0b;
+    }
+
+    .zone-name {
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .zone-seats {
+      font-size: 0.875rem;
+      color: var(--slate-600);
+    }
+
+    .zone-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      color: #1e40af;
+    }
+
+    .alert strong {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+  </style>
+</body>
 </html>

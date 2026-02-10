@@ -1,5 +1,5 @@
 // ========================================
-// ADMIN.JS - Admin Panel Logic
+// ADMIN.JS - Admin Panel Logic (UPDATED PRICING)
 // ========================================
 
 // Simple admin authentication (for demo purposes)
@@ -95,7 +95,7 @@ async function loadSchedulesTable() {
         <div><strong>${schedule.busName}</strong></div>
         <div class="text-muted">${schedule.type}</div>
       </td>
-      <td>${schedule.origin} &rarr; ${schedule.destination}</td>
+      <td>${schedule.origin} → ${schedule.destination}</td>
       <td>${formatTime(schedule.departureTime)}</td>
       <td>${formatTime(schedule.arrivalTime)}</td>
       <td>${formatCurrency(schedule.price)}</td>
@@ -145,7 +145,7 @@ async function loadBookingsTable() {
           <div class="text-muted">${booking.phone}</div>
         </td>
         <td>
-          ${schedule ? `<div><strong>${schedule.busName}</strong></div><div class="text-muted">${schedule.origin} &rarr; ${schedule.destination}</div>` : 'N/A'}
+          ${schedule ? `<div><strong>${schedule.busName}</strong></div><div class="text-muted">${schedule.origin} → ${schedule.destination}</div>` : 'N/A'}
         </td>
         <td>
           ${booking.seatNumbers.map(seat => `<span class="seat-badge-sm">${seat}</span>`).join(' ')}
@@ -258,7 +258,7 @@ async function deleteScheduleConfirm(id) {
   }
 }
 
-// Initialize pricing form
+// Initialize pricing form with NEW independent pricing
 function initPricingForm() {
   const form = document.getElementById('pricing-form');
   if (!form) {
@@ -270,34 +270,100 @@ function initPricingForm() {
     // Load current pricing
     const pricing = getSeatPricing();
     
-    const windowInput = document.getElementById('window-multiplier');
-    const frontInput = document.getElementById('front-multiplier');
-    const backInput = document.getElementById('back-multiplier');
+    const firstRightInput = document.getElementById('first-right-price');
+    const firstLeftInput = document.getElementById('first-left-price');
+    const lastLeftInput = document.getElementById('last-left-price');
+    const sleeperInput = document.getElementById('sleeper-price');
     
     // Check if all required elements exist before setting values
-    if (windowInput && frontInput && backInput && pricing) {
-      windowInput.value = pricing.window || 1.0;
-      frontInput.value = pricing.front || 1.0;
-      backInput.value = pricing.back || 1.0;
+    if (firstRightInput && firstLeftInput && lastLeftInput && sleeperInput && pricing) {
+      firstRightInput.value = pricing.firstRight || 120;
+      firstLeftInput.value = pricing.firstLeft || 100;
+      lastLeftInput.value = pricing.lastLeft || 90;
+      sleeperInput.value = pricing.sleeper || 150;
+      
+      updatePricingPreview();
     } else {
       console.warn('Some pricing form inputs are missing');
     }
     
     form.addEventListener('submit', handlePricingSubmit);
+    
+    // Add live preview updates
+    [firstRightInput, firstLeftInput, lastLeftInput, sleeperInput].forEach(input => {
+      if (input) {
+        input.addEventListener('input', updatePricingPreview);
+      }
+    });
   } catch (error) {
     console.error('Error initializing pricing form:', error);
   }
 }
 
-// Handle pricing form submission
+// Update pricing preview
+function updatePricingPreview() {
+  const preview = document.getElementById('pricing-preview');
+  if (!preview) return;
+  
+  const firstRight = parseInt(document.getElementById('first-right-price')?.value || 120);
+  const firstLeft = parseInt(document.getElementById('first-left-price')?.value || 100);
+  const lastLeft = parseInt(document.getElementById('last-left-price')?.value || 90);
+  const sleeper = parseInt(document.getElementById('sleeper-price')?.value || 150);
+  
+  preview.innerHTML = `
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+      <div style="flex: 1; min-width: 150px;">
+        <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">🔵 First Right</div>
+        <div style="font-size: 1.25rem; font-weight: 600; color: #3b82f6;">${formatCurrency(firstRight)}</div>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">⚪ First Left</div>
+        <div style="font-size: 1.25rem; font-weight: 600; color: #6b7280;">${formatCurrency(firstLeft)}</div>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">🟢 Last Left</div>
+        <div style="font-size: 1.25rem; font-weight: 600; color: #10b981;">${formatCurrency(lastLeft)}</div>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">🟠 Sleeper</div>
+        <div style="font-size: 1.25rem; font-weight: 600; color: #f59e0b;">${formatCurrency(sleeper)}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Handle pricing form submission with NEW independent pricing
 function handlePricingSubmit(e) {
   e.preventDefault();
   
-  updateSeatPricing('window', parseFloat(document.getElementById('window-multiplier').value));
-  updateSeatPricing('front', parseFloat(document.getElementById('front-multiplier').value));
-  updateSeatPricing('back', parseFloat(document.getElementById('back-multiplier').value));
+  const firstRight = parseInt(document.getElementById('first-right-price').value);
+  const firstLeft = parseInt(document.getElementById('first-left-price').value);
+  const lastLeft = parseInt(document.getElementById('last-left-price').value);
+  const sleeper = parseInt(document.getElementById('sleeper-price').value);
+  
+  // Validate prices
+  if (firstRight < 0 || firstLeft < 0 || lastLeft < 0 || sleeper < 0) {
+    showToast('Prices must be positive numbers', 'error');
+    return;
+  }
+  
+  // Update pricing
+  updateSeatPricing('firstRight', firstRight);
+  updateSeatPricing('firstLeft', firstLeft);
+  updateSeatPricing('lastLeft', lastLeft);
+  updateSeatPricing('sleeper', sleeper);
   
   showToast('Pricing updated successfully!', 'success');
+  updatePricingPreview();
+}
+
+// Reset pricing to defaults
+function resetPricing() {
+  if (confirm('Are you sure you want to reset pricing to default values?')) {
+    resetSeatPricing();
+    initPricingForm();
+    showToast('Pricing reset to defaults', 'success');
+  }
 }
 
 // Switch admin tabs
@@ -325,6 +391,7 @@ function exportData() {
   const data = {
     schedules: getSchedules(),
     bookings: getAllBookings(),
+    pricing: getSeatPricing(),
     exportDate: new Date().toISOString()
   };
   

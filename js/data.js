@@ -1,5 +1,5 @@
 // ========================================
-// DATA.JS - API Integration Layer
+// DATA.JS - API Integration Layer (UPDATED PRICING)
 // Connects to Node.js + MongoDB backend
 // ========================================
 
@@ -24,52 +24,61 @@ function generateAllSeats() {
 
 const ALL_SEATS = generateAllSeats();
 
-// Seat Pricing Multipliers (can be moved to backend later)
+// NEW: Independent Seat Pricing (NOT multipliers, direct prices)
+// These are the DEFAULT prices for each zone
 const seatPricing = {
-  firstRight: 1.2,    // Front right 2x6 seats
-  firstLeft: 1.0,     // Front left 2x6 seats  
-  lastLeft7th: 0.9,   // Last left single seats (7th position)
-  lastRightSleeper: 1.5 // Last right sleeper seats (double)
+  firstRight: 120,    // First Right (2×6) - Premium seats
+  firstLeft: 100,     // First Left (2×6) - Standard seats
+  lastLeft: 90,       // Last Left 7th Seat - Budget seats
+  sleeper: 150        // Last Right Sleeper - Luxury seats
 };
 
-// Define which seats are window/aisle/front/back
+// Define which seats belong to which zone
 const seatPricingZones = {
-  // Upper Deck Zones
-  firstRight: ['U3', 'U4', 'U8', 'U9', 'U13', 'U14', 'U18', 'U19'],
-  firstLeft: ['U1', 'U2', 'U6', 'U7', 'U11', 'U12', 'U16', 'U17'],
-  lastLeft7th: ['U15', 'U20'],
-  lastRightSleeper: ['U5', 'U10'],
+  // Upper Deck
+  firstRight_U: [3, 4, 8, 9, 13, 14, 18, 19],
+  firstLeft_U: [1, 2, 6, 7, 11, 12, 16, 17],
+  lastLeft_U: [15, 20],
+  sleeper_U: [5, 10],
   
-  // Lower Deck Zones  
-  firstRight_L: ['L3', 'L4', 'L8', 'L9', 'L13', 'L14', 'L18', 'L19'],
-  firstLeft_L: ['L1', 'L2', 'L6', 'L7', 'L11', 'L12', 'L16', 'L17'],
-  lastLeft7th_L: ['L15', 'L20'],
-  lastRightSleeper_L: ['L5', 'L10']
+  // Lower Deck
+  firstRight_L: [3, 4, 8, 9, 13, 14, 18, 19],
+  firstLeft_L: [1, 2, 6, 7, 11, 12, 16, 17],
+  lastLeft_L: [15, 20],
+  sleeper_L: [5, 10]
 };
 
-// Calculate seat price based on base price and seat category
+// Get zone for a seat
+function getSeatZone(seatNumber) {
+  const deck = seatNumber.charAt(0); // 'U' or 'L'
+  const num = parseInt(seatNumber.substring(1));
+  
+  // Check sleeper seats first
+  if ([5, 10].includes(num)) {
+    return 'sleeper';
+  }
+  
+  // Check last left seats
+  if ([15, 20].includes(num)) {
+    return 'lastLeft';
+  }
+  
+  // Check first right seats
+  if ([3, 4, 8, 9, 13, 14, 18, 19].includes(num)) {
+    return 'firstRight';
+  }
+  
+  // Default to first left
+  return 'firstLeft';
+}
+
+// Calculate seat price based on zone (NO LONGER USES BASE PRICE)
 function calculateSeatPrice(basePrice, seatNumber) {
-  let multiplier = 1.0; // default
+  const zone = getSeatZone(seatNumber);
+  const pricing = getSeatPricing();
   
-  // Check which zone the seat belongs to
-  if (seatPricingZones.firstRight.includes(seatNumber) || 
-      seatPricingZones.firstRight_L.includes(seatNumber)) {
-    multiplier = seatPricing.firstRight;
-  }
-  else if (seatPricingZones.firstLeft.includes(seatNumber) || 
-           seatPricingZones.firstLeft_L.includes(seatNumber)) {
-    multiplier = seatPricing.firstLeft;
-  }
-  else if (seatPricingZones.lastLeft7th.includes(seatNumber) || 
-           seatPricingZones.lastLeft7th_L.includes(seatNumber)) {
-    multiplier = seatPricing.lastLeft7th;
-  }
-  else if (seatPricingZones.lastRightSleeper.includes(seatNumber) || 
-           seatPricingZones.lastRightSleeper_L.includes(seatNumber)) {
-    multiplier = seatPricing.lastRightSleeper;
-  }
-  
-  return Math.round(basePrice * multiplier);
+  // Return the direct price for the zone
+  return pricing[zone] || pricing.firstLeft; // fallback to firstLeft price
 }
 
 // ========================================
@@ -351,14 +360,6 @@ async function getBookingStats() {
   }
 }
 
-// Calculate total booking amount
-function calculateBookingAmount(scheduleId, seatNumbers) {
-  // This is a synchronous function, but schedule might not be loaded
-  // For now, we'll need to modify the calling code to pass the schedule object
-  // or calculate on the backend
-  return 0; // Placeholder - will be calculated properly in seats.js
-}
-
 // Helper function for seats.js
 async function calculateBookingAmountAsync(scheduleId, seatNumbers) {
   const schedule = await getScheduleById(scheduleId);
@@ -373,27 +374,58 @@ async function calculateBookingAmountAsync(scheduleId, seatNumbers) {
 }
 
 // ========================================
-// BACKWARD COMPATIBILITY
-// For existing frontend code
+// PRICING MANAGEMENT
 // ========================================
 
+// Get current seat pricing
 function getSeatPricing() {
+  // Try to get from localStorage first (for admin changes)
+  const stored = localStorage.getItem('seatPricing');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('Error parsing stored pricing:', e);
+    }
+  }
+  
+  // Return default pricing
   return { ...seatPricing };
 }
 
-function updateSeatPricing(category, multiplier) {
-  if (seatPricing.hasOwnProperty(category)) {
-    seatPricing[category] = multiplier;
+// Update seat pricing (Admin only)
+function updateSeatPricing(zone, price) {
+  const currentPricing = getSeatPricing();
+  
+  if (currentPricing.hasOwnProperty(zone)) {
+    currentPricing[zone] = parseInt(price);
+    localStorage.setItem('seatPricing', JSON.stringify(currentPricing));
+    console.log('Updated pricing for', zone, ':', price);
     return true;
   }
+  
+  console.error('Invalid pricing zone:', zone);
   return false;
 }
 
+// Reset pricing to defaults
+function resetSeatPricing() {
+  localStorage.removeItem('seatPricing');
+  console.log('Pricing reset to defaults');
+  return true;
+}
+
+// ========================================
+// BACKWARD COMPATIBILITY
+// ========================================
+
 // Wrapper to make getSchedules synchronous-like for old code
-// (This is a temporary solution - ideally all code should use async/await)
 let cachedSchedules = [];
 
 async function loadAndCacheSchedules(filters = {}) {
   cachedSchedules = await getSchedules(filters);
   return cachedSchedules;
 }
+
+console.log('✅ Data.js loaded with independent zone pricing');
+console.log('📊 Current pricing:', getSeatPricing());
