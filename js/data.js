@@ -351,6 +351,32 @@ async function getAllBookings() {
   }
 }
 
+// Cancel booking (Admin)
+async function cancelBooking(bookingToken) {
+  try {
+    console.log('Cancelling booking:', bookingToken);
+    
+    const response = await fetch(`${API_BASE_URL}/bookings/${bookingToken}/cancel`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to cancel booking');
+    }
+
+    console.log('Booking cancelled successfully');
+    return true;
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    showToast(error.message, 'error');
+    return false;
+  }
+}
+
 // Get booking statistics (Admin)
 async function getBookingStats() {
   try {

@@ -57,6 +57,13 @@
       </div>
     </div>
 
+    <!-- Temporary Reset Button (for development) -->
+    <div style="text-align: center; margin: 1rem 0;">
+      <button class="btn btn-sm" onclick="resetStatsTemporary()" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; border: none; cursor: pointer;">
+        🔄 Reset Values (Temporary - Dev Only)
+      </button>
+    </div>
+
     <!-- Tabs -->
     <div class="admin-tabs">
       <button class="admin-tab-btn active" onclick="switchAdminTab('schedules')">Bus Schedules</button>
@@ -143,6 +150,7 @@
               <th>Seats</th>
               <th>Amount</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="bookings-table-body">

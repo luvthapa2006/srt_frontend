@@ -122,12 +122,12 @@ async function loadBookingsTable() {
   const tbody = document.getElementById('bookings-table-body');
   if (!tbody) return;
   
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
   
   const bookings = await getAllBookings();
   
   if (bookings.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No bookings found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
     return;
   }
   
@@ -151,9 +151,16 @@ async function loadBookingsTable() {
         </td>
         <td>${formatCurrency(booking.totalAmount)}</td>
         <td>
-          <span class="badge badge-${booking.status === 'confirmed' ? 'success' : 'secondary'}">
+          <span class="badge badge-${booking.status === 'confirmed' ? 'success' : booking.status === 'cancelled' ? 'danger' : 'secondary'}">
             ${booking.status}
           </span>
+        </td>
+        <td>
+          ${booking.status === 'confirmed' ? `
+            <button class="btn btn-sm btn-danger" onclick="cancelBookingConfirm('${booking.bookingToken}')" title="Cancel Booking">
+              Cancel
+            </button>
+          ` : '<span class="text-muted">-</span>'}
         </td>
       </tr>
     `;
@@ -457,6 +464,58 @@ function filterSchedules() {
     const text = row.textContent.toLowerCase();
     row.style.display = text.includes(searchTerm) ? '' : 'none';
   });
+}
+
+// Cancel booking confirmation
+async function cancelBookingConfirm(bookingToken) {
+  if (confirm(`Are you sure you want to cancel booking ${bookingToken}?`)) {
+    showLoading();
+    const success = await cancelBooking(bookingToken);
+    hideLoading();
+    
+    if (success) {
+      await loadBookingsTable();
+      await loadStats();
+      showToast('Booking cancelled successfully!', 'success');
+    } else {
+      showToast('Failed to cancel booking. Please try again.', 'error');
+    }
+  }
+}
+
+// Temporary function to reset statistics (for development only)
+async function resetStatsTemporary() {
+  if (confirm('⚠️ DEVELOPMENT ONLY: This will reset revenue and booking stats to zero. Continue?')) {
+    showLoading();
+    
+    try {
+      // Call the reset endpoint on the backend
+      const response = await fetch(`${API_BASE_URL}/bookings/reset-stats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Reload stats to show zero values
+        await loadStats();
+        showToast('Stats reset successfully!', 'success');
+      } else {
+        // If backend endpoint doesn't exist yet, just reload stats
+        // The stats will show current actual values from database
+        await loadStats();
+        showToast('Stats reloaded. Note: Backend reset endpoint may not be implemented yet.', 'warning');
+      }
+    } catch (error) {
+      console.error('Error resetting stats:', error);
+      // Fallback: just reload stats
+      await loadStats();
+      showToast('Stats reloaded', 'info');
+    }
+    
+    hideLoading();
+  }
 }
 
 // Initialize when DOM is ready
