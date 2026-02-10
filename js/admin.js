@@ -65,9 +65,13 @@ async function loadStats() {
   const totalBookings = stats.totalBookings || 0;
   const totalBuses = schedules.length;
   
-  document.getElementById('stat-revenue').textContent = formatCurrency(totalRevenue);
-  document.getElementById('stat-bookings').textContent = totalBookings;
-  document.getElementById('stat-buses').textContent = totalBuses;
+  const statRevenue = document.getElementById('stat-revenue');
+  const statBookings = document.getElementById('stat-bookings');
+  const statBuses = document.getElementById('stat-buses');
+  
+  if (statRevenue) statRevenue.textContent = formatCurrency(totalRevenue);
+  if (statBookings) statBookings.textContent = totalBookings;
+  if (statBuses) statBuses.textContent = totalBuses;
 }
 
 // Load schedules table
@@ -91,7 +95,7 @@ async function loadSchedulesTable() {
         <div><strong>${schedule.busName}</strong></div>
         <div class="text-muted">${schedule.type}</div>
       </td>
-      <td>${schedule.origin} → ${schedule.destination}</td>
+      <td>${schedule.origin} &rarr; ${schedule.destination}</td>
       <td>${formatTime(schedule.departureTime)}</td>
       <td>${formatTime(schedule.arrivalTime)}</td>
       <td>${formatCurrency(schedule.price)}</td>
@@ -102,11 +106,11 @@ async function loadSchedulesTable() {
       </td>
       <td>
         <div class="btn-group">
-          <button class="btn btn-sm btn-outline" onclick="editSchedule(${schedule.id})" title="Edit">
-            ✏️
+          <button class="btn btn-sm btn-outline" onclick="editSchedule('${schedule.id}')" title="Edit">
+            Edit
           </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteScheduleConfirm(${schedule.id})" title="Delete">
-            🗑️
+          <button class="btn btn-sm btn-danger" onclick="deleteScheduleConfirm('${schedule.id}')" title="Delete">
+            Delete
           </button>
         </div>
       </td>
@@ -141,7 +145,7 @@ async function loadBookingsTable() {
           <div class="text-muted">${booking.phone}</div>
         </td>
         <td>
-          ${schedule ? `<div><strong>${schedule.busName}</strong></div><div class="text-muted">${schedule.origin} → ${schedule.destination}</div>` : 'N/A'}
+          ${schedule ? `<div><strong>${schedule.busName}</strong></div><div class="text-muted">${schedule.origin} &rarr; ${schedule.destination}</div>` : 'N/A'}
         </td>
         <td>
           ${booking.seatNumbers.map(seat => `<span class="seat-badge-sm">${seat}</span>`).join(' ')}
@@ -254,27 +258,35 @@ async function deleteScheduleConfirm(id) {
   }
 }
 
-
 // Initialize pricing form
 function initPricingForm() {
   const form = document.getElementById('pricing-form');
-  if (!form) return; // Exit early if form doesn't exist
-  
-  // Load current pricing
-  const pricing = getSeatPricing();
-  
-  const windowInput = document.getElementById('window-multiplier');
-  const frontInput = document.getElementById('front-multiplier');
-  const backInput = document.getElementById('back-multiplier');
-  
-  // Check if all required elements exist before setting values
-  if (windowInput && frontInput && backInput) {
-    windowInput.value = pricing.window;
-    frontInput.value = pricing.front;
-    backInput.value = pricing.back;
+  if (!form) {
+    console.log('Pricing form not found - skipping initialization');
+    return;
   }
   
-  form.addEventListener('submit', handlePricingSubmit);
+  try {
+    // Load current pricing
+    const pricing = getSeatPricing();
+    
+    const windowInput = document.getElementById('window-multiplier');
+    const frontInput = document.getElementById('front-multiplier');
+    const backInput = document.getElementById('back-multiplier');
+    
+    // Check if all required elements exist before setting values
+    if (windowInput && frontInput && backInput && pricing) {
+      windowInput.value = pricing.window || 1.0;
+      frontInput.value = pricing.front || 1.0;
+      backInput.value = pricing.back || 1.0;
+    } else {
+      console.warn('Some pricing form inputs are missing');
+    }
+    
+    form.addEventListener('submit', handlePricingSubmit);
+  } catch (error) {
+    console.error('Error initializing pricing form:', error);
+  }
 }
 
 // Handle pricing form submission
