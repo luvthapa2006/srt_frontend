@@ -168,11 +168,10 @@ function renderDeck(prefix) {
   html += createSeatButton(prefix, 19, seatZones[19]);
   html += '</div>';
   
-  // Row 7: Seat 7 (last-left) | 20 (sleeper)
-  html += '<div class="seat-row-7">';
+  // Row 7: Seat 7 (last-left) | 20 (sleeper - spans 2 columns)
+  html += '<div class="seat-row-7 seat-row-7-last">';
   html += createSeatButton(prefix, 7, seatZones[7]);
   html += '<div class="seat-aisle"></div>';
-  html += '<div class="seat-spacer"></div>'; // Empty space
   html += createSeatButton(prefix, 20, seatZones[20], true);
   html += '</div>';
   
