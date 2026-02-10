@@ -3,49 +3,407 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bus Timings - Shree Ram Travels</title>
-  <link rel="icon" href="assets/icons/favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Select Bus - Shree Ram Travels</title>
   <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* Additional styles for timings page */
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+    
+    .filter-info-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .schedule-group {
+      margin-bottom: 3rem;
+    }
+    
+    .schedule-group-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .time-icon {
+      font-size: 1.5rem;
+    }
+    
+    .schedule-group-content {
+      display: grid;
+      gap: 1.5rem;
+    }
+    
+    .schedule-card {
+      display: flex;
+      gap: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .schedule-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    
+    .schedule-info {
+      flex: 1;
+    }
+    
+    .schedule-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 200px;
+      gap: 0.75rem;
+    }
+    
+    .bus-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.5rem;
+    }
+    
+    .bus-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    
+    .bus-meta {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .bus-rating {
+      color: #f59e0b;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .badge-today {
+      background: #10b981;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .bus-type {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin: 0 0 1rem 0;
+    }
+    
+    .route-timeline {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .route-point {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .route-time {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    
+    .route-city {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .route-date {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+    
+    .route-connector {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .route-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      position: relative;
+    }
+    
+    .route-duration {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      background: #f3f4f6;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+    
+    .icon-clock {
+      color: #667eea;
+    }
+    
+    .bus-amenities {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .amenity-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      background: #f3f4f6;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+    
+    .amenity-icon {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .price-section {
+      text-align: center;
+    }
+    
+    .price-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      display: block;
+    }
+    
+    .price {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #667eea;
+      margin: 0.25rem 0;
+    }
+    
+    .price-note {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      display: block;
+    }
+    
+    .seats-left {
+      font-size: 0.875rem;
+      color: #10b981;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .seats-left.seats-low {
+      color: #f59e0b;
+    }
+    
+    .seats-icon {
+      font-size: 1rem;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+    
+    .empty-state-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    
+    .filters-bar {
+      max-width: 1200px;
+      margin: 0 auto 2rem auto;
+      padding: 0 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .sort-select {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    
+    .skeleton-card {
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      border-radius: 4px;
+    }
+    
+    .skeleton-text {
+      height: 1.25rem;
+      margin-bottom: 0.75rem;
+      width: 100%;
+    }
+    
+    .skeleton-text.short {
+      width: 60%;
+    }
+    
+    .skeleton-button {
+      height: 2.5rem;
+      width: 150px;
+      margin-top: 1rem;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    @media (max-width: 768px) {
+      .schedule-card {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .schedule-cta {
+        width: 100%;
+        min-width: auto;
+      }
+      
+      .route-timeline {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .route-connector {
+        flex-direction: row;
+        height: auto;
+      }
+      
+      .route-line {
+        height: 100%;
+        width: 2px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- Navbar -->
+  <!-- Navigation -->
   <nav class="navbar">
     <div class="container">
-      <div class="nav-content">
-        <a href="index.html" class="nav-brand">
-          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
-        </a>
-        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-        <ul class="nav-links" id="mobile-menu">
-          <li><a href="index.html" class="nav-link">Home</a></li>
-          <li><a href="timings.html" class="nav-link active">Bus Timings</a></li>
-          <li><a href="admin.html" class="nav-link">Admin</a></li>
-        </ul>
+      <a href="index.html" class="navbar-brand">Shree Ram Travels</a>
+      <div class="navbar-menu">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="timings.html" class="nav-link active">Bus Timings</a>
+        <a href="track-booking.html" class="nav-link">Track Booking</a>
+        <a href="admin.html" class="nav-link">Admin</a>
       </div>
     </div>
   </nav>
 
-  <!-- Main Content -->
-  <div class="min-h-screen" style="background: var(--slate-50);">
-    <div class="container px-4 py-8">
-      <div class="mb-8">
-        <h1 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem;">Available Buses</h1>
-        <p class="text-muted" id="filter-info">Showing all scheduled buses</p>
-      </div>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div id="filter-info" class="filter-info-content">
+      <h1 class="page-title">Available Buses</h1>
+    </div>
+  </div>
 
-      <!-- Schedules List -->
-      <div class="schedules-list" id="schedules-list">
-        <!-- Populated by JavaScript -->
-      </div>
+  <!-- Filters and Sorting Bar -->
+  <div class="filters-bar">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button onclick="filterByBusType('all')" class="btn btn-outline btn-sm">All Buses</button>
+      <button onclick="filterByBusType('AC Sleeper')" class="btn btn-outline btn-sm">AC Sleeper</button>
+      <button onclick="filterByBusType('AC Seater')" class="btn btn-outline btn-sm">AC Seater</button>
+      <button onclick="filterByBusType('Non-AC')" class="btn btn-outline btn-sm">Non-AC</button>
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <label for="sort-select" style="font-size: 0.875rem; color: #6b7280;">Sort by:</label>
+      <select id="sort-select" class="sort-select" onchange="sortSchedules(this.value)">
+        <option value="departure">Departure Time</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="duration">Journey Duration</option>
+        <option value="seats">Available Seats</option>
+      </select>
+      
+      <button onclick="refreshSchedules()" class="btn btn-outline btn-sm" title="Refresh">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container" style="max-width: 1200px; padding-bottom: 3rem;">
+    <div id="schedules-list">
+      <!-- Schedules will be loaded here -->
     </div>
   </div>
 
   <!-- Scripts -->
-  <script src="js/data.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/data.js"></script>
   <script src="js/timings.js"></script>
 </body>
 </html>
