@@ -1,13 +1,20 @@
 // ========================================
-// PAYMENT.JS - Payment & Confirmation Page Logic
+// PAYMENT.JS - Payment & Confirmation Page Logic with Paytm Integration
 // ========================================
 
 let bookingDetails = null;
 let confirmedBooking = null;
+let paytmConfig = null;
 
 // Initialize payment page
 async function initPaymentPage() {
   const params = getQueryParams();
+  
+  // Check if returning from Paytm
+  if (params.status) {
+    handlePaymentCallback(params);
+    return;
+  }
   
   if (!params.scheduleId || !params.seats || !params.totalAmount) {
     showToast('Invalid booking details', 'error');
@@ -23,6 +30,10 @@ async function initPaymentPage() {
   
   showLoading();
   const schedule = await getScheduleById(bookingDetails.scheduleId);
+  
+  // Load Paytm configuration
+  await loadPaytmConfig();
+  
   hideLoading();
   
   if (!schedule) {
@@ -33,6 +44,132 @@ async function initPaymentPage() {
   
   displayBookingSummary(schedule);
   setupPaymentForm();
+}
+
+// Load Paytm configuration from backend
+async function loadPaytmConfig() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/paytm/config`);
+    const result = await response.json();
+    
+    if (result.success) {
+      paytmConfig = result.data;
+      console.log('✅ Paytm config loaded:', paytmConfig);
+    }
+  } catch (error) {
+    console.error('❌ Error loading Paytm config:', error);
+  }
+}
+
+// Handle payment callback from Paytm
+function handlePaymentCallback(params) {
+  const formContainer = document.getElementById('payment-form-container');
+  const confirmationContainer = document.getElementById('confirmation-container');
+  
+  if (formContainer) formContainer.style.display = 'none';
+  if (confirmationContainer) confirmationContainer.style.display = 'block';
+  
+  if (params.status === 'success') {
+    showPaymentSuccess(params);
+  } else if (params.status === 'failed') {
+    showPaymentFailed(params);
+  } else {
+    showPaymentError(params);
+  }
+}
+
+// Display payment success
+function showPaymentSuccess(params) {
+  const confirmationContainer = document.getElementById('confirmation-container');
+  if (!confirmationContainer) return;
+  
+  confirmationContainer.innerHTML = `
+    <div class="confirmation-success">
+      <div class="success-icon">✓</div>
+      <h2 class="success-title">Payment Successful!</h2>
+      <p class="success-message">Your payment has been processed successfully</p>
+    </div>
+    
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <h3>Transaction Details</h3>
+      </div>
+      <div class="ticket-body">
+        <div class="ticket-section">
+          <div class="ticket-row">
+            <div class="ticket-field">
+              <span class="field-label">Order ID</span>
+              <span class="field-value">${params.orderId || 'N/A'}</span>
+            </div>
+            <div class="ticket-field">
+              <span class="field-label">Transaction ID</span>
+              <span class="field-value">${params.txnId || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="confirmation-actions">
+      <button class="btn btn-primary" onclick="navigateTo('index.html')">
+        Back to Home
+      </button>
+    </div>
+  `;
+  
+  showToast('Payment successful!', 'success');
+}
+
+// Display payment failed
+function showPaymentFailed(params) {
+  const confirmationContainer = document.getElementById('confirmation-container');
+  if (!confirmationContainer) return;
+  
+  const message = decodeURIComponent(params.message || 'Payment failed');
+  
+  confirmationContainer.innerHTML = `
+    <div style="background: #FEE2E2; border: 2px solid #EF4444; border-radius: 1rem; padding: 2rem; text-align: center;">
+      <div style="font-size: 4rem; color: #DC2626; margin-bottom: 1rem;">✗</div>
+      <h2 style="color: #991B1B; font-size: 1.75rem; margin-bottom: 0.5rem;">Payment Failed</h2>
+      <p style="color: #7F1D1D; margin-bottom: 1.5rem;">${message}</p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button class="btn btn-primary" onclick="history.back()">
+          Try Again
+        </button>
+        <button class="btn btn-outline" onclick="navigateTo('index.html')">
+          Go to Home
+        </button>
+      </div>
+    </div>
+  `;
+  
+  showToast('Payment failed', 'error');
+}
+
+// Display payment error
+function showPaymentError(params) {
+  const confirmationContainer = document.getElementById('confirmation-container');
+  if (!confirmationContainer) return;
+  
+  const message = decodeURIComponent(params.message || 'An error occurred');
+  
+  confirmationContainer.innerHTML = `
+    <div style="background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 1rem; padding: 2rem; text-align: center;">
+      <div style="font-size: 4rem; color: #D97706; margin-bottom: 1rem;">⚠</div>
+      <h2 style="color: #92400E; font-size: 1.75rem; margin-bottom: 0.5rem;">Payment Error</h2>
+      <p style="color: #78350F; margin-bottom: 1.5rem;">${message}</p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button class="btn btn-primary" onclick="history.back()">
+          Try Again
+        </button>
+        <button class="btn btn-outline" onclick="navigateTo('index.html')">
+          Go to Home
+        </button>
+      </div>
+    </div>
+  `;
+  
+  showToast('Payment error occurred', 'error');
 }
 
 // Display booking summary
@@ -111,8 +248,8 @@ function setupPaymentForm() {
   }
 }
 
-// Handle payment form submission
-function handlePaymentSubmit(e) {
+// Handle payment form submission - Initiate Paytm payment
+async function handlePaymentSubmit(e) {
   e.preventDefault();
   
   if (!validateForm('payment-form')) {
@@ -130,197 +267,78 @@ function handlePaymentSubmit(e) {
   // Show loading
   showLoading();
   
-  // Simulate payment processing
-  setTimeout(() => {
-    processBooking(formData);
-  }, 1500);
-}
-
-// Process booking
-async function processBooking(formData) {
-  const result = await createBooking(formData);
-  
-  hideLoading();
-  
-  if (result.error) {
-    showToast(result.error, 'error');
-    if (result.unavailableSeats) {
-      showToast(`Seats ${result.unavailableSeats.join(', ')} are no longer available`, 'error');
-      setTimeout(() => {
-        navigateTo('seats.html', { id: formData.scheduleId });
-      }, 2000);
-    }
-    return;
-  }
-  
-  // Success!
-  confirmedBooking = result;
-  displayConfirmation();
-  
-  // Send confirmation email (simulated)
-  sendConfirmationEmail(result);
-}
-
-// Display confirmation
-function displayConfirmation() {
-  const formContainer = document.getElementById('payment-form-container');
-  const confirmationContainer = document.getElementById('confirmation-container');
-  
-  if (formContainer) formContainer.style.display = 'none';
-  if (confirmationContainer) {
-    confirmationContainer.style.display = 'block';
-    renderConfirmation();
-  }
-  
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  
-  // Show success message
-  showToast('Booking confirmed successfully!', 'success');
-}
-
-// Render confirmation details
-async function renderConfirmation() {
-  const confirmationContainer = document.getElementById('confirmation-container');
-  if (!confirmationContainer || !confirmedBooking) return;
-  
-  // Get schedule details (might be populated or need fetching)
-  let schedule = confirmedBooking.scheduleId;
-  if (typeof schedule === 'string') {
-    showLoading();
-    schedule = await getScheduleById(schedule);
+  try {
+    // Initiate Paytm payment
+    const response = await fetch(`${API_BASE_URL}/paytm/initiate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const result = await response.json();
     hideLoading();
-  }
-  
-  if (!schedule) {
-    showToast('Error loading booking details', 'error');
-    return;
-  }
-  
-  confirmationContainer.innerHTML = `
-    <div class="confirmation-success">
-      <div class="success-icon">✓</div>
-      <h2 class="success-title">Booking Confirmed!</h2>
-      <p class="success-message">Your tickets have been booked successfully</p>
-    </div>
     
-    <div class="ticket-card" id="ticket-details">
-      <div class="ticket-header">
-        <h3>Shree Ram Travels</h3>
-        <div class="ticket-token">
-          <span class="token-label">Booking Token</span>
-          <span class="token-value" id="booking-token">${confirmedBooking.bookingToken}</span>
-          <button class="btn-icon" onclick="copyToken()" title="Copy Token">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <div class="ticket-body">
-        <div class="ticket-section">
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">Passenger</span>
-              <span class="field-value">${confirmedBooking.customerName}</span>
-            </div>
-            <div class="ticket-field">
-              <span class="field-label">Phone</span>
-              <span class="field-value">${confirmedBooking.phone}</span>
-            </div>
-          </div>
-          
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">Email</span>
-              <span class="field-value">${confirmedBooking.email}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="ticket-divider"></div>
-        
-        <div class="ticket-section">
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">Bus</span>
-              <span class="field-value">${schedule.busName} (${schedule.type})</span>
-            </div>
-          </div>
-          
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">From</span>
-              <span class="field-value">${schedule.origin}</span>
-            </div>
-            <div class="ticket-field">
-              <span class="field-label">To</span>
-              <span class="field-value">${schedule.destination}</span>
-            </div>
-          </div>
-          
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">Departure</span>
-              <span class="field-value">${formatDate(schedule.departureTime)}</span>
-            </div>
-            <div class="ticket-field">
-              <span class="field-label">Time</span>
-              <span class="field-value">${formatTime(schedule.departureTime)}</span>
-            </div>
-          </div>
-          
-          <div class="ticket-row">
-            <div class="ticket-field">
-              <span class="field-label">Seats</span>
-              <span class="field-value seats-value">
-                ${confirmedBooking.seatNumbers.map(seat => 
-                  `<span class="seat-badge">${seat}</span>`
-                ).join(' ')}
-              </span>
-            </div>
-            <div class="ticket-field">
-              <span class="field-label">Amount</span>
-              <span class="field-value amount-value">${formatCurrency(confirmedBooking.totalAmount)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="ticket-footer">
-        <p class="ticket-note">Please arrive 15 minutes before departure time</p>
-        <p class="ticket-note">Carry a valid ID proof for verification</p>
-      </div>
-    </div>
+    if (!result.success) {
+      showToast(result.message || 'Failed to initiate payment', 'error');
+      if (result.unavailableSeats) {
+        showToast(`Seats ${result.unavailableSeats.join(', ')} are no longer available`, 'error');
+        setTimeout(() => {
+          navigateTo('seats.html', { id: formData.scheduleId });
+        }, 2000);
+      }
+      return;
+    }
     
-    <div class="confirmation-actions">
-      <button class="btn btn-primary" onclick="downloadTicketPDF()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        Download Ticket
-      </button>
-      
-      <button class="btn btn-secondary" onclick="shareBookingDetails()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="18" cy="5" r="3"></circle>
-          <circle cx="6" cy="12" r="3"></circle>
-          <circle cx="18" cy="19" r="3"></circle>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-        </svg>
-        Share
-      </button>
-      
-      <button class="btn btn-outline" onclick="navigateTo('index.html')">
-        Book Another Ticket
-      </button>
-    </div>
-  `;
+    console.log('✅ Payment initiated:', result.data);
+    
+    // Store pending booking data in session storage
+    sessionStorage.setItem('pendingBooking', JSON.stringify(result.data.pendingBooking));
+    
+    // Redirect to Paytm payment page
+    initiatePaytmPayment(result.data);
+    
+  } catch (error) {
+    console.error('❌ Error initiating payment:', error);
+    hideLoading();
+    showToast('Failed to initiate payment. Please try again.', 'error');
+  }
+}
+
+// Initiate Paytm payment by creating a form and submitting
+function initiatePaytmPayment(paymentData) {
+  const { paytmParams, paytmUrl } = paymentData;
+  
+  console.log('🚀 Redirecting to Paytm payment page...');
+  console.log('Paytm URL:', paytmUrl);
+  console.log('Paytm Params:', paytmParams);
+  
+  // Create a form dynamically
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = paytmUrl;
+  form.style.display = 'none';
+  
+  // Add all parameters as hidden fields
+  Object.keys(paytmParams).forEach(key => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = paytmParams[key];
+    form.appendChild(input);
+  });
+  
+  // Add form to body and submit
+  document.body.appendChild(form);
+  
+  // Show message to user
+  showToast('Redirecting to Paytm payment gateway...', 'info');
+  
+  // Submit form after a short delay
+  setTimeout(() => {
+    form.submit();
+  }, 500);
 }
 
 // Copy booking token
@@ -341,18 +359,6 @@ function shareBookingDetails() {
   if (confirmedBooking) {
     shareBooking(confirmedBooking);
   }
-}
-
-// Send confirmation email (simulated)
-function sendConfirmationEmail(booking) {
-  console.log('Sending confirmation email to:', booking.email);
-  console.log('Booking details:', booking);
-  
-  // In a real app, this would call an API to send email
-  // For demo purposes, we'll just log it
-  setTimeout(() => {
-    showToast('Confirmation email sent!', 'info');
-  }, 1000);
 }
 
 // Initialize when DOM is ready
