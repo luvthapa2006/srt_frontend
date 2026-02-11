@@ -294,7 +294,13 @@ async function handlePaymentSubmit(e) {
     console.log('✅ Payment initiated:', result.data);
     
     // Store pending booking data in session storage
-    sessionStorage.setItem('pendingBooking', JSON.stringify(result.data.pendingBooking));
+    if (result.data.bookingToken) {
+      sessionStorage.setItem('pendingBooking', JSON.stringify({
+        bookingToken: result.data.bookingToken,
+        orderId: result.data.orderId,
+        amount: result.data.amount
+      }));
+    }
     
     // Redirect to Paytm payment page
     initiatePaytmPayment(result.data);
@@ -314,6 +320,20 @@ function initiatePaytmPayment(paymentData) {
   console.log('Paytm URL:', paytmUrl);
   console.log('Paytm Params:', paytmParams);
   
+  // Validate that we have the payment URL
+  if (!paytmUrl) {
+    console.error('❌ Paytm URL is missing from response!');
+    showToast('Payment configuration error. Please try again.', 'error');
+    return;
+  }
+  
+  // Validate that we have payment parameters
+  if (!paytmParams || Object.keys(paytmParams).length === 0) {
+    console.error('❌ Paytm parameters are missing!');
+    showToast('Payment configuration error. Please try again.', 'error');
+    return;
+  }
+  
   // Create a form dynamically
   const form = document.createElement('form');
   form.method = 'POST';
@@ -329,14 +349,15 @@ function initiatePaytmPayment(paymentData) {
     form.appendChild(input);
   });
   
-  // Add form to body and submit
+  // Add form to body
   document.body.appendChild(form);
   
   // Show message to user
-  showToast('Redirecting to Paytm payment gateway...', 'info');
+  showToast('Redirecting to payment gateway...', 'info');
   
   // Submit form after a short delay
   setTimeout(() => {
+    console.log('📤 Submitting payment form...');
     form.submit();
   }, 500);
 }
