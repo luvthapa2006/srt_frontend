@@ -249,7 +249,6 @@ function createScheduleCard(schedule) {
               <p class="bus-type" style="color: #6b7280; font-size: 0.875rem; margin: 0;">${schedule.type}</p>
             </div>
             <div class="bus-meta" style="display: flex; gap: 0.5rem; align-items: center;">
-              <span class="bus-rating" style="color: #f59e0b; font-size: 0.875rem; font-weight: 500;">⭐ 4.${Math.floor(Math.random() * 3) + 6}</span>
               ${isToday ? '<span class="badge-today" style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Today</span>' : ''}
             </div>
           </div>
