@@ -9,785 +9,494 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* ── Login modal blur overlay ── */
+    #admin-login-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      /* frosted-glass backdrop */
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    #admin-login-modal.active { display: flex; }
+
+    .modal-content {
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      max-width: 90%;
+      width: 400px;
+      animation: modalPop 0.25s ease;
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.92); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .modal-logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .lock-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+    }
+
+    /* ── blurred page body behind modal ── */
+    body.modal-open .admin-page-content { filter: blur(4px); pointer-events: none; }
+
+    /* ── Route Selector ── */
+    #route-selector {
+      width: 100%; padding: 0.75rem;
+      font-size: 1rem; border: 2px solid #e5e7eb;
+      border-radius: 8px; background: white; transition: all 0.2s;
+    }
+    #route-selector:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+    #pricing-status .alert { padding: 1rem; border-radius: 8px; margin-bottom: 0; }
+    #pricing-status .alert-info     { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; }
+    #pricing-status .alert-secondary{ background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; }
+
+    .pricing-info-box {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; padding: 1.5rem; border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 1rem;
+    }
+    .pricing-info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 1rem; font-weight: 600; }
+    .pricing-info-header .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-success   { background: #10b981; color: white; }
+    .badge-secondary { background: rgba(255,255,255,0.2); color: white; }
+
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 1.5rem; margin-bottom: 1rem; }
+    .pricing-item { display: flex; flex-direction: column; gap: 0.25rem; }
+    .pricing-label { font-size: 0.875rem; opacity: 0.9; }
+    .pricing-value { font-size: 1.5rem; font-weight: 700; }
+    .pricing-note  { padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); opacity: 0.9; font-size: 0.875rem; }
+
+    .pricing-card { border-radius: 12px; padding: 1.5rem; border: 2px solid; transition: all 0.3s ease; }
+    .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .pricing-card-blue   { background: #eff6ff; border-color: #3b82f6; }
+    .pricing-card-gray   { background: #f9fafb; border-color: #6b7280; }
+    .pricing-card-green  { background: #f0fdf4; border-color: #10b981; }
+    .pricing-card-orange { background: #fffbeb; border-color: #f59e0b; }
+
+    .pricing-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .pricing-icon { font-size: 1.5rem; }
+    .pricing-card-header h4 { margin: 0; font-size: 1.125rem; font-weight: 600; }
+    .pricing-card-body label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; }
+
+    .pricing-input { width: 100%; padding: 0.75rem; font-size: 1.25rem; font-weight: 600; border: 2px solid #e5e7eb; border-radius: 8px; text-align: center; transition: all 0.2s; }
+    .pricing-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .pricing-help    { display: block; margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; line-height: 1.4; }
+    .pricing-example { margin-top: 0.75rem; padding: 0.5rem; background: rgba(0,0,0,0.05); border-radius: 6px; font-size: 0.875rem; font-style: italic; text-align: center; }
+
+    .pricing-preview { margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg,#f9fafb,#ffffff); border-radius: 12px; border: 2px solid #e5e7eb; }
+
+    .alert { padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    .alert-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .alert strong { display: block; margin-bottom: 0.5rem; }
+
+    .form-actions { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb; flex-wrap: wrap; }
+
+    .btn { padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 500; cursor: pointer; border: none; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .btn-primary   { background: linear-gradient(135deg,#667eea,#764ba2); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+    .btn-secondary { background: #6b7280; color: white; }
+    .btn-secondary:hover { background: #4b5563; }
+    .btn-outline   { background: white; border: 2px solid #e5e7eb; color: #374151; }
+    .btn-outline:hover { border-color: #667eea; color: #667eea; }
+    .btn-success   { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; transform: translateY(-1px); }
+    .btn-block { width: 100%; justify-content: center; }
+
+    .card { background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card-header h3 { font-size: 1.25rem; font-weight: 600; color: var(--secondary); margin-bottom: 0.5rem; }
+    .card-description { color: var(--slate-600); margin-bottom: 1.5rem; font-size: 0.875rem; }
+    .card-body { margin-top: 1rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary); }
+    .form-control { width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; transition: all 0.2s; }
+    .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .form-help { display: block; margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280; }
+
+    .tab-header { margin-bottom: 2rem; }
+    .tab-header h2 { font-size: 1.75rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem; }
+    .tab-description { color: var(--slate-600); font-size: 1rem; }
+    .required { color: #ef4444; }
+
+    /* Download Excel button area */
+    .bookings-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Export modal */
+    #export-modal {
+      position: fixed; inset: 0; z-index: 9998;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(15,23,42,0.5);
+      backdrop-filter: blur(6px);
+    }
+    #export-modal.active { display: flex; }
+    .export-modal-box {
+      background: white; border-radius: 16px;
+      padding: 2rem; width: 420px; max-width: 94vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      animation: modalPop 0.2s ease;
+    }
+    .export-modal-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .export-modal-box p  { color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .export-option { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .export-option label {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.875rem 1rem; border: 2px solid #e5e7eb;
+      border-radius: 10px; cursor: pointer; transition: all 0.2s;
+    }
+    .export-option label:hover { border-color: #667eea; background: #f5f3ff; }
+    .export-option input[type=radio] { margin-top: 3px; accent-color: #667eea; }
+    .export-option .opt-label { font-weight: 600; font-size: 0.9rem; color: #1e293b; }
+    .export-option .opt-desc  { font-size: 0.8rem; color: #64748b; }
+    #export-filter-fields { display: none; margin-bottom: 1rem; }
+    #export-filter-fields.visible { display: block; }
+
+    @media(max-width:768px){
+      .pricing-grid { grid-template-columns: 1fr; }
+      .form-actions { flex-direction: column; }
+      .form-actions button { width: 100%; }
+      .bookings-toolbar { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="container">
-      <div class="nav-content">
-        <a href="index.html" class="nav-brand">
-          <img src="https://i.ibb.co/Cs16zCvx/ramb-logo.png" alt="Shree Ram Travels" style="height: 50px;">
-        </a>
-        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-        <ul class="nav-links" id="mobile-menu">
-          <li><a href="index.html" class="nav-link">Home</a></li>
-          <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
-          <li><a href="admin.html" class="nav-link active">Admin</a></li>
-          <li><button class="btn btn-sm btn-outline" onclick="adminLogout()">Logout</button></li>
-        </ul>
+
+  <!-- ══════════════════════════════════════
+       ADMIN LOGIN MODAL (always on top)
+  ══════════════════════════════════════ -->
+  <div id="admin-login-modal">
+    <div class="modal-content">
+      <div class="modal-logo">
+        <div class="lock-icon">🔐</div>
       </div>
-    </div>
-  </nav>
-
-  <!-- Admin Header -->
-  <div class="admin-header">
-    <div class="container px-4">
-      <h1 style="color: white; font-size: 2rem;">Admin Dashboard</h1>
-      <p style="color: var(--slate-300);">Manage schedules, bookings, and pricing</p>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="container px-4 py-8">
-    <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Revenue</div>
-        <div class="stat-value" id="stat-revenue">₹0</div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-label">Total Bookings</div>
-        <div class="stat-value" id="stat-bookings">0</div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-label">Active Buses</div>
-        <div class="stat-value" id="stat-buses">0</div>
-      </div>
-    </div>
-
-    <!-- Temporary Reset Button (for development) -->
-    <div style="text-align: center; margin: 1rem 0; display: flex; gap: 1rem; justify-content: center; align-items: center;">
-      <button class="btn btn-sm" onclick="loadStats()" style="background: #10b981; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; border: none; cursor: pointer;">
-        🔄 Refresh Stats
-      </button>
-      <button class="btn btn-sm" onclick="resetStatsTemporary()" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; border: none; cursor: pointer;">
-        ⚠️ Reset to Zero (Temp Display Only)
-      </button>
-    </div>
-
-    <!-- Tabs -->
-    <div class="admin-tabs">
-      <button class="admin-tab-btn active" onclick="switchAdminTab('schedules')">Bus Schedules</button>
-      <button class="admin-tab-btn" onclick="switchAdminTab('bookings')">Bookings</button>
-      <button class="admin-tab-btn" onclick="switchAdminTab('pricing')">Pricing</button>
-    </div>
-
-    <!-- Tab: Schedules -->
-    <div id="tab-schedules" class="admin-tab-content active">
-      <div class="card mb-8">
-        <h3 class="summary-title" id="form-title">Add New Schedule</h3>
-        <form id="schedule-form">
-          <input type="hidden" id="schedule-id">
-          <input type="hidden" id="bus-name" value="Mahalaxmi Travels">
-          <input type="hidden" id="bus-type" value="AC Sleeper (2+1)">
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Origin</label>
-              <input type="text" class="form-input" id="origin" required>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">Destination</label>
-              <input type="text" class="form-input" id="destination" required>
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Bus Date</label>
-              <input type="date" class="form-input" id="bus-date" required>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">Departure Time</label>
-              <input type="time" class="form-input" id="bus-time" required>
-            </div>
-          </div>
-          <small class="text-muted">Select the date and departure time for this bus</small>
-          
-          <div class="form-group">
-            <label class="form-label">Base Price (₹) <span class="required">*</span></label>
-            <input type="number" class="form-input" id="price" min="100" required>
-            <small class="text-muted">This is for display/reference only. Actual seat prices are set in the Pricing tab.</small>
-          </div>
-
-          <!-- Pricing Preview Section (populated by admin.js) -->
-          <div id="schedule-pricing-preview" style="display: none; margin-top: 1rem;">
-            <!-- Pricing preview will be dynamically populated by admin.js updateScheduleFormPricing() -->
-          </div>
-
-          <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
-          <button type="button" class="btn btn-secondary" onclick="resetScheduleForm()">🔄 Reset Form</button>
-        </form>
-      </div>
-
-      <!-- Schedules Table -->
-      <div class="table-container">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Bus Name</th>
-              <th>Route</th>
-              <th>Date</th>
-              <th>Timing</th>
-              <th>Price</th>
-              <th>Seats Available</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="schedules-table-body">
-            <!-- Populated by admin.js loadSchedulesTable() -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Tab: Bookings -->
-    <div id="tab-bookings" class="admin-tab-content">
-      <div class="table-container">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Token</th>
-              <th>Passenger</th>
-              <th>Contact</th>
-              <th>Bus Details</th>
-              <th>Seats</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="bookings-table-body">
-            <!-- Populated by admin.js loadBookingsTable() -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Tab: Pricing (ROUTE-BASED PRICING SYSTEM) -->
-    <div id="tab-pricing" class="admin-tab-content">
-      <div class="tab-header">
-        <h2>Seat Pricing Configuration</h2>
-        <p class="tab-description">
-          Set independent prices for different seat zones. Configure pricing per route or set default pricing.
-        </p>
-      </div>
-
-      <!-- ROUTE SELECTOR SECTION -->
-      <div class="card" style="margin-bottom: 2rem;">
-        <div class="card-header">
-          <h3>Select Route</h3>
-          <p class="card-description">
-            Choose a route to set custom pricing, or leave unselected to modify default pricing.
-          </p>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="route-selector">Route</label>
-            <select id="route-selector" class="form-control">
-              <option value="">Select a route...</option>
-              <!-- Options will be populated dynamically by admin.js loadRouteSelector() -->
-            </select>
-            <small class="form-help">
-              Routes marked with ⭐ have custom pricing. Select a route to view/edit its pricing.
-            </small>
-          </div>
-          
-          <!-- Pricing Status Display -->
-          <div id="pricing-status" style="margin-top: 1rem;">
-            <div class="alert alert-secondary">
-              <strong>Select a route</strong> to set custom pricing, or modify default pricing below.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PRICING CONFIGURATION FORM -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Seat Zone Pricing</h3>
-          <p class="card-description">
-            Set prices for different seat zones. These prices apply independently of the base price.
-          </p>
-        </div>
-        <div class="card-body">
-          <form id="pricing-form">
-            <div class="pricing-grid">
-              <!-- First Right (2×6) - Premium -->
-              <div class="pricing-card pricing-card-blue">
-                <div class="pricing-card-header">
-                  <span class="pricing-icon">🔵 🔵</span>
-                  <h4>First Right (2×6)</h4>
-                </div>
-                <div class="pricing-card-body">
-                  <label for="first-right-price">Price per seat (₹)</label>
-                  <input 
-                    type="number" 
-                    id="first-right-price" 
-                    class="form-control pricing-input"
-                    min="0" 
-                    step="1" 
-                    required
-                    placeholder="120"
-                  />
-                  <small class="pricing-help">
-                    Seats: 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (both decks)
-                  </small>
-                  <div class="pricing-example">Example: ₹120 per seat</div>
-                </div>
-              </div>
-
-              <!-- First Left (1×6) - Standard -->
-              <div class="pricing-card pricing-card-gray">
-                <div class="pricing-card-header">
-                  <span class="pricing-icon">⚪ ⚪</span>
-                  <h4>First Left (1×6)</h4>
-                </div>
-                <div class="pricing-card-body">
-                  <label for="first-left-price">Price per seat (₹)</label>
-                  <input 
-                    type="number" 
-                    id="first-left-price" 
-                    class="form-control pricing-input"
-                    min="0" 
-                    step="1" 
-                    required
-                    placeholder="100"
-                  />
-                  <small class="pricing-help">
-                    Seats: 1, 2, 3, 4, 5, 6 (both decks)
-                  </small>
-                  <div class="pricing-example">Example: ₹100 per seat</div>
-                </div>
-              </div>
-
-              <!-- Last Left 7th Seat - Budget -->
-              <div class="pricing-card pricing-card-green">
-                <div class="pricing-card-header">
-                  <span class="pricing-icon">🟢 🟢</span>
-                  <h4>Last Left 7th Seat</h4>
-                </div>
-                <div class="pricing-card-body">
-                  <label for="last-left-price">Price per seat (₹)</label>
-                  <input 
-                    type="number" 
-                    id="last-left-price" 
-                    class="form-control pricing-input"
-                    min="0" 
-                    step="1" 
-                    required
-                    placeholder="90"
-                  />
-                  <small class="pricing-help">
-                    Seats: 7 (both decks)
-                  </small>
-                  <div class="pricing-example">Example: ₹90 per seat</div>
-                </div>
-              </div>
-
-              <!-- Last Right Sleeper - Luxury -->
-              <div class="pricing-card pricing-card-orange">
-                <div class="pricing-card-header">
-                  <span class="pricing-icon">🟠 🟠</span>
-                  <h4>Last Right Sleeper</h4>
-                </div>
-                <div class="pricing-card-body">
-                  <label for="sleeper-price">Price per seat (₹)</label>
-                  <input 
-                    type="number" 
-                    id="sleeper-price" 
-                    class="form-control pricing-input"
-                    min="0" 
-                    step="1" 
-                    required
-                    placeholder="150"
-                  />
-                  <small class="pricing-help">
-                    Seats: 20 (sleeper seats, both decks)
-                  </small>
-                  <div class="pricing-example">Example: ₹150 per seat</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Live Preview (populated by admin.js updatePricingPreview()) -->
-            <div id="pricing-preview" class="pricing-preview">
-              <!-- Preview will be populated dynamically -->
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
-                💾 Save Pricing
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="resetAllPricing()">
-                🔄 Reset All to Defaults
-              </button>
-              <button type="button" class="btn btn-outline" onclick="resetRoutePricing()" id="reset-route-btn" style="display: none;">
-                ↩️ Reset Route to Default
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Info Section -->
-      <div class="alert alert-info" style="margin-top: 2rem;">
-        <h4>How Route-Based Pricing Works:</h4>
-        <ul style="margin: 0.5rem 0 0 1.5rem;">
-          <li><strong>Default Pricing:</strong> Applied to all routes that don't have custom pricing</li>
-          <li><strong>Route-Specific Pricing:</strong> Override default pricing for specific routes (e.g., Delhi → Mumbai)</li>
-          <li><strong>Automatic Application:</strong> Pricing is automatically applied when customers select seats</li>
-          <li><strong>Independent Zones:</strong> Each seat zone has its own fixed price regardless of bus type or time</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Admin Login Modal -->
-  <div id="admin-login-modal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 400px; padding: 2rem;">
-      <h2 style="margin-bottom: 1.5rem; text-align: center;">Admin Login</h2>
+      <h2 style="text-align:center;margin-bottom:0.25rem;font-size:1.4rem;font-weight:700;">Admin Access</h2>
+      <p style="text-align:center;color:#6b7280;font-size:0.875rem;margin-bottom:1.5rem;">Enter your password to continue</p>
       <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" class="form-input" id="admin-password" placeholder="Enter admin password" required autofocus>
-          <small class="text-muted">Default password: admin123</small>
+          <input type="password" class="form-input" id="admin-password"
+                 placeholder="••••••••••" required autofocus>
+          <!-- NO hint shown here -->
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem;">
+          Unlock Dashboard →
+        </button>
       </form>
     </div>
   </div>
+
+  <!-- ══════════════════════════════════════
+       EXPORT MODAL
+  ══════════════════════════════════════ -->
+  <div id="export-modal">
+    <div class="export-modal-box">
+      <h3>📥 Download Bookings Excel</h3>
+      <p>Choose what data to include in your export.</p>
+
+      <div class="export-option">
+        <label>
+          <input type="radio" name="export-type" value="all" checked>
+          <div>
+            <div class="opt-label">All Bookings</div>
+            <div class="opt-desc">Download every booking in the system</div>
+          </div>
+        </label>
+        <label>
+          <input type="radio" name="export-type" value="filter">
+          <div>
+            <div class="opt-label">Filter by Date &amp; Route</div>
+            <div class="opt-desc">Choose a specific date range and/or bus route</div>
+          </div>
+        </label>
+      </div>
+
+      <div id="export-filter-fields">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.3rem;">From Date</label>
+            <input type="date" id="export-date-from" class="form-input" style="font-size:0.875rem;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.3rem;">To Date</label>
+            <input type="date" id="export-date-to" class="form-input" style="font-size:0.875rem;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.3rem;">Bus Route (optional)</label>
+          <select id="export-route-filter" class="form-input" style="font-size:0.875rem;">
+            <option value="">All Routes</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn btn-outline" onclick="closeExportModal()">Cancel</button>
+        <button class="btn btn-success" onclick="executeExport()">⬇️ Download Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE CONTENT (blurred when modal open)
+  ══════════════════════════════════════ -->
+  <div class="admin-page-content">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-content">
+          <a href="index.html" class="nav-brand">
+            <img src="https://i.ibb.co/TqYcn7bS/shree-ram-logo-new.png" alt="Shree Ram Travels" style="height:50px;">
+          </a>
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <ul class="nav-links" id="mobile-menu">
+            <li><a href="index.html"   class="nav-link">Home</a></li>
+            <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
+            <li><a href="admin.html"   class="nav-link active">Admin</a></li>
+            <li><button class="btn btn-sm btn-outline" onclick="adminLogout()">Logout</button></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <div class="container px-4">
+        <h1 style="color:white;font-size:2rem;">Admin Dashboard</h1>
+        <p style="color:var(--slate-300);">Manage schedules, bookings, and pricing</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container px-4 py-8">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" id="stat-revenue">₹0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Bookings</div>
+          <div class="stat-value" id="stat-bookings">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Buses</div>
+          <div class="stat-value" id="stat-buses">0</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin:1rem 0;display:flex;gap:1rem;justify-content:center;align-items:center;">
+        <button class="btn btn-sm" onclick="loadStats()" style="background:#10b981;color:white;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;border:none;cursor:pointer;">
+          🔄 Refresh Stats
+        </button>
+        <button class="btn btn-sm" onclick="resetStatsTemporary()" style="background:#ef4444;color:white;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;border:none;cursor:pointer;">
+          ⚠️ Reset to Zero
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" onclick="switchAdminTab('schedules', event)">Bus Schedules</button>
+        <button class="admin-tab-btn"        onclick="switchAdminTab('bookings', event)">Bookings</button>
+        <button class="admin-tab-btn"        onclick="switchAdminTab('pricing', event)">Pricing</button>
+      </div>
+
+      <!-- Tab: Schedules -->
+      <div id="tab-schedules" class="admin-tab-content active">
+        <div class="card mb-8">
+          <h3 class="summary-title" id="form-title">Add New Schedule</h3>
+          <form id="schedule-form">
+            <input type="hidden" id="schedule-id">
+            <input type="hidden" id="bus-name" value="Shree Ram Travels">
+            <input type="hidden" id="bus-type" value="AC Sleeper (2+1)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">Origin</label>
+                <input type="text" class="form-input" id="origin" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Destination</label>
+                <input type="text" class="form-input" id="destination" required>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">Bus Date</label>
+                <input type="date" class="form-input" id="bus-date" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Departure Time</label>
+                <input type="time" class="form-input" id="bus-time" required>
+              </div>
+            </div>
+            <small class="text-muted">Select the date and departure time for this bus</small>
+            <div class="form-group" style="margin-top:1rem;">
+              <label class="form-label">Base Price (₹) <span class="required">*</span></label>
+              <input type="number" class="form-input" id="price" min="100" required>
+              <small class="text-muted">For display only. Actual seat prices are set in the Pricing tab.</small>
+            </div>
+            <div id="schedule-pricing-preview" style="display:none;margin-top:1rem;"></div>
+            <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
+            <button type="button" class="btn btn-secondary" onclick="resetScheduleForm()">🔄 Reset Form</button>
+          </form>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Bus Name</th><th>Route</th><th>Date</th><th>Timing</th><th>Price</th><th>Seats Available</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="schedules-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Bookings -->
+      <div id="tab-bookings" class="admin-tab-content">
+        <div class="bookings-toolbar">
+          <h3 style="font-size:1.1rem;font-weight:600;color:var(--secondary);margin:0;">All Bookings</h3>
+          <button class="btn btn-success" onclick="openExportModal()">
+            📥 Download User Excel Sheet
+          </button>
+        </div>
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Token</th><th>Passenger</th><th>Contact</th><th>Bus Details</th><th>Seats</th><th>Amount</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Pricing -->
+      <div id="tab-pricing" class="admin-tab-content">
+        <div class="tab-header">
+          <h2>Seat Pricing Configuration</h2>
+          <p class="tab-description">Set independent prices for different seat zones. Configure pricing per route or set default pricing.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:2rem;">
+          <div class="card-header">
+            <h3>Select Route</h3>
+            <p class="card-description">Choose a route to set custom pricing, or leave unselected to modify default pricing.</p>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="route-selector">Route</label>
+              <select id="route-selector" class="form-control">
+                <option value="">Select a route…</option>
+              </select>
+              <small class="form-help">Routes marked with ⭐ have custom pricing.</small>
+            </div>
+            <div id="pricing-status" style="margin-top:1rem;">
+              <div class="alert alert-secondary"><strong>Select a route</strong> to set custom pricing, or modify default pricing below.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Seat Zone Pricing</h3>
+            <p class="card-description">Set prices for different seat zones independently of the base price.</p>
+          </div>
+          <div class="card-body">
+            <form id="pricing-form">
+              <div class="pricing-grid">
+                <div class="pricing-card pricing-card-blue">
+                  <div class="pricing-card-header"><span class="pricing-icon">🔵 🔵</span><h4>First Right (2×6)</h4></div>
+                  <div class="pricing-card-body">
+                    <label for="first-right-price">Price per seat (₹)</label>
+                    <input type="number" id="first-right-price" class="form-control pricing-input" min="0" step="1" required placeholder="120">
+                    <small class="pricing-help">Seats: 8–19 (both decks)</small>
+                    <div class="pricing-example">Example: ₹120 per seat</div>
+                  </div>
+                </div>
+                <div class="pricing-card pricing-card-gray">
+                  <div class="pricing-card-header"><span class="pricing-icon">⚪ ⚪</span><h4>First Left (1×6)</h4></div>
+                  <div class="pricing-card-body">
+                    <label for="first-left-price">Price per seat (₹)</label>
+                    <input type="number" id="first-left-price" class="form-control pricing-input" min="0" step="1" required placeholder="100">
+                    <small class="pricing-help">Seats: 1–6 (both decks)</small>
+                    <div class="pricing-example">Example: ₹100 per seat</div>
+                  </div>
+                </div>
+                <div class="pricing-card pricing-card-green">
+                  <div class="pricing-card-header"><span class="pricing-icon">🟢 🟢</span><h4>Last Left 7th Seat</h4></div>
+                  <div class="pricing-card-body">
+                    <label for="last-left-price">Price per seat (₹)</label>
+                    <input type="number" id="last-left-price" class="form-control pricing-input" min="0" step="1" required placeholder="90">
+                    <small class="pricing-help">Seats: 7 (both decks)</small>
+                    <div class="pricing-example">Example: ₹90 per seat</div>
+                  </div>
+                </div>
+                <div class="pricing-card pricing-card-orange">
+                  <div class="pricing-card-header"><span class="pricing-icon">🟠 🟠</span><h4>Last Right Sleeper</h4></div>
+                  <div class="pricing-card-body">
+                    <label for="sleeper-price">Price per seat (₹)</label>
+                    <input type="number" id="sleeper-price" class="form-control pricing-input" min="0" step="1" required placeholder="150">
+                    <small class="pricing-help">Seats: 20 – sleeper (both decks)</small>
+                    <div class="pricing-example">Example: ₹150 per seat</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="pricing-preview" class="pricing-preview"></div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Save Pricing</button>
+                <button type="button" class="btn btn-secondary" onclick="resetAllPricing()">🔄 Reset All to Defaults</button>
+                <button type="button" class="btn btn-outline" onclick="resetRoutePricing()" id="reset-route-btn" style="display:none;">↩️ Reset Route to Default</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="alert alert-info" style="margin-top:2rem;">
+          <h4>How Route-Based Pricing Works:</h4>
+          <ul style="margin:0.5rem 0 0 1.5rem;">
+            <li><strong>Default Pricing:</strong> Applied to all routes without custom pricing</li>
+            <li><strong>Route-Specific Pricing:</strong> Override defaults per route</li>
+            <li><strong>Automatic Application:</strong> Applied when customers select seats</li>
+            <li><strong>Independent Zones:</strong> Each zone has a fixed price regardless of bus type</li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- /container -->
+  </div><!-- /admin-page-content -->
 
   <!-- Scripts -->
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script src="js/admin.js"></script>
-
-  <!-- Debug Script -->
-  <script>
-    // Debug: Log when page loads
-    console.log('🔍 Admin page loaded');
-    console.log('🔍 API Base URL:', API_BASE_URL);
-    
-    // Debug: Check if schedules are being loaded
-    window.addEventListener('load', async () => {
-      console.log('🔍 Window loaded, checking data...');
-      
-      // Wait a bit for scripts to initialize
-      setTimeout(async () => {
-        try {
-          const schedules = await getSchedules();
-          console.log('🔍 Schedules loaded:', schedules.length);
-          console.log('🔍 Schedule data:', schedules);
-          
-          if (schedules.length === 0) {
-            console.warn('⚠️ No schedules found in database');
-          }
-        } catch (error) {
-          console.error('❌ Error loading schedules:', error);
-        }
-      }, 2000);
-    });
-  </script>
-
-  <style>
-    /* Route Selector Styles */
-    #route-selector {
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      background-color: white;
-      transition: all 0.2s;
-    }
-
-    #route-selector:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    /* Pricing Status Alert */
-    #pricing-status .alert {
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 0;
-    }
-
-    #pricing-status .alert-info {
-      background-color: #dbeafe;
-      border: 1px solid #93c5fd;
-      color: #1e40af;
-    }
-
-    #pricing-status .alert-secondary {
-      background-color: #f3f4f6;
-      border: 1px solid #d1d5db;
-      color: #374151;
-    }
-
-    /* Schedule Form Pricing Preview */
-    .pricing-info-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      margin-top: 1rem;
-    }
-
-    .pricing-info-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .pricing-info-header .badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge-success {
-      background-color: #10b981;
-      color: white;
-    }
-
-    .badge-secondary {
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .pricing-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .pricing-label {
-      font-size: 0.875rem;
-      opacity: 0.9;
-    }
-
-    .pricing-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .pricing-note {
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-      opacity: 0.9;
-      font-size: 0.875rem;
-    }
-
-    /* Pricing Cards */
-    .pricing-card {
-      border-radius: 12px;
-      padding: 1.5rem;
-      border: 2px solid;
-      transition: all 0.3s ease;
-    }
-
-    .pricing-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .pricing-card-blue {
-      background-color: #eff6ff;
-      border-color: #3b82f6;
-    }
-
-    .pricing-card-gray {
-      background-color: #f9fafb;
-      border-color: #6b7280;
-    }
-
-    .pricing-card-green {
-      background-color: #f0fdf4;
-      border-color: #10b981;
-    }
-
-    .pricing-card-orange {
-      background-color: #fffbeb;
-      border-color: #f59e0b;
-    }
-
-    .pricing-card-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .pricing-icon {
-      font-size: 1.5rem;
-    }
-
-    .pricing-card-header h4 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-    }
-
-    .pricing-card-body label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      font-size: 0.875rem;
-    }
-
-    .pricing-input {
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      text-align: center;
-      transition: all 0.2s;
-    }
-
-    .pricing-input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .pricing-help {
-      display: block;
-      margin-top: 0.5rem;
-      font-size: 0.75rem;
-      color: #6b7280;
-      line-height: 1.4;
-    }
-
-    .pricing-example {
-      margin-top: 0.75rem;
-      padding: 0.5rem;
-      background-color: rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-style: italic;
-      text-align: center;
-    }
-
-    /* Pricing Preview */
-    .pricing-preview {
-      margin: 2rem 0;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-      border-radius: 12px;
-      border: 2px solid #e5e7eb;
-    }
-
-    .alert {
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 1rem;
-    }
-
-    .alert-info {
-      background: #eff6ff;
-      border-left: 4px solid #3b82f6;
-      color: #1e40af;
-    }
-
-    .alert strong {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-top: 2rem;
-      padding-top: 2rem;
-      border-top: 2px solid #e5e7eb;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-secondary {
-      background: #6b7280;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #4b5563;
-    }
-
-    .btn-outline {
-      background: white;
-      border: 2px solid #e5e7eb;
-      color: #374151;
-    }
-
-    .btn-outline:hover {
-      border-color: #667eea;
-      color: #667eea;
-    }
-
-    .card {
-      background: white;
-      padding: 2rem;
-      border-radius: 0.75rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .card-header h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--secondary);
-      margin-bottom: 0.5rem;
-    }
-
-    .card-description {
-      color: var(--slate-600);
-      margin-bottom: 1.5rem;
-      font-size: 0.875rem;
-    }
-
-    .card-body {
-      margin-top: 1rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: var(--secondary);
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: all 0.2s;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-help {
-      display: block;
-      margin-top: 0.5rem;
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-
-    .tab-header {
-      margin-bottom: 2rem;
-    }
-
-    .tab-header h2 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--secondary);
-      margin-bottom: 0.5rem;
-    }
-
-    .tab-description {
-      color: var(--slate-600);
-      font-size: 1rem;
-    }
-
-    .required {
-      color: #ef4444;
-    }
-
-    /* Modal Styles */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      max-width: 90%;
-      width: 400px;
-    }
-
-    .btn-block {
-      width: 100%;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .pricing-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .form-actions {
-        flex-direction: column;
-      }
-      
-      .form-actions button {
-        width: 100%;
-      }
-    }
-  </style>
 </body>
 </html>
