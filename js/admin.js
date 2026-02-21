@@ -134,15 +134,24 @@ async function loadSchedulesTable() {
     return;
   }
 
-  tbody.innerHTML = schedules.map(schedule => `
+  tbody.innerHTML = schedules.map(schedule => {
+    const dh = schedule.durationHours || 0;
+    const dm = schedule.durationMins  || 0;
+    const durationStr = dh || dm
+      ? `${dh > 0 ? dh + 'h ' : ''}${dm > 0 ? dm + 'm' : ''}`.trim()
+      : '—';
+    return `
     <tr>
       <td>
         <div><strong>${schedule.busName}</strong></div>
         <div class="text-muted">${schedule.type}</div>
       </td>
       <td>${schedule.origin} → ${schedule.destination}</td>
+      <td style="font-size:0.8rem;color:#475569;">${schedule.pickupPoint || '—'}</td>
+      <td style="font-size:0.8rem;color:#475569;">${schedule.dropPoint   || '—'}</td>
       <td>${formatDate(schedule.departureTime)}</td>
       <td>${formatTime(schedule.departureTime)}</td>
+      <td><span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.8rem;font-weight:600;">⏱ ${durationStr}</span></td>
       <td>${formatCurrency(schedule.price)}</td>
       <td>
         <span class="badge badge-${(schedule.bookedSeats?.length || 0) > 30 ? 'warning' : 'success'}">
@@ -155,8 +164,7 @@ async function loadSchedulesTable() {
           <button class="btn btn-sm btn-danger"  onclick="deleteScheduleConfirm('${schedule.id}')">Delete</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`}).join('');
 }
 
 // ─────────────────────────────────────────
@@ -373,13 +381,22 @@ async function handleScheduleSubmit(e) {
   const busDate = document.getElementById('bus-date').value;
   const busTime = document.getElementById('bus-time').value;
   const departureDate = new Date(`${busDate}T${busTime}`);
-  const arrivalDate   = new Date(departureDate.getTime() + 30 * 60000);
+
+  // Calculate arrival time from duration fields
+  const durationHrs  = parseInt(document.getElementById('duration-hours').value)  || 0;
+  const durationMins = parseInt(document.getElementById('duration-minutes').value) || 0;
+  const totalMins    = (durationHrs * 60) + durationMins;
+  const arrivalDate  = new Date(departureDate.getTime() + (totalMins || 30) * 60000);
 
   const formData = {
     busName:       document.getElementById('bus-name').value.trim(),
     type:          document.getElementById('bus-type').value,
     origin:        document.getElementById('origin').value.trim(),
     destination:   document.getElementById('destination').value.trim(),
+    pickupPoint:   document.getElementById('pickup-point').value.trim(),
+    dropPoint:     document.getElementById('drop-point').value.trim(),
+    durationHours: durationHrs,
+    durationMins:  durationMins,
     departureTime: departureDate.toISOString(),
     arrivalTime:   arrivalDate.toISOString(),
     price:         parseInt(document.getElementById('price').value)
@@ -421,6 +438,10 @@ async function editSchedule(id) {
   document.getElementById('bus-type').value      = schedule.type;
   document.getElementById('origin').value        = schedule.origin;
   document.getElementById('destination').value   = schedule.destination;
+  document.getElementById('pickup-point').value  = schedule.pickupPoint  || '';
+  document.getElementById('drop-point').value    = schedule.dropPoint    || '';
+  document.getElementById('duration-hours').value   = schedule.durationHours || '';
+  document.getElementById('duration-minutes').value = schedule.durationMins  || '';
 
   const d = new Date(schedule.departureTime);
   document.getElementById('bus-date').value = d.toISOString().split('T')[0];
@@ -447,9 +468,13 @@ async function deleteScheduleConfirm(id) {
 
 function resetScheduleForm() {
   document.getElementById('schedule-form').reset();
-  document.getElementById('schedule-id').value = '';
-  document.getElementById('bus-name').value    = 'Shree Ram Travels';
-  document.getElementById('bus-type').value    = 'AC Sleeper (2+1)';
+  document.getElementById('schedule-id').value      = '';
+  document.getElementById('bus-name').value         = 'Shree Ram Travels';
+  document.getElementById('bus-type').value         = 'AC Sleeper (2+1)';
+  document.getElementById('pickup-point').value     = '';
+  document.getElementById('drop-point').value       = '';
+  document.getElementById('duration-hours').value   = '';
+  document.getElementById('duration-minutes').value = '';
   document.getElementById('form-title').textContent = 'Add New Schedule';
   document.getElementById('schedule-pricing-preview').style.display = 'none';
 }

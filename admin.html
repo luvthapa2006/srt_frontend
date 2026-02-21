@@ -355,35 +355,69 @@
             <input type="hidden" id="schedule-id">
             <input type="hidden" id="bus-name" value="Shree Ram Travels">
             <input type="hidden" id="bus-type" value="AC Sleeper (2+1)">
+
+            <!-- Row 1: Origin & Destination -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">Origin</label>
-                <input type="text" class="form-input" id="origin" required>
+                <label class="form-label">🏙️ Origin City</label>
+                <input type="text" class="form-input" id="origin" placeholder="e.g. Dehradun" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Destination</label>
-                <input type="text" class="form-input" id="destination" required>
+                <label class="form-label">🏙️ Destination City</label>
+                <input type="text" class="form-input" id="destination" placeholder="e.g. Jaipur" required>
               </div>
             </div>
+
+            <!-- Row 2: Pick Up & Drop Points -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">Bus Date</label>
+                <label class="form-label">📍 Pick Up Point</label>
+                <input type="text" class="form-input" id="pickup-point"
+                       placeholder="e.g. ISBT Dehradun, Gate 3" required>
+                <small class="text-muted">Exact boarding location for passengers</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label">📍 Drop Point</label>
+                <input type="text" class="form-input" id="drop-point"
+                       placeholder="e.g. Sindhi Camp Bus Stand, Jaipur" required>
+                <small class="text-muted">Exact drop-off location</small>
+              </div>
+            </div>
+
+            <!-- Row 3: Date, Departure Time, Time Taken -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">📅 Bus Date</label>
                 <input type="date" class="form-input" id="bus-date" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Departure Time</label>
+                <label class="form-label">🕐 Departure Time</label>
                 <input type="time" class="form-input" id="bus-time" required>
               </div>
+              <div class="form-group">
+                <label class="form-label">⏱️ Time Taken</label>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                  <input type="number" class="form-input" id="duration-hours"
+                         placeholder="Hrs" min="0" max="72" style="width:50%;" required>
+                  <input type="number" class="form-input" id="duration-minutes"
+                         placeholder="Min" min="0" max="59" style="width:50%;">
+                </div>
+                <small class="text-muted">Hours &amp; Minutes (e.g. 8 hrs 30 min)</small>
+              </div>
             </div>
-            <small class="text-muted">Select the date and departure time for this bus</small>
-            <div class="form-group" style="margin-top:1rem;">
-              <label class="form-label">Base Price (₹) <span class="required">*</span></label>
-              <input type="number" class="form-input" id="price" min="100" required>
+
+            <!-- Row 4: Price -->
+            <div class="form-group">
+              <label class="form-label">💰 Base Price (₹) <span class="required">*</span></label>
+              <input type="number" class="form-input" id="price" min="100" required placeholder="e.g. 1200">
               <small class="text-muted">For display only. Actual seat prices are set in the Pricing tab.</small>
             </div>
+
             <div id="schedule-pricing-preview" style="display:none;margin-top:1rem;"></div>
-            <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
-            <button type="button" class="btn btn-secondary" onclick="resetScheduleForm()">🔄 Reset Form</button>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+              <button type="submit" class="btn btn-primary">💾 Save Schedule</button>
+              <button type="button" class="btn btn-secondary" onclick="resetScheduleForm()">🔄 Reset Form</button>
+            </div>
           </form>
         </div>
 
@@ -391,7 +425,7 @@
           <table class="table">
             <thead>
               <tr>
-                <th>Bus Name</th><th>Route</th><th>Date</th><th>Timing</th><th>Price</th><th>Seats Available</th><th>Actions</th>
+                <th>Bus Name</th><th>Route</th><th>Pick Up</th><th>Drop</th><th>Date</th><th>Timing</th><th>Duration</th><th>Price</th><th>Seats</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="schedules-table-body"></tbody>
