@@ -275,7 +275,10 @@ function createScheduleCard(schedule) {
           <div class="route-point" style="display: flex; flex-direction: column; gap: 0.25rem;">
             <span class="route-time" style="font-size: 1.125rem; font-weight: 600; color: #1f2937;">${formatTime(schedule.arrivalTime)}</span>
             <span class="route-city" style="font-size: 0.875rem; color: #6b7280;">${schedule.destination}</span>
-            <span class="route-date" style="font-size: 0.75rem; color: #9ca3af;">${formatDate(schedule.arrivalTime)}</span>
+            ${new Date(schedule.arrivalTime).toDateString() !== new Date(schedule.departureTime).toDateString()
+              ? `<span class="route-date" style="font-size:0.75rem;color:#f59e0b;font-weight:600;">+1 Day · ${formatDate(schedule.arrivalTime)}</span>`
+              : `<span class="route-date" style="font-size:0.75rem;color:#9ca3af;">${formatDate(schedule.arrivalTime)}</span>`
+            }
           </div>
         </div>
         
@@ -285,6 +288,11 @@ function createScheduleCard(schedule) {
           <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">💧 Water</span>
           ${schedule.type.includes('AC') ? '<span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">❄️ AC</span>' : ''}
         </div>
+        ${(schedule.pickupPoint || schedule.dropPoint) ? `
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
+          ${schedule.pickupPoint ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#10b981;margin-top:1px;">📍</span><div><span style="font-weight:600;color:#374151;">Pick Up:</span> ${schedule.pickupPoint}</div></div>` : ''}
+          ${schedule.dropPoint   ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#ef4444;margin-top:1px;">📍</span><div><span style="font-weight:600;color:#374151;">Drop:</span> ${schedule.dropPoint}</div></div>` : ''}
+        </div>` : ''}
       </div>
       
       <div class="schedule-cta" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 200px; gap: 0.75rem;">
