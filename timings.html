@@ -3,407 +3,408 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Select Bus - Shree Ram Travels</title>
+  <title>Bus Timings - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tailwind.css">
+
   <style>
-    /* Additional styles for timings page */
-    .page-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2rem 0;
-      margin-bottom: 2rem;
+    /* ══════════════════════════════════════
+       PAGE HEADER – rich gradient with route info
+    ══════════════════════════════════════ */
+    .timings-hero {
+      background: linear-gradient(135deg, #1e293b 0%, #312e81 60%, #4c1d95 100%);
+      padding: 2.5rem 0 3rem;
+      position: relative;
+      overflow: hidden;
     }
-    
-    .filter-info-content {
+    /* decorative circles */
+    .timings-hero::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: rgba(102,126,234,0.15);
+      border-radius: 50%;
+      top: -150px; right: -80px;
+      pointer-events: none;
+    }
+    .timings-hero::after {
+      content: '';
+      position: absolute;
+      width: 250px; height: 250px;
+      background: rgba(167,139,250,0.1);
+      border-radius: 50%;
+      bottom: -100px; left: 5%;
+      pointer-events: none;
+    }
+
+    .hero-inner {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 1rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
     }
-    
-    .schedule-group {
-      margin-bottom: 3rem;
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #c4b5fd;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 0.3rem 0.8rem;
+      border-radius: 99px;
+      margin-bottom: 1rem;
     }
-    
-    .schedule-group-title {
+
+    #filter-info h1 {
+      color: white;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 800;
+      margin: 0 0 0.5rem;
+      line-height: 1.2;
+    }
+    #filter-info p {
+      color: #a5b4fc;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* route pill badges */
+    .route-pills {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 1.25rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+    .route-pill {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 0.875rem;
       font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .route-arrow {
+      color: #a5b4fc;
+      font-size: 1rem;
+    }
+    .route-pill-date {
+      background: rgba(99,102,241,0.35);
+      border: 1px solid rgba(129,140,248,0.4);
+      color: #c4b5fd;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.85rem;
+      border-radius: 99px;
+    }
+
+    /* ══════════════════════════════════════
+       FILTERS BAR
+    ══════════════════════════════════════ */
+    .filters-bar {
+      max-width: 1200px;
+      margin: 0 auto 1.5rem;
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-type-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.45rem 1rem;
+      border-radius: 99px;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+
+    .sort-controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .sort-label {
+      font-size: 0.82rem;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    .sort-select {
+      padding: 0.45rem 0.85rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.82rem;
+      color: #374151;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .sort-select:focus { border-color: #667eea; }
+
+    .refresh-btn {
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      font-size: 0.82rem;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.18s;
+    }
+    .refresh-btn:hover { border-color: #667eea; color: #667eea; }
+
+    /* ══════════════════════════════════════
+       SCHEDULE GROUP HEADINGS
+    ══════════════════════════════════════ */
+    .schedule-group { margin-bottom: 2.5rem; }
+
+    .schedule-group-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1e293b;
       margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
+      padding-bottom: 0.6rem;
       border-bottom: 2px solid #e5e7eb;
     }
-    
-    .time-icon {
-      font-size: 1.5rem;
-    }
-    
-    .schedule-group-content {
-      display: grid;
-      gap: 1.5rem;
-    }
-    
+    .time-icon { font-size: 1.4rem; }
+
+    .schedule-group-content { display: grid; gap: 1rem; }
+
+    /* ══════════════════════════════════════
+       BUS CARD
+    ══════════════════════════════════════ */
     .schedule-card {
       display: flex;
-      gap: 2rem;
-      padding: 1.5rem;
+      gap: 0;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border: 1px solid #f1f5f9;
+      transition: all 0.25s ease;
+      overflow: hidden;
     }
-    
     .schedule-card:hover {
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.11);
       transform: translateY(-2px);
+      border-color: #e0e7ff;
     }
-    
-    .schedule-info {
-      flex: 1;
+
+    /* left accent bar */
+    .card-accent {
+      width: 5px;
+      background: linear-gradient(180deg, #667eea, #764ba2);
+      flex-shrink: 0;
     }
-    
+
+    .schedule-info { flex: 1; padding: 1.25rem 1.5rem; }
     .schedule-cta {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 200px;
-      gap: 0.75rem;
+      min-width: 190px;
+      gap: 0.6rem;
+      padding: 1.25rem 1.5rem;
+      border-left: 1px solid #f1f5f9;
+      background: #fafbff;
     }
-    
-    .bus-info-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 0.5rem;
-    }
-    
-    .bus-name {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #1f2937;
-      margin: 0;
-    }
-    
-    .bus-meta {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    
-    .bus-rating {
-      color: #f59e0b;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-    
-    .badge-today {
-      background: #10b981;
-      color: white;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    
-    .bus-type {
-      color: #6b7280;
-      font-size: 0.875rem;
-      margin: 0 0 1rem 0;
-    }
-    
-    .route-timeline {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    
-    .route-point {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    
-    .route-time {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #1f2937;
-    }
-    
-    .route-city {
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-    
-    .route-date {
-      font-size: 0.75rem;
-      color: #9ca3af;
-    }
-    
-    .route-connector {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .route-line {
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(to right, #667eea, #764ba2);
-      position: relative;
-    }
-    
-    .route-duration {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-size: 0.75rem;
-      color: #6b7280;
-      background: #f3f4f6;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-    }
-    
-    .icon-clock {
-      color: #667eea;
-    }
-    
-    .bus-amenities {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    
-    .amenity-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.5rem;
-      background: #f3f4f6;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      color: #6b7280;
-    }
-    
-    .amenity-icon {
-      width: 14px;
-      height: 14px;
-    }
-    
-    .price-section {
-      text-align: center;
-    }
-    
-    .price-label {
-      font-size: 0.75rem;
-      color: #6b7280;
-      display: block;
-    }
-    
-    .price {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #667eea;
-      margin: 0.25rem 0;
-    }
-    
-    .price-note {
-      font-size: 0.75rem;
-      color: #9ca3af;
-      display: block;
-    }
-    
-    .seats-left {
-      font-size: 0.875rem;
-      color: #10b981;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-    
-    .seats-left.seats-low {
-      color: #f59e0b;
-    }
-    
-    .seats-icon {
-      font-size: 1rem;
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .empty-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-    
-    .empty-state h3 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 0.5rem;
-    }
-    
-    .empty-state p {
-      color: #6b7280;
-      margin-bottom: 1.5rem;
-    }
-    
-    .empty-state-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-    }
-    
-    .filters-bar {
-      max-width: 1200px;
-      margin: 0 auto 2rem auto;
-      padding: 0 1rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .sort-select {
-      padding: 0.5rem 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      background: white;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-    
-    .skeleton-card {
-      padding: 1.5rem;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
+
+    /* skeleton */
+    .skeleton-card { padding: 1.5rem; background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .skeleton {
-      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background: linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);
       background-size: 200% 100%;
-      animation: loading 1.5s infinite;
+      animation: shimmer 1.5s infinite;
       border-radius: 4px;
     }
-    
-    .skeleton-text {
-      height: 1.25rem;
-      margin-bottom: 0.75rem;
-      width: 100%;
-    }
-    
-    .skeleton-text.short {
-      width: 60%;
-    }
-    
-    .skeleton-button {
-      height: 2.5rem;
-      width: 150px;
-      margin-top: 1rem;
-    }
-    
-    @keyframes loading {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    
-    @media (max-width: 768px) {
-      .schedule-card {
-        flex-direction: column;
-        gap: 1rem;
-      }
-      
-      .schedule-cta {
-        width: 100%;
-        min-width: auto;
-      }
-      
-      .route-timeline {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .route-connector {
-        flex-direction: row;
-        height: auto;
-      }
-      
-      .route-line {
-        height: 100%;
-        width: 2px;
-      }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .skeleton-text { height: 1.1rem; margin-bottom: 0.7rem; width: 100%; }
+    .skeleton-text.short { width: 55%; }
+    .skeleton-button { height: 2.4rem; width: 140px; margin-top: 0.75rem; border-radius: 8px; }
+
+    /* empty state */
+    .empty-state { text-align:center; padding:4rem 2rem; background:white; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media(max-width:768px){
+      .schedule-card { flex-direction: column; }
+      .card-accent { width: 100%; height: 5px; }
+      .schedule-cta { width:100%; min-width:auto; border-left:none; border-top:1px solid #f1f5f9; flex-direction:row; justify-content:space-between; align-items:center; padding:1rem 1.25rem; }
+      .filters-bar { flex-direction:column; align-items:flex-start; gap:0.75rem; }
+      .sort-controls { width:100%; justify-content:flex-end; }
     }
   </style>
 </head>
 <body>
-  <!-- Navigation -->
+
+  <!-- ══════════════════════════════════════
+       NAVBAR — matches the rest of the site
+  ══════════════════════════════════════ -->
   <nav class="navbar">
     <div class="container">
-      <a href="index.html" class="navbar-brand">Shree Ram Travels</a>
-      <div class="navbar-menu">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="timings.html" class="nav-link active">Bus Timings</a>
-        <a href="track-booking.html" class="nav-link">Track Booking</a>
-        <a href="admin.html" class="nav-link">Admin</a>
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="https://i.ibb.co/TqYcn7bS/shree-ram-logo-new.png"
+               alt="Shree Ram Travels" style="height:50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html"   class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link active">Bus Timings</a></li>
+          <li><a href="index.html#track" class="nav-link">Track Booking</a></li>
+          <li><a href="admin.html"   class="nav-link">Admin</a></li>
+        </ul>
       </div>
     </div>
   </nav>
 
-  <!-- Page Header -->
-  <div class="page-header">
-    <div id="filter-info" class="filter-info-content">
-      <h1 class="page-title">Available Buses</h1>
+  <!-- ══════════════════════════════════════
+       HERO HEADER
+  ══════════════════════════════════════ -->
+  <div class="timings-hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">🚌 Live Bus Schedules</div>
+      <div id="filter-info">
+        <h1>All Available Buses</h1>
+        <p>Browse and book from our available routes</p>
+      </div>
+      <div class="route-pills" id="route-pills" style="display:none;">
+        <!-- populated by JS when route filters are present -->
+      </div>
     </div>
   </div>
 
-  <!-- Filters and Sorting Bar -->
-  <div class="filters-bar">
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-      <button onclick="filterByBusType('all')" class="btn btn-outline btn-sm">All Buses</button>
-      <button onclick="filterByBusType('AC Sleeper')" class="btn btn-outline btn-sm">AC Sleeper</button>
-      <button onclick="filterByBusType('AC Seater')" class="btn btn-outline btn-sm">AC Seater</button>
-      <button onclick="filterByBusType('Non-AC')" class="btn btn-outline btn-sm">Non-AC</button>
-    </div>
-    
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-      <label for="sort-select" style="font-size: 0.875rem; color: #6b7280;">Sort by:</label>
-      <select id="sort-select" class="sort-select" onchange="sortSchedules(this.value)">
-        <option value="departure">Departure Time</option>
-        <option value="price-low">Price: Low to High</option>
-        <option value="price-high">Price: High to Low</option>
-        <option value="duration">Journey Duration</option>
-        <option value="seats">Available Seats</option>
-      </select>
-      
-      <button onclick="refreshSchedules()" class="btn btn-outline btn-sm" title="Refresh">
-        🔄 Refresh
-      </button>
+  <!-- ══════════════════════════════════════
+       FILTERS BAR
+  ══════════════════════════════════════ -->
+  <div style="max-width:1200px;margin:1.5rem auto 0;padding:0 1.5rem;">
+    <div class="filters-bar" style="padding:0;margin:0;">
+      <div class="filter-type-btns">
+        <button onclick="filterByBusType('all')"        class="filter-btn active" id="filter-all">All Buses</button>
+        <button onclick="filterByBusType('AC Sleeper')" class="filter-btn" id="filter-sleeper">AC Sleeper</button>
+        <button onclick="filterByBusType('AC Seater')"  class="filter-btn" id="filter-seater">AC Seater</button>
+        <button onclick="filterByBusType('Non-AC')"     class="filter-btn" id="filter-nonac">Non-AC</button>
+      </div>
+
+      <div class="sort-controls">
+        <span class="sort-label">Sort by:</span>
+        <select id="sort-select" class="sort-select" onchange="sortSchedules(this.value)">
+          <option value="departure">Departure Time</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="duration">Journey Duration</option>
+          <option value="seats">Available Seats</option>
+        </select>
+        <button onclick="refreshSchedules()" class="refresh-btn">🔄 Refresh</button>
+      </div>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="container" style="max-width: 1200px; padding-bottom: 3rem;">
-    <div id="schedules-list">
-      <!-- Schedules will be loaded here -->
-    </div>
+  <!-- ══════════════════════════════════════
+       SCHEDULES LIST
+  ══════════════════════════════════════ -->
+  <div style="max-width:1200px;margin:1.5rem auto 4rem;padding:0 1.5rem;">
+    <div id="schedules-list"></div>
   </div>
 
   <!-- Scripts -->
-  <script src="js/main.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
   <script src="js/timings.js"></script>
+
+  <!-- Override displayFilterInfo to populate the nicer hero -->
+  <script>
+    const _origDisplayFilterInfo = displayFilterInfo;
+
+    // Patch after timings.js loads
+    window.addEventListener('load', () => {
+      // Re-patch displayFilterInfo with the richer version
+      window.displayFilterInfo = function() {
+        const h1  = document.querySelector('#filter-info h1');
+        const sub = document.querySelector('#filter-info p');
+        const pills = document.getElementById('route-pills');
+
+        if (currentFilters.origin && currentFilters.destination) {
+          if (h1)  h1.textContent  = `${currentFilters.origin} → ${currentFilters.destination}`;
+          if (sub) sub.textContent = 'Showing available buses for your route';
+
+          if (pills) {
+            pills.style.display = 'flex';
+            pills.innerHTML = `
+              <div class="route-pill">
+                <span>📍 ${currentFilters.origin}</span>
+                <span class="route-arrow">→</span>
+                <span>📍 ${currentFilters.destination}</span>
+              </div>
+              ${currentFilters.date
+                ? `<div class="route-pill-date">📅 ${new Date(currentFilters.date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</div>`
+                : ''}
+            `;
+          }
+        } else {
+          if (h1)  h1.textContent  = 'All Available Buses';
+          if (sub) sub.textContent = 'Browse and book from our available routes';
+          if (pills) pills.style.display = 'none';
+        }
+      };
+
+      // Re-run with correct data
+      if (typeof displayFilterInfo === 'function') displayFilterInfo();
+    });
+
+    // Filter button active state
+    function setActiveFilter(id) {
+      ['filter-all','filter-sleeper','filter-seater','filter-nonac'].forEach(b => {
+        document.getElementById(b)?.classList.remove('active');
+      });
+      document.getElementById(id)?.classList.add('active');
+    }
+
+    const _origFilter = filterByBusType;
+    window.filterByBusType = function(type) {
+      const map = { all:'filter-all', 'AC Sleeper':'filter-sleeper', 'AC Seater':'filter-seater', 'Non-AC':'filter-nonac' };
+      setActiveFilter(map[type] || 'filter-all');
+      _origFilter(type);
+    };
+  </script>
+
 </body>
 </html>

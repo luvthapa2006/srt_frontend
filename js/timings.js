@@ -238,89 +238,98 @@ function createScheduleCard(schedule) {
   const duration = calculateDuration(schedule.departureTime, schedule.arrivalTime);
   const departureDate = new Date(schedule.departureTime);
   const isToday = isDateToday(departureDate);
-  
+  const nextDay = new Date(schedule.arrivalTime).toDateString() !== new Date(schedule.departureTime).toDateString();
+
   return `
-    <div class="schedule-card" style="display: flex; gap: 2rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease;" data-schedule-id="${schedule.id}">
-      <div class="schedule-info" style="flex: 1;">
-        <div class="schedule-header" style="margin-bottom: 0.5rem;">
-          <div class="bus-info-header" style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-              <h3 class="bus-name" style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0 0 0.25rem 0;">${schedule.busName}</h3>
-              <p class="bus-type" style="color: #6b7280; font-size: 0.875rem; margin: 0;">${schedule.type}</p>
-            </div>
-            <div class="bus-meta" style="display: flex; gap: 0.5rem; align-items: center;">
-              ${isToday ? '<span class="badge-today" style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Today</span>' : ''}
-            </div>
+    <div class="schedule-card" data-schedule-id="${schedule.id}">
+      <div class="card-accent"></div>
+
+      <div class="schedule-info">
+        <!-- Bus name + badges -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+          <div>
+            <h3 style="font-size:1.15rem;font-weight:700;color:#1e293b;margin:0 0 0.2rem;">${schedule.busName}</h3>
+            <span style="font-size:0.8rem;color:#6b7280;background:#f8fafc;border:1px solid #e2e8f0;padding:0.15rem 0.5rem;border-radius:4px;">${schedule.type}</span>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            ${isToday ? '<span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #bbf7d0;">Today</span>' : ''}
+            ${availableSeats <= 5 && availableSeats > 0 ? '<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fcd34d;">Almost Full</span>' : ''}
           </div>
         </div>
-        
-        <div class="route-timeline" style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
-          <div class="route-point" style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <span class="route-time" style="font-size: 1.125rem; font-weight: 600; color: #1f2937;">${formatTime(schedule.departureTime)}</span>
-            <span class="route-city" style="font-size: 0.875rem; color: #6b7280;">${schedule.origin}</span>
-            <span class="route-date" style="font-size: 0.75rem; color: #9ca3af;">${formatDate(schedule.departureTime)}</span>
+
+        <!-- Route timeline -->
+        <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0;">
+          <!-- Departure -->
+          <div style="text-align:left;min-width:80px;">
+            <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${formatTime(schedule.departureTime)}</div>
+            <div style="font-size:0.82rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">${schedule.origin}</div>
+            <div style="font-size:0.72rem;color:#9ca3af;">${formatDate(schedule.departureTime)}</div>
           </div>
-          
-          <div class="route-connector" style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-            <div class="route-line" style="width: 100%; height: 2px; background: linear-gradient(to right, #667eea, #764ba2);"></div>
-            <div class="route-duration" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #6b7280; background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px;">
-              <svg class="icon-clock" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
+
+          <!-- Connector -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.35rem;">
+            <div style="width:100%;height:2px;background:linear-gradient(to right,#667eea,#764ba2);border-radius:2px;"></div>
+            <div style="display:flex;align-items:center;gap:0.25rem;font-size:0.75rem;color:#6b7280;background:#f3f4f6;padding:0.2rem 0.6rem;border-radius:99px;white-space:nowrap;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               ${duration}
             </div>
           </div>
-          
-          <div class="route-point" style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <span class="route-time" style="font-size: 1.125rem; font-weight: 600; color: #1f2937;">${formatTime(schedule.arrivalTime)}</span>
-            <span class="route-city" style="font-size: 0.875rem; color: #6b7280;">${schedule.destination}</span>
-            ${new Date(schedule.arrivalTime).toDateString() !== new Date(schedule.departureTime).toDateString()
-              ? `<span class="route-date" style="font-size:0.75rem;color:#f59e0b;font-weight:600;">+1 Day · ${formatDate(schedule.arrivalTime)}</span>`
-              : `<span class="route-date" style="font-size:0.75rem;color:#9ca3af;">${formatDate(schedule.arrivalTime)}</span>`
+
+          <!-- Arrival -->
+          <div style="text-align:right;min-width:80px;">
+            <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${formatTime(schedule.arrivalTime)}</div>
+            <div style="font-size:0.82rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">${schedule.destination}</div>
+            ${nextDay
+              ? `<div style="font-size:0.72rem;color:#f59e0b;font-weight:600;">+1 Day · ${formatDate(schedule.arrivalTime)}</div>`
+              : `<div style="font-size:0.72rem;color:#9ca3af;">${formatDate(schedule.arrivalTime)}</div>`
             }
           </div>
         </div>
-        
-        <div class="bus-amenities" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">📶 WiFi</span>
-          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">🔌 Charging</span>
-          <span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">💧 Water</span>
-          ${schedule.type.includes('AC') ? '<span class="amenity-badge" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">❄️ AC</span>' : ''}
+
+        <!-- Amenities -->
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.5rem;">
+          ${['📶 WiFi','🔌 Charging','💧 Water'].map(a => `<span style="padding:0.2rem 0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:0.72rem;color:#6b7280;">${a}</span>`).join('')}
+          ${schedule.type.includes('AC') ? '<span style="padding:0.2rem 0.5rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;font-size:0.72rem;color:#3b82f6;">❄️ AC</span>' : ''}
         </div>
+
+        <!-- Pick Up / Drop points -->
         ${(schedule.pickupPoint || schedule.dropPoint) ? `
-        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
-          ${schedule.pickupPoint ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#10b981;margin-top:1px;">📍</span><div><span style="font-weight:600;color:#374151;">Pick Up:</span> ${schedule.pickupPoint}</div></div>` : ''}
-          ${schedule.dropPoint   ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#ef4444;margin-top:1px;">📍</span><div><span style="font-weight:600;color:#374151;">Drop:</span> ${schedule.dropPoint}</div></div>` : ''}
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed #e5e7eb;">
+          ${schedule.pickupPoint ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#10b981;">📍</span><div><span style="font-weight:600;color:#374151;">Pick Up:</span> ${schedule.pickupPoint}</div></div>` : ''}
+          ${schedule.dropPoint   ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#ef4444;">📍</span><div><span style="font-weight:600;color:#374151;">Drop:</span> ${schedule.dropPoint}</div></div>` : ''}
         </div>` : ''}
       </div>
-      
-      <div class="schedule-cta" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 200px; gap: 0.75rem;">
-        <div class="price-section" style="text-align: center;">
-          <span class="price-label" style="font-size: 0.75rem; color: #6b7280; display: block;">Starting from</span>
-          <div class="price" style="font-size: 1.75rem; font-weight: 700; color: #667eea; margin: 0.25rem 0;">${formatCurrency(schedule.price)}</div>
-          <span class="price-note" style="font-size: 0.75rem; color: #9ca3af; display: block;">per seat</span>
+
+      <!-- CTA panel -->
+      <div class="schedule-cta">
+        <div style="text-align:center;">
+          <span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:0.2rem;">Starting from</span>
+          <div style="font-size:1.7rem;font-weight:800;color:#667eea;">${formatCurrency(schedule.price)}</div>
+          <span style="font-size:0.72rem;color:#9ca3af;">per seat</span>
         </div>
-        
-        <button 
-          class="btn btn-primary btn-lg" 
+
+        <button
           onclick="selectBus('${schedule.id}')"
-          style="padding: 1rem 2rem; border-radius: 6px; font-weight: 500; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 100%; ${availableSeats === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+          style="width:100%;padding:0.75rem 1.25rem;border-radius:8px;border:none;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;
+            ${availableSeats === 0
+              ? 'background:#f3f4f6;color:#9ca3af;cursor:not-allowed;'
+              : 'background:linear-gradient(135deg,#667eea,#764ba2);color:white;'}"
           ${availableSeats === 0 ? 'disabled' : ''}
         >
-          ${availableSeats > 0 ? 'Select Seats' : 'Fully Booked'}
+          ${availableSeats > 0 ? 'Select Seats →' : 'Fully Booked'}
         </button>
-        
-        <div class="seats-left" style="font-size: 0.875rem; color: ${availableSeats < 10 ? '#f59e0b' : '#10b981'}; font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
-          ${availableSeats > 0 ? 
-            `<span class="seats-icon">💺</span> ${availableSeats} Seats Available` : 
-            '<span class="seats-icon">❌</span> No Seats Available'
-          }
+
+        <div style="font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;
+          ${availableSeats === 0 ? 'color:#ef4444;' : availableSeats <= 5 ? 'color:#f59e0b;' : 'color:#10b981;'}">
+          ${availableSeats > 0
+            ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left`
+            : '❌ No seats available'}
         </div>
       </div>
     </div>
   `;
 }
+
 
 // Helper function to check if date is today
 function isDateToday(date) {
