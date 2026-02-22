@@ -388,18 +388,23 @@ async function handleScheduleSubmit(e) {
   const totalMins    = (durationHrs * 60) + durationMins;
   const arrivalDate  = new Date(departureDate.getTime() + (totalMins || 30) * 60000);
 
+  const origin       = document.getElementById('origin').value.trim();
+  const destination  = document.getElementById('destination').value.trim();
+  const basePriceRaw = document.getElementById('price').value;
+  const basePrice    = basePriceRaw !== '' ? parseInt(basePriceRaw) : null;
+
   const formData = {
     busName:       document.getElementById('bus-name').value.trim(),
     type:          document.getElementById('bus-type').value,
-    origin:        document.getElementById('origin').value.trim(),
-    destination:   document.getElementById('destination').value.trim(),
+    origin,
+    destination,
     pickupPoint:   document.getElementById('pickup-point').value.trim(),
     dropPoint:     document.getElementById('drop-point').value.trim(),
     durationHours: durationHrs,
     durationMins:  durationMins,
     departureTime: departureDate.toISOString(),
     arrivalTime:   arrivalDate.toISOString(),
-    price:         parseInt(document.getElementById('price').value)
+    price:         basePrice || 0
   };
   const scheduleId = document.getElementById('schedule-id').value;
 
@@ -415,10 +420,21 @@ async function handleScheduleSubmit(e) {
   hideLoading();
 
   if (result) {
+    // If a base price was entered, auto-apply it to all seats on this route
+    if (basePrice && basePrice > 0) {
+      const existing = getRoutePricing(origin, destination);
+      setRoutePricing(origin, destination, {
+        lowerPrice: basePrice,
+        upperPrice: basePrice,
+        perSeat:    existing.perSeat || {}
+      });
+      showToast('Base price Rs.' + basePrice + ' applied to all seats on ' + origin + ' to ' + destination, 'info');
+    }
+
     e.target.reset();
     document.getElementById('schedule-id').value = '';
     document.getElementById('bus-name').value    = 'Shree Ram Travels';
-    document.getElementById('bus-type').value    = 'AC Sleeper (2+1)';
+    document.getElementById('bus-type').value    = 'AC Sleeper (36)';
     document.getElementById('form-title').textContent = 'Add New Schedule';
     document.getElementById('schedule-pricing-preview').style.display = 'none';
     await loadSchedulesTable();
