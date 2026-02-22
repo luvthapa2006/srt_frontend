@@ -1,311 +1,277 @@
 // ========================================
-// SEATS.JS - Seat Selection Page Logic (ROUTE-BASED PRICING)
-// Layout: Left side = 1 column (7 seats), Right side = 2 columns (13 seats)
-// Total per deck: 20 seats
+// SEATS.JS - Seat Selection (Slider Tab UI)
+// AC Sleeper (36):        Both decks: 6L×1 left + 6R×2 right = 18/deck
+// AC Seater+Sleeper(8+32):Lower: 6L×1 left + 4R×2 seater + 4R×2 sleeper = 22
+//                         Upper: 6L×1 left + 6R×2 right sleeper = 18
 // ========================================
 
 let currentSchedule = null;
-let selectedSeats = [];
+let selectedSeats    = [];
+let activeDeck       = 'lower'; // 'lower' | 'upper'
 
-// Initialize seats page
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
 function initSeatsPage() {
   const params = getQueryParams();
-  const scheduleId = params.id;
-  
-  if (!scheduleId) {
-    showToast('Invalid schedule', 'error');
-    navigateTo('timings.html');
-    return;
-  }
-  
-  loadSchedule(scheduleId);
+  if (!params.id) { showToast('Invalid schedule','error'); navigateTo('timings.html'); return; }
+  loadSchedule(params.id);
 }
 
-// Load schedule details
-async function loadSchedule(scheduleId) {
+async function loadSchedule(id) {
   showLoading();
-  currentSchedule = await getScheduleById(scheduleId);
+  currentSchedule = await getScheduleById(id);
   hideLoading();
-  
-  if (!currentSchedule) {
-    showToast('Schedule not found', 'error');
-    navigateTo('timings.html');
-    return;
-  }
-  
+  if (!currentSchedule) { showToast('Schedule not found','error'); navigateTo('timings.html'); return; }
   displayScheduleInfo();
-  renderSeatLayout();
+  buildDeckTabs();
+  renderActiveDeck();
   updateSummary();
 }
 
-// Display schedule information
+// ─────────────────────────────────────────
+// SCHEDULE INFO
+// ─────────────────────────────────────────
 function displayScheduleInfo() {
-  const scheduleInfo = document.getElementById('schedule-info');
-  if (scheduleInfo) {
-    scheduleInfo.innerHTML = `
-      <h1 class="page-title">Select Seats</h1>
-      <p class="schedule-subtitle">${currentSchedule.busName} • ${currentSchedule.type}</p>
-    `;
-  }
-  
-  // Update journey details sidebar
-  const journeyDetails = document.getElementById('journey-details');
-  if (journeyDetails) {
-    journeyDetails.innerHTML = `
-      <h3 class="summary-title">Journey Details</h3>
-      
-      <div class="detail-group">
-        <label class="detail-label">Route</label>
-        <div class="detail-value">${currentSchedule.origin} → ${currentSchedule.destination}</div>
-      </div>
-      
-      <div class="detail-group">
-        <label class="detail-label">Departure</label>
-        <div class="detail-value">
-          ${formatDate(currentSchedule.departureTime)} at ${formatTime(currentSchedule.departureTime)}
-        </div>
-      </div>
-      
-      <div class="detail-group">
-        <label class="detail-label">Bus Type</label>
-        <div class="detail-value">${currentSchedule.type}</div>
-      </div>
-    `;
-  }
+  const info = document.getElementById('schedule-info');
+  if (info) info.innerHTML = `
+    <h1 class="page-title">Select Seats</h1>
+    <p class="schedule-subtitle">${currentSchedule.busName} • ${currentSchedule.type}</p>`;
+
+  const jd = document.getElementById('journey-details');
+  if (jd) jd.innerHTML = `
+    <h3 class="summary-title">Journey Details</h3>
+    <div class="detail-group"><label class="detail-label">Route</label>
+      <div class="detail-value">${currentSchedule.origin} → ${currentSchedule.destination}</div></div>
+    <div class="detail-group"><label class="detail-label">Departure</label>
+      <div class="detail-value">${formatDate(currentSchedule.departureTime)} at ${formatTime(currentSchedule.departureTime)}</div></div>
+    <div class="detail-group"><label class="detail-label">Bus Type</label>
+      <div class="detail-value">${currentSchedule.type}</div></div>`;
 }
 
-// Render seat layout
-function renderSeatLayout() {
-  const upperDeck = document.getElementById('upper-deck');
-  const lowerDeck = document.getElementById('lower-deck');
-  
-  if (!upperDeck || !lowerDeck) return;
-  
-  // Clear existing
-  upperDeck.innerHTML = '';
-  lowerDeck.innerHTML = '';
-  
-  // Render upper deck (U1-U20)
-  upperDeck.innerHTML = '<h4 class="deck-title">Upper Deck</h4>' + renderDeck('U');
-  
-  // Render lower deck (L1-L20)
-  lowerDeck.innerHTML = '<h4 class="deck-title">Lower Deck</h4>' + renderDeck('L');
+// ─────────────────────────────────────────
+// DECK TAB SLIDER
+// ─────────────────────────────────────────
+function buildDeckTabs() {
+  const container = document.getElementById('upper-deck');
+  const lowerEl   = document.getElementById('lower-deck');
+
+  // Replace the two existing deck divs with a single tabbed container
+  const wrapper = document.createElement('div');
+  wrapper.id = 'deck-tab-wrapper';
+  wrapper.innerHTML = `
+    <div class="deck-tabs">
+      <button class="deck-tab-btn active" id="tab-btn-lower" onclick="switchDeck('lower')">
+        🛏️ Lower Deck
+      </button>
+      <button class="deck-tab-btn" id="tab-btn-upper" onclick="switchDeck('upper')">
+        🛏️ Upper Deck
+      </button>
+    </div>
+    <div id="deck-render-area"></div>`;
+
+  // Insert before the first deck div
+  const parent = container.parentNode;
+  parent.insertBefore(wrapper, container);
+  container.style.display = 'none';
+  lowerEl.style.display   = 'none';
 }
 
-// Render a single deck with new 7-row layout
-function renderDeck(prefix) {
-  let html = '<div class="seat-grid-7row">';
-  
-  // Add driver position indicator
-  html += '<div class="driver-indicator"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="9"></line><line x1="12" y1="15" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="9" y2="12"></line><line x1="15" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line></svg> Driver</div>';
-  
-  // Define seat zones for pricing
-  const seatZones = {
-    1: 'first-left', 2: 'first-left', 3: 'first-left', 
-    4: 'first-left', 5: 'first-left', 6: 'first-left', 
-    7: 'last-left',
-    8: 'first-right', 9: 'first-right',
-    10: 'first-right', 11: 'first-right',
-    12: 'first-right', 13: 'first-right',
-    14: 'first-right', 15: 'first-right',
-    16: 'first-right', 17: 'first-right',
-    18: 'first-right', 19: 'first-right',
-    20: 'sleeper'
-  };
-  
-  // Row 1: Seat 1 | 8, 9
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 1, seatZones[1]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 8, seatZones[8]);
-  html += createSeatButton(prefix, 9, seatZones[9]);
-  html += '</div>';
-  
-  // Row 2: Seat 2 | 10, 11
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 2, seatZones[2]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 10, seatZones[10]);
-  html += createSeatButton(prefix, 11, seatZones[11]);
-  html += '</div>';
-  
-  // Row 3: Seat 3 | 12, 13
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 3, seatZones[3]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 12, seatZones[12]);
-  html += createSeatButton(prefix, 13, seatZones[13]);
-  html += '</div>';
-  
-  // Row 4: Seat 4 | 14, 15
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 4, seatZones[4]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 14, seatZones[14]);
-  html += createSeatButton(prefix, 15, seatZones[15]);
-  html += '</div>';
-  
-  // Row 5: Seat 5 | 16, 17
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 5, seatZones[5]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 16, seatZones[16]);
-  html += createSeatButton(prefix, 17, seatZones[17]);
-  html += '</div>';
-  
-  // Row 6: Seat 6 | 18, 19
-  html += '<div class="seat-row-7">';
-  html += createSeatButton(prefix, 6, seatZones[6]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 18, seatZones[18]);
-  html += createSeatButton(prefix, 19, seatZones[19]);
-  html += '</div>';
-  
-  // Row 7: Seat 7 (last-left) | 20 (sleeper - spans 2 columns)
-  html += '<div class="seat-row-7 seat-row-7-last">';
-  html += createSeatButton(prefix, 7, seatZones[7]);
-  html += '<div class="seat-aisle"></div>';
-  html += createSeatButton(prefix, 20, seatZones[20], true);
-  html += '</div>';
-  
+function switchDeck(deck) {
+  activeDeck = deck;
+  document.getElementById('tab-btn-lower').classList.toggle('active', deck === 'lower');
+  document.getElementById('tab-btn-upper').classList.toggle('active', deck === 'upper');
+  renderActiveDeck();
+}
+
+// ─────────────────────────────────────────
+// RENDER CURRENT DECK
+// ─────────────────────────────────────────
+function renderActiveDeck() {
+  const area = document.getElementById('deck-render-area');
+  if (!area) return;
+  const busType = currentSchedule.type || 'AC Sleeper (36)';
+  const prefix  = activeDeck === 'lower' ? 'L' : 'U';
+  area.innerHTML = renderDeck(prefix, busType);
+}
+
+function renderDeck(prefix, busType) {
+  const isSleeper = busType === 'AC Sleeper (36)';
+  const isMixed   = busType === 'AC Seater+Sleeper (8+32)';
+  const isLower   = prefix === 'L';
+
+  let html = '<div class="seat-grid-new">';
+  html += driverIndicator();
+
+  if (isSleeper) {
+    // Both decks: 6 rows, Left 1 col (sleeper) | aisle | Right 2 cols (sleeper)
+    // Seats: left = 1-6, right = 7-18 (rows: [7,8],[9,10],[11,12],[13,14],[15,16],[17,18])
+    for (let row = 0; row < 6; row++) {
+      const leftNum  = row + 1;           // 1-6
+      const rightA   = 7 + row * 2;       // 7,9,11,13,15,17
+      const rightB   = 8 + row * 2;       // 8,10,12,14,16,18
+      html += `<div class="seat-row-new">`;
+      html += seatBtn(prefix, leftNum, 'sleeper', true);
+      html += `<div class="seat-aisle"></div>`;
+      html += seatBtn(prefix, rightA,  'sleeper', true);
+      html += seatBtn(prefix, rightB,  'sleeper', true);
+      html += `</div>`;
+    }
+
+  } else if (isMixed && isLower) {
+    // Lower: 6 left sleepers | 4 right seater rows | 4 right sleeper rows  (total 22 seats)
+    const totalRows = 8; // 6 left rows, 8 right rows — left ends at row 6 with empty
+    for (let row = 0; row < 8; row++) {
+      const hasLeft  = row < 6;
+      const leftNum  = row + 1;           // L1-L6 left sleepers
+      const rightA   = 7  + row * 2;     // L7,L9,...,L21
+      const rightB   = 8  + row * 2;     // L8,L10,...,L22
+      const isSeater = row < 4;          // rows 0-3 = seater, rows 4-7 = sleeper
+      const rightType = isSeater ? 'seater' : 'sleeper';
+
+      html += `<div class="seat-row-new">`;
+      if (hasLeft) {
+        html += seatBtn(prefix, leftNum, 'sleeper', true);
+      } else {
+        html += `<div class="seat-empty"></div>`;
+      }
+      html += `<div class="seat-aisle"></div>`;
+      html += seatBtn(prefix, rightA, rightType, !isSeater);
+      html += seatBtn(prefix, rightB, rightType, !isSeater);
+      html += `</div>`;
+
+      // Separator between seaters and sleepers on right side
+      if (row === 3) {
+        html += `<div class="seat-type-separator"><span>— Sleeper section below —</span></div>`;
+      }
+    }
+
+  } else if (isMixed && !isLower) {
+    // Upper: 6 left sleepers | 6 right sleeper rows = 18 seats
+    for (let row = 0; row < 6; row++) {
+      const leftNum = row + 1;
+      const rightA  = 7  + row * 2;
+      const rightB  = 8  + row * 2;
+      html += `<div class="seat-row-new">`;
+      html += seatBtn(prefix, leftNum, 'sleeper', true);
+      html += `<div class="seat-aisle"></div>`;
+      html += seatBtn(prefix, rightA, 'sleeper', true);
+      html += seatBtn(prefix, rightB, 'sleeper', true);
+      html += `</div>`;
+    }
+  }
+
   html += '</div>';
   return html;
 }
 
-// Create individual seat button with route-based pricing
-function createSeatButton(prefix, number, zone, isSleeper = false) {
-  const seatId = `${prefix}${number}`;
-  const isBooked = currentSchedule.bookedSeats?.includes(seatId);
-  const isSelected = selectedSeats.includes(seatId);
-  
-  // Use route-based pricing
-  const seatPrice = calculateSeatPriceForRoute(
-    currentSchedule.origin, 
-    currentSchedule.destination, 
-    seatId
-  );
-  
-  let className = 'seat-new';
-  if (isBooked) className += ' seat-booked';
-  if (isSelected) className += ' seat-selected';
-  if (isSleeper) className += ' seat-sleeper';
-  className += ` zone-${zone}`;
-  
-  return `
-    <button 
-      class="${className}" 
-      data-seat="${seatId}"
-      data-zone="${zone}"
-      ${isBooked ? 'disabled' : ''}
-      onclick="toggleSeat('${seatId}')"
-      title="${seatId}${isSleeper ? ' (Sleeper)' : ''} - ${formatCurrency(seatPrice)}"
-    >
-      <span class="seat-number">${seatId}</span>
-      ${isSleeper ? '<span class="seat-type">💤</span>' : ''}
-      ${!isBooked ? `<span class="seat-price">${formatCurrency(seatPrice)}</span>` : '<span class="sold-label">Sold</span>'}
-    </button>
-  `;
+function driverIndicator() {
+  return `<div class="driver-indicator">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+      <line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/>
+    </svg> Driver
+  </div>`;
 }
 
-// Toggle seat selection
-function toggleSeat(seatId) {
+function seatBtn(prefix, num, type, isSleeper) {
+  const seatId   = `${prefix}${num}`;
   const isBooked = currentSchedule.bookedSeats?.includes(seatId);
-  if (isBooked) return;
-  
-  const index = selectedSeats.indexOf(seatId);
-  if (index > -1) {
-    selectedSeats.splice(index, 1);
+  const isSel    = selectedSeats.includes(seatId);
+  const price    = calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, seatId, currentSchedule.type);
+
+  let cls = `seat-new seat-type-${type}`;
+  if (isBooked) cls += ' seat-booked';
+  if (isSel)    cls += ' seat-selected';
+  if (isSleeper) cls += ' seat-is-sleeper';
+
+  return `
+    <button class="${cls}" data-seat="${seatId}"
+      ${isBooked ? 'disabled' : ''} onclick="toggleSeat('${seatId}')"
+      title="${seatId} ${isSleeper ? '(Sleeper)' : '(Seater)'} — ₹${price}">
+      <span class="seat-number">${seatId}</span>
+      <span class="seat-icon">${isSleeper ? '💤' : '💺'}</span>
+      ${!isBooked
+        ? `<span class="seat-price">₹${price}</span>`
+        : `<span class="sold-label">Sold</span>`}
+    </button>`;
+}
+
+// ─────────────────────────────────────────
+// TOGGLE SEAT
+// ─────────────────────────────────────────
+function toggleSeat(seatId) {
+  if (currentSchedule.bookedSeats?.includes(seatId)) return;
+  const idx = selectedSeats.indexOf(seatId);
+  if (idx > -1) {
+    selectedSeats.splice(idx, 1);
   } else {
-    if (selectedSeats.length >= 6) {
-      showToast('Maximum 6 seats can be selected', 'warning');
-      return;
-    }
+    if (selectedSeats.length >= 6) { showToast('Maximum 6 seats allowed','warning'); return; }
     selectedSeats.push(seatId);
   }
-  
-  renderSeatLayout();
+  renderActiveDeck();
   updateSummary();
 }
 
-// Update booking summary
+// ─────────────────────────────────────────
+// SUMMARY
+// ─────────────────────────────────────────
 function updateSummary() {
-  const summarySection = document.getElementById('booking-summary');
-  if (!summarySection) return;
-  
+  const el = document.getElementById('booking-summary');
+  if (!el) return;
+
   if (selectedSeats.length === 0) {
-    summarySection.innerHTML = `
-      <div class="empty-selection">
-        <p>No seats selected</p>
-        <p class="text-muted">Click on available seats to select</p>
-      </div>
-    `;
+    el.innerHTML = `<div class="empty-selection">
+      <p>No seats selected</p>
+      <p class="text-muted">Switch decks and click seats to select</p>
+    </div>`;
     return;
   }
-  
-  // Calculate total amount using route-based pricing
-  let totalAmount = 0;
-  const seatDetails = [];
-  
-  selectedSeats.forEach(seatId => {
-    const price = calculateSeatPriceForRoute(
-      currentSchedule.origin,
-      currentSchedule.destination,
-      seatId
-    );
-    totalAmount += price;
-    
-    const zone = getSeatZone(seatId);
-    seatDetails.push({ seatId, price, zone });
+
+  let total = 0;
+  const details = selectedSeats.map(sid => {
+    const price = calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type);
+    total += price;
+    const deck = sid.charAt(0) === 'L' ? 'Lower' : 'Upper';
+    return { sid, price, deck };
   });
-  
-  summarySection.innerHTML = `
+
+  el.innerHTML = `
     <h4 class="summary-subtitle">Selected Seats</h4>
     <div class="selected-seats-list">
-      ${seatDetails.map(({ seatId, price, zone }) => `
+      ${details.map(({ sid, price, deck }) => `
         <div class="selected-seat-item">
-          <span class="seat-badge zone-${zone}">${seatId}</span>
-          <span class="seat-item-price">${formatCurrency(price)}</span>
-          <button class="remove-seat-btn" onclick="toggleSeat('${seatId}')" title="Remove">×</button>
-        </div>
-      `).join('')}
+          <span class="seat-badge">${sid}<small style="font-weight:400;opacity:.7;margin-left:3px;">${deck}</small></span>
+          <span class="seat-item-price">₹${price}</span>
+          <button class="remove-seat-btn" onclick="toggleSeat('${sid}')" title="Remove">×</button>
+        </div>`).join('')}
     </div>
-    
     <div class="summary-divider"></div>
-    
     <div class="total-section">
       <span class="total-label">Total Amount</span>
-      <span class="total-amount">${formatCurrency(totalAmount)}</span>
+      <span class="total-amount">${formatCurrency(total)}</span>
     </div>
-    
     <button class="btn btn-primary btn-lg btn-block" onclick="proceedToPayment()">
-      Proceed to Payment
-    </button>
-  `;
+      Proceed to Payment →
+    </button>`;
 }
 
-// Proceed to payment
+// ─────────────────────────────────────────
+// PAYMENT
+// ─────────────────────────────────────────
 function proceedToPayment() {
-  if (selectedSeats.length === 0) {
-    showToast('Please select at least one seat', 'warning');
-    return;
-  }
-  
-  // Calculate total amount using route-based pricing
-  let totalAmount = 0;
-  selectedSeats.forEach(seatId => {
-    totalAmount += calculateSeatPriceForRoute(
-      currentSchedule.origin,
-      currentSchedule.destination,
-      seatId
-    );
+  if (selectedSeats.length === 0) { showToast('Please select at least one seat','warning'); return; }
+  let total = 0;
+  selectedSeats.forEach(sid => {
+    total += calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type);
   });
-  
   navigateTo('payment.html', {
-    scheduleId: currentSchedule.id,
-    seats: selectedSeats.join(','),
-    totalAmount: totalAmount
+    scheduleId:  currentSchedule.id,
+    seats:       selectedSeats.join(','),
+    totalAmount: total
   });
 }
 
-// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', initSeatsPage);

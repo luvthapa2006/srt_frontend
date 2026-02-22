@@ -485,19 +485,22 @@ function resetScheduleForm() {
 async function loadRouteSelector() {
   const routeSelect = document.getElementById('route-selector');
   if (!routeSelect) return;
-  const routes       = await getAllRoutes();
-  const allPricing   = getAllRoutePricing();
-  routeSelect.innerHTML = '<option value="">Select a route…</option>';
+  const routes     = await getAllRoutes();
+  const allPricing = getAllRoutePricing();
+  // remove old listener by cloning
+  const fresh = routeSelect.cloneNode(false);
+  routeSelect.parentNode.replaceChild(fresh, routeSelect);
+  fresh.innerHTML = '<option value="">Select a route…</option>';
   routes.forEach(route => {
     const hasCustom = allPricing[route.key] !== undefined;
     const opt = document.createElement('option');
     opt.value = route.key;
     opt.textContent = `${route.display}${hasCustom ? ' ⭐' : ''}`;
-    opt.dataset.origin = route.origin;
+    opt.dataset.origin      = route.origin;
     opt.dataset.destination = route.destination;
-    routeSelect.appendChild(opt);
+    fresh.appendChild(opt);
   });
-  routeSelect.addEventListener('change', handleRouteSelection);
+  fresh.addEventListener('change', handleRouteSelection);
 }
 
 function handleRouteSelection(e) {
@@ -507,98 +510,197 @@ function handleRouteSelection(e) {
     key:         sel.value,
     origin:      sel.dataset.origin,
     destination: sel.dataset.destination,
-    display:     sel.textContent.replace(' ⭐', '')
+    display:     sel.textContent.replace(' ⭐','')
   };
   loadPricingForRoute(selectedRoute);
 }
 
 function loadPricingForRoute(route) {
-  const pricing      = getRoutePricing(route.origin, route.destination);
-  const allPricing   = getAllRoutePricing();
-  const hasCustom    = allPricing[route.key] !== undefined;
+  const pricing    = getRoutePricing(route.origin, route.destination);
+  const allPricing = getAllRoutePricing();
+  const hasCustom  = allPricing[route.key] !== undefined;
 
-  document.getElementById('first-right-price').value = pricing.firstRight;
-  document.getElementById('first-left-price').value  = pricing.firstLeft;
-  document.getElementById('last-left-price').value   = pricing.lastLeft;
-  document.getElementById('sleeper-price').value     = pricing.sleeper;
+  // Section 1 – deck-level prices
+  document.getElementById('lower-deck-price').value = pricing.lowerPrice || 800;
+  document.getElementById('upper-deck-price').value = pricing.upperPrice || 600;
 
-  const pricingStatus = document.getElementById('pricing-status');
-  if (pricingStatus) {
-    pricingStatus.innerHTML = hasCustom
-      ? `<div class="alert alert-info"><strong>Custom pricing is set for this route.</strong><button class="btn btn-sm btn-outline" onclick="resetRoutePricing()" style="margin-left:1rem;">Reset to Default</button></div>`
-      : `<div class="alert alert-secondary"><strong>Using default pricing.</strong> Save to set custom pricing for this route.</div>`;
-  }
+  const ps = document.getElementById('pricing-status');
+  if (ps) ps.innerHTML = hasCustom
+    ? `<div class="alert alert-info"><strong>Custom pricing set for this route.</strong>
+        <button class="btn btn-sm btn-outline" onclick="resetRoutePricing()" style="margin-left:1rem;">Reset to Default</button></div>`
+    : `<div class="alert alert-secondary"><strong>Using default pricing.</strong> Save to apply custom pricing.</div>`;
 
   const btn = document.getElementById('reset-route-btn');
   if (btn) btn.style.display = hasCustom ? 'inline-flex' : 'none';
 
-  updatePricingPreview();
+  // Section 2 – per-seat map (detect bus type from first schedule on this route)
+  renderAdminSeatMap(route, pricing);
 }
 
 function initPricingForm() {
   const form = document.getElementById('pricing-form');
   if (!form) return;
   form.addEventListener('submit', handlePricingSubmit);
-  ['first-right-price', 'first-left-price', 'last-left-price', 'sleeper-price'].forEach(id => {
+  ['lower-deck-price','upper-deck-price'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updatePricingPreview);
+    if (el) el.addEventListener('input', updateDeckPricePreview);
   });
   resetPricingForm();
 }
 
 function resetPricingForm() {
-  const pricing = getSeatPricing();
-  document.getElementById('first-right-price').value = pricing.firstRight;
-  document.getElementById('first-left-price').value  = pricing.firstLeft;
-  document.getElementById('last-left-price').value   = pricing.lastLeft;
-  document.getElementById('sleeper-price').value     = pricing.sleeper;
+  document.getElementById('lower-deck-price').value = 800;
+  document.getElementById('upper-deck-price').value = 600;
   const ps = document.getElementById('pricing-status');
-  if (ps) ps.innerHTML = `<div class="alert alert-secondary"><strong>Select a route</strong> to set custom pricing, or modify default pricing below.</div>`;
-  updatePricingPreview();
+  if (ps) ps.innerHTML = `<div class="alert alert-secondary"><strong>Select a route</strong> to configure pricing.</div>`;
+  document.getElementById('per-seat-map-container').innerHTML =
+    `<p style="color:#6b7280;text-align:center;padding:2rem 0;">Select a route above to configure per-seat prices.</p>`;
+  updateDeckPricePreview();
 }
 
-function updatePricingPreview() {
-  const preview = document.getElementById('pricing-preview');
-  if (!preview) return;
-  const fr = parseInt(document.getElementById('first-right-price')?.value || 120);
-  const fl = parseInt(document.getElementById('first-left-price')?.value  || 100);
-  const ll = parseInt(document.getElementById('last-left-price')?.value   || 90);
-  const sl = parseInt(document.getElementById('sleeper-price')?.value     || 150);
-  preview.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;padding:1rem;background:#f9fafb;border-radius:8px;">
-      <div><div style="font-size:0.875rem;color:#6b7280;margin-bottom:0.25rem;">🔵 First Right</div><div style="font-size:1.25rem;font-weight:600;color:#3b82f6;">${formatCurrency(fr)}</div></div>
-      <div><div style="font-size:0.875rem;color:#6b7280;margin-bottom:0.25rem;">⚪ First Left</div><div style="font-size:1.25rem;font-weight:600;color:#6b7280;">${formatCurrency(fl)}</div></div>
-      <div><div style="font-size:0.875rem;color:#6b7280;margin-bottom:0.25rem;">🟢 Last Left</div><div style="font-size:1.25rem;font-weight:600;color:#10b981;">${formatCurrency(ll)}</div></div>
-      <div><div style="font-size:0.875rem;color:#6b7280;margin-bottom:0.25rem;">🟠 Sleeper</div><div style="font-size:1.25rem;font-weight:600;color:#f59e0b;">${formatCurrency(sl)}</div></div>
+function updateDeckPricePreview() {
+  const lp = parseInt(document.getElementById('lower-deck-price')?.value || 800);
+  const up = parseInt(document.getElementById('upper-deck-price')?.value || 600);
+  const prev = document.getElementById('pricing-preview');
+  if (!prev) return;
+  prev.innerHTML = `
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;padding:1rem;background:#f9fafb;border-radius:8px;">
+      <div>
+        <div style="font-size:0.8rem;color:#6b7280;margin-bottom:0.25rem;">🛏️ Lower Deck (default)</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#3b82f6;">${formatCurrency(lp)}</div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem;color:#6b7280;margin-bottom:0.25rem;">🛏️ Upper Deck (default)</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#8b5cf6;">${formatCurrency(up)}</div>
+      </div>
+      <div style="flex:1;min-width:200px;background:#fffbeb;border-radius:6px;padding:0.75rem;font-size:0.8rem;color:#92400e;">
+        ℹ️ Per-seat overrides (Section 2) will take priority over these deck defaults.
+      </div>
     </div>`;
+}
+
+// ─── Section 2: Admin per-seat map ───
+async function renderAdminSeatMap(route, pricing) {
+  const container = document.getElementById('per-seat-map-container');
+  if (!container) return;
+
+  // Get bus type from first schedule matching this route
+  const schedules = await getSchedules({ origin: route.origin, destination: route.destination });
+  const busType   = schedules[0]?.type || 'AC Sleeper (36)';
+  const perSeat   = pricing.perSeat || {};
+
+  const lp = parseInt(document.getElementById('lower-deck-price').value || 800);
+  const up = parseInt(document.getElementById('upper-deck-price').value || 600);
+
+  function renderMapDeck(prefix, deckLabel, deckDefault) {
+    const isSleeper = busType === 'AC Sleeper (36)';
+    const isMixed   = busType === 'AC Seater+Sleeper (8+32)';
+    const isLower   = prefix === 'L';
+    const rows = (isMixed && isLower) ? 8 : 6;
+
+    let html = `<div style="margin-bottom:2rem;">
+      <h5 style="margin-bottom:1rem;font-weight:700;color:#374151;">
+        🛏️ ${deckLabel} Deck
+        <small style="font-weight:400;color:#6b7280;font-size:0.8rem;"> — default: ${formatCurrency(deckDefault)}</small>
+      </h5>
+      <div class="admin-seat-grid">`;
+
+    for (let row = 0; row < rows; row++) {
+      const hasLeft = !(isMixed && isLower && row >= 6);
+      const leftNum = row + 1;
+      const rightA  = 7  + row * 2;
+      const rightB  = 8  + row * 2;
+      const isSeaterRow = isMixed && isLower && row < 4;
+
+      html += `<div class="admin-seat-row">`;
+
+      // Left seat
+      if (hasLeft) {
+        const sid = `${prefix}${leftNum}`;
+        const val = perSeat[sid] !== undefined ? perSeat[sid] : '';
+        html += adminSeatInput(sid, val, deckDefault, 'sleeper');
+      } else {
+        html += `<div class="admin-seat-empty"></div>`;
+      }
+
+      html += `<div class="admin-aisle"></div>`;
+
+      // Right seats
+      [rightA, rightB].forEach(n => {
+        const sid = `${prefix}${n}`;
+        const val = perSeat[sid] !== undefined ? perSeat[sid] : '';
+        const type = isSeaterRow ? 'seater' : 'sleeper';
+        html += adminSeatInput(sid, val, deckDefault, type);
+      });
+
+      html += `</div>`;
+      if (isMixed && isLower && row === 3) {
+        html += `<div style="text-align:center;font-size:0.75rem;color:#9ca3af;margin:0.5rem 0;border-top:1px dashed #e5e7eb;padding-top:0.5rem;">— Sleeper section —</div>`;
+      }
+    }
+
+    html += `</div></div>`;
+    return html;
+  }
+
+  function adminSeatInput(sid, val, deckDefault, type) {
+    const icon = type === 'seater' ? '💺' : '💤';
+    return `
+      <div class="admin-seat-input-wrap" title="${sid}">
+        <div class="admin-seat-label">${icon} ${sid}</div>
+        <input type="number" class="admin-seat-price-input" id="seat-input-${sid}"
+          data-seat="${sid}" min="0" placeholder="${deckDefault}"
+          value="${val}" oninput="onPerSeatInput('${sid}')">
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div style="margin-bottom:1rem;padding:0.75rem 1rem;background:#eff6ff;border-radius:8px;font-size:0.85rem;color:#1e40af;">
+      💡 Leave a seat blank to use the deck default price. Enter a value to override that specific seat.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;overflow-x:auto;">
+      <div>${renderMapDeck('L','Lower', lp)}</div>
+      <div>${renderMapDeck('U','Upper', up)}</div>
+    </div>`;
+}
+
+function onPerSeatInput(seatId) {
+  // live update — collected on save
 }
 
 function handlePricingSubmit(e) {
   e.preventDefault();
-  const pricing = {
-    firstRight: parseInt(document.getElementById('first-right-price').value),
-    firstLeft:  parseInt(document.getElementById('first-left-price').value),
-    lastLeft:   parseInt(document.getElementById('last-left-price').value),
-    sleeper:    parseInt(document.getElementById('sleeper-price').value)
-  };
-  if (Object.values(pricing).some(v => v < 0)) { showToast('Prices must be positive', 'error'); return; }
+  if (!selectedRoute) { showToast('Please select a route first','warning'); return; }
 
-  if (selectedRoute) {
-    const ok = setRoutePricing(selectedRoute.origin, selectedRoute.destination, pricing);
-    if (ok) { showToast(`Custom pricing saved for ${selectedRoute.display}!`, 'success'); loadRouteSelector(); loadPricingForRoute(selectedRoute); }
-    else      showToast('Failed to save pricing', 'error');
+  const lp = parseInt(document.getElementById('lower-deck-price').value);
+  const up = parseInt(document.getElementById('upper-deck-price').value);
+  if (isNaN(lp) || isNaN(up) || lp < 0 || up < 0) { showToast('Prices must be positive','error'); return; }
+
+  // Collect per-seat overrides
+  const perSeat = {};
+  document.querySelectorAll('.admin-seat-price-input').forEach(input => {
+    const sid = input.dataset.seat;
+    const val = input.value.trim();
+    if (val !== '' && !isNaN(parseInt(val)) && parseInt(val) >= 0) {
+      perSeat[sid] = parseInt(val);
+    }
+  });
+
+  const ok = setRoutePricing(selectedRoute.origin, selectedRoute.destination, { lowerPrice: lp, upperPrice: up, perSeat });
+  if (ok) {
+    showToast(`Pricing saved for ${selectedRoute.display}!`, 'success');
+    loadRouteSelector();
+    loadPricingForRoute(selectedRoute);
   } else {
-    ['firstRight','firstLeft','lastLeft','sleeper'].forEach(z => updateSeatPricing(z, pricing[z]));
-    showToast('Default pricing updated!', 'success');
+    showToast('Failed to save pricing','error');
   }
-  updatePricingPreview();
 }
 
 function resetRoutePricing() {
   if (!selectedRoute) return;
-  if (confirm(`Reset pricing for ${selectedRoute.display} to default values?`)) {
+  if (confirm(`Reset pricing for ${selectedRoute.display} to defaults?`)) {
     deleteRoutePricing(selectedRoute.origin, selectedRoute.destination);
-    showToast('Route pricing reset to default', 'success');
+    showToast('Route pricing reset','success');
     loadRouteSelector();
     loadPricingForRoute(selectedRoute);
   }
@@ -606,9 +708,9 @@ function resetRoutePricing() {
 
 function resetAllPricing() {
   if (confirm('⚠️ Reset ALL pricing to system defaults?')) {
-    resetSeatPricing();
+    localStorage.removeItem('routePricing_v2');
     localStorage.removeItem('routePricing');
-    showToast('All pricing reset to defaults', 'success');
+    showToast('All pricing reset','success');
     selectedRoute = null;
     document.getElementById('route-selector').value = '';
     resetPricingForm();
@@ -623,13 +725,12 @@ function switchAdminTab(tabName, event) {
   document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
   const tab = document.getElementById(`tab-${tabName}`);
   if (tab) tab.classList.add('active');
-
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   if (event?.target) event.target.classList.add('active');
-
   if (tabName === 'pricing')  loadRouteSelector();
-  if (tabName === 'bookings') loadBookingsTable(); // refresh on switch
+  if (tabName === 'bookings') loadBookingsTable();
 }
+
 
 // ─────────────────────────────────────────
 // CANCEL BOOKING

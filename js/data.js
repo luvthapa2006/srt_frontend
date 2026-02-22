@@ -1,569 +1,342 @@
 // ========================================
-// DATA.JS - API Integration Layer (ROUTE-BASED PRICING)
-// Connects to Node.js + MongoDB backend
+// DATA.JS - API Integration Layer
+// Bus Types: AC Sleeper (36) | AC Seater+Sleeper (8+32)
+// Pricing: lower deck price, upper deck price, per-seat overrides
 // ========================================
 
-// API Base URL - Update this when deploying
 const API_BASE_URL = 'https://srt-backend-a5m9.onrender.com/api';
 
-// Seat Configuration (Client-side constants)
-const TOTAL_SEATS = 40;
-const SEATS_PER_DECK = 20;
+// ── Bus type constants ──
+const BUS_TYPE_SLEEPER   = 'AC Sleeper (36)';
+const BUS_TYPE_MIXED     = 'AC Seater+Sleeper (8+32)';
 
-// Generate all available seats
-function generateAllSeats() {
-  const seats = [];
-  for (let i = 1; i <= SEATS_PER_DECK; i++) {
-    seats.push(`U${i}`); // Upper deck
-  }
-  for (let i = 1; i <= SEATS_PER_DECK; i++) {
-    seats.push(`L${i}`); // Lower deck
-  }
-  return seats;
+// ── Seat layout per bus type per deck ──
+// AC Sleeper (36): both decks → 6L×1 left + 6R×2 right = 18 per deck × 2 = 36
+// AC Seater+Sleeper (8+32):
+//   Lower → 6L×1 left + 4R×2 seaters + 4R×2 sleepers = 6+8+8 = 22... 
+//   Wait: spec says 8 seats total (lower right first 4 rows×2) + 32 sleepers
+//   Lower: 6 left(sleeper) + 8 right-seater(rows1-4) + 8 right-sleeper(rows5-8) = 22 lower
+//   Upper: 6 left(sleeper) + 12 right(sleeper) = 18 upper  → total 40 (8 seaters + 32 sleepers) ✓
+
+function getTotalSeats(busType) {
+  if (busType === BUS_TYPE_SLEEPER) return 36;
+  if (busType === BUS_TYPE_MIXED)   return 40; // 8 seaters + 32 sleepers
+  return 36;
 }
 
-const ALL_SEATS = generateAllSeats();
+// Generate seat IDs for a given bus type
+// Returns { lower: [...], upper: [...] }
+function getSeatIds(busType) {
+  if (busType === BUS_TYPE_SLEEPER) {
+    // Lower: L1-L18, Upper: U1-U18
+    const lower = Array.from({length: 18}, (_, i) => `L${i+1}`);
+    const upper = Array.from({length: 18}, (_, i) => `U${i+1}`);
+    return { lower, upper };
+  }
+  if (busType === BUS_TYPE_MIXED) {
+    // Lower: L1-L22 (6 left + 8 seater-right + 8 sleeper-right)
+    const lower = Array.from({length: 22}, (_, i) => `L${i+1}`);
+    // Upper: U1-U18 (6 left sleepers + 12 right sleepers)
+    const upper = Array.from({length: 18}, (_, i) => `U${i+1}`);
+    return { lower, upper };
+  }
+  // fallback
+  const lower = Array.from({length: 18}, (_, i) => `L${i+1}`);
+  const upper = Array.from({length: 18}, (_, i) => `U${i+1}`);
+  return { lower, upper };
+}
 
-// DEFAULT pricing (used as fallback)
-const defaultSeatPricing = {
-  firstRight: 120,
-  firstLeft: 100,
-  lastLeft: 90,
-  sleeper: 150
-};
+// Get zone info for a seat given busType
+// Returns: { zone, isSeater, isSleeper, deck, col }
+function getSeatInfo(seatId, busType) {
+  const deck = seatId.charAt(0); // 'L' or 'U'
+  const num  = parseInt(seatId.substring(1));
 
-// Define which seats belong to which zone (7-ROW LAYOUT)
-const seatPricingZones = {
-  firstLeft_U: [1, 2, 3, 4, 5, 6],
-  lastLeft_U: [7],
-  firstRight_U: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  sleeper_U: [20],
-  firstLeft_L: [1, 2, 3, 4, 5, 6],
-  lastLeft_L: [7],
-  firstRight_L: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  sleeper_L: [20]
-};
+  if (busType === BUS_TYPE_SLEEPER) {
+    // Both decks: seats 1-6 = left sleepers, 7-18 = right sleepers (6 rows × 2)
+    const isLeft  = num <= 6;
+    return {
+      zone:      isLeft ? 'left' : 'right',
+      isSleeper: true,
+      isSeater:  false,
+      deck,
+      col: isLeft ? 'left' : 'right'
+    };
+  }
 
-// Get zone for a seat
-function getSeatZone(seatNumber) {
-  const deck = seatNumber.charAt(0);
-  const num = parseInt(seatNumber.substring(1));
-  
-  if (num === 20) return 'sleeper';
-  if (num === 7) return 'lastLeft';
-  if ([1, 2, 3, 4, 5, 6].includes(num)) return 'firstLeft';
-  return 'firstRight';
+  if (busType === BUS_TYPE_MIXED) {
+    if (deck === 'L') {
+      // Lower: 1-6 left sleepers | 7-14 right seaters (rows 1-4 × 2) | 15-22 right sleepers (rows 5-8 × 2)
+      if (num <= 6)  return { zone: 'left',          isSleeper: true,  isSeater: false, deck, col: 'left' };
+      if (num <= 14) return { zone: 'right-seater',  isSleeper: false, isSeater: true,  deck, col: 'right' };
+      return           { zone: 'right-sleeper', isSleeper: true,  isSeater: false, deck, col: 'right' };
+    } else {
+      // Upper: 1-6 left sleepers | 7-18 right sleepers
+      const isLeft = num <= 6;
+      return {
+        zone:      isLeft ? 'left' : 'right',
+        isSleeper: true,
+        isSeater:  false,
+        deck,
+        col: isLeft ? 'left' : 'right'
+      };
+    }
+  }
+
+  return { zone: 'left', isSleeper: true, isSeater: false, deck, col: 'left' };
+}
+
+// Legacy compatibility
+function getSeatZone(seatId) {
+  return getSeatInfo(seatId, BUS_TYPE_SLEEPER).zone;
 }
 
 // ========================================
-// ROUTE-BASED PRICING SYSTEM
+// PRICING SYSTEM
+// Structure per route:
+// {
+//   lowerPrice: number,   // default price for all lower seats
+//   upperPrice: number,   // default price for all upper seats
+//   perSeat: { L1: 500, U7: 600, ... }  // individual overrides
+// }
 // ========================================
 
-// Generate route key from origin and destination
+const defaultPricing = {
+  lowerPrice: 800,
+  upperPrice: 600,
+  perSeat: {}
+};
+
 function getRouteKey(origin, destination) {
-  // Normalize route key (case-insensitive, trimmed)
-  const normalizedOrigin = origin.trim().toLowerCase();
-  const normalizedDestination = destination.trim().toLowerCase();
-  return `${normalizedOrigin}-${normalizedDestination}`;
+  return `${origin.trim().toLowerCase()}-${destination.trim().toLowerCase()}`;
 }
 
-// Get pricing for a specific route
 function getRoutePricing(origin, destination) {
-  const routeKey = getRouteKey(origin, destination);
-  
+  const key = getRouteKey(origin, destination);
   try {
-    const storedPricing = localStorage.getItem('routePricing');
-    if (storedPricing) {
-      const allRoutePricing = JSON.parse(storedPricing);
-      if (allRoutePricing[routeKey]) {
-        return allRoutePricing[routeKey];
-      }
+    const stored = localStorage.getItem('routePricing_v2');
+    if (stored) {
+      const all = JSON.parse(stored);
+      if (all[key]) return all[key];
     }
-  } catch (e) {
-    console.error('Error reading route pricing:', e);
-  }
-  
-  // Return default pricing if no route-specific pricing found
-  return { ...defaultSeatPricing };
+  } catch(e) {}
+  return { ...defaultPricing, perSeat: {} };
 }
 
-// Set pricing for a specific route
 function setRoutePricing(origin, destination, pricing) {
-  const routeKey = getRouteKey(origin, destination);
-  
+  const key = getRouteKey(origin, destination);
   try {
-    let allRoutePricing = {};
-    const stored = localStorage.getItem('routePricing');
-    if (stored) {
-      allRoutePricing = JSON.parse(stored);
-    }
-    
-    allRoutePricing[routeKey] = {
-      firstRight: parseInt(pricing.firstRight),
-      firstLeft: parseInt(pricing.firstLeft),
-      lastLeft: parseInt(pricing.lastLeft),
-      sleeper: parseInt(pricing.sleeper),
-      routeName: `${origin} → ${destination}`,
+    let all = {};
+    const stored = localStorage.getItem('routePricing_v2');
+    if (stored) all = JSON.parse(stored);
+    all[key] = {
+      lowerPrice: parseInt(pricing.lowerPrice) || 800,
+      upperPrice: parseInt(pricing.upperPrice) || 600,
+      perSeat:    pricing.perSeat || {},
+      routeName:  `${origin} → ${destination}`,
       lastUpdated: new Date().toISOString()
     };
-    
-    localStorage.setItem('routePricing', JSON.stringify(allRoutePricing));
-    console.log(`✅ Pricing saved for route: ${routeKey}`, allRoutePricing[routeKey]);
+    localStorage.setItem('routePricing_v2', JSON.stringify(all));
     return true;
-  } catch (e) {
-    console.error('Error saving route pricing:', e);
-    return false;
-  }
+  } catch(e) { return false; }
 }
 
-// Get all routes with custom pricing
 function getAllRoutePricing() {
   try {
-    const stored = localStorage.getItem('routePricing');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Error reading all route pricing:', e);
-  }
-  return {};
+    const stored = localStorage.getItem('routePricing_v2');
+    return stored ? JSON.parse(stored) : {};
+  } catch(e) { return {}; }
 }
 
-// Delete pricing for a specific route (revert to default)
 function deleteRoutePricing(origin, destination) {
-  const routeKey = getRouteKey(origin, destination);
-  
+  const key = getRouteKey(origin, destination);
   try {
-    const stored = localStorage.getItem('routePricing');
+    const stored = localStorage.getItem('routePricing_v2');
     if (stored) {
-      const allRoutePricing = JSON.parse(stored);
-      delete allRoutePricing[routeKey];
-      localStorage.setItem('routePricing', JSON.stringify(allRoutePricing));
-      console.log(`✅ Pricing deleted for route: ${routeKey}`);
-      return true;
+      const all = JSON.parse(stored);
+      delete all[key];
+      localStorage.setItem('routePricing_v2', JSON.stringify(all));
     }
-  } catch (e) {
-    console.error('Error deleting route pricing:', e);
-  }
-  return false;
-}
-
-// Calculate seat price for a specific route and seat
-function calculateSeatPriceForRoute(origin, destination, seatNumber) {
-  const zone = getSeatZone(seatNumber);
-  const routePricing = getRoutePricing(origin, destination);
-  return routePricing[zone] || routePricing.firstLeft;
-}
-
-// BACKWARD COMPATIBILITY: Keep old function for existing code
-function calculateSeatPrice(basePrice, seatNumber) {
-  // This is deprecated - now we use route-based pricing
-  // But keeping for backward compatibility
-  const zone = getSeatZone(seatNumber);
-  return getSeatPricing()[zone] || getSeatPricing().firstLeft;
-}
-
-// Get current default pricing (for routes without custom pricing)
-function getSeatPricing() {
-  try {
-    const stored = localStorage.getItem('defaultSeatPricing');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Error parsing default pricing:', e);
-  }
-  return { ...defaultSeatPricing };
-}
-
-// Update default pricing
-function updateSeatPricing(zone, price) {
-  const currentPricing = getSeatPricing();
-  
-  if (currentPricing.hasOwnProperty(zone)) {
-    currentPricing[zone] = parseInt(price);
-    localStorage.setItem('defaultSeatPricing', JSON.stringify(currentPricing));
-    console.log('Updated default pricing for', zone, ':', price);
     return true;
-  }
-  
-  console.error('Invalid pricing zone:', zone);
-  return false;
+  } catch(e) { return false; }
 }
 
-// Reset default pricing
-function resetSeatPricing() {
-  localStorage.removeItem('defaultSeatPricing');
-  console.log('Default pricing reset to defaults');
-  return true;
+// Calculate price for one seat
+function calculateSeatPriceForRoute(origin, destination, seatId, busType) {
+  const pricing = getRoutePricing(origin, destination);
+  // Per-seat override takes priority
+  if (pricing.perSeat && pricing.perSeat[seatId] !== undefined) {
+    return parseInt(pricing.perSeat[seatId]);
+  }
+  // Deck-level price
+  const deck = seatId.charAt(0);
+  return deck === 'L' ? (pricing.lowerPrice || 800) : (pricing.upperPrice || 600);
 }
+
+// ── Legacy shims so old code doesn't break ──
+function getSeatPricing()           { return { firstRight:800, firstLeft:800, lastLeft:800, sleeper:800 }; }
+function updateSeatPricing()        { return true; }
+function resetSeatPricing()         { return true; }
+function calculateSeatPrice(bp, s)  { return bp; }
 
 // ========================================
 // API FUNCTIONS
 // ========================================
 
-// Get all schedules with optional filters
 async function getSchedules(filters = {}) {
   try {
-    const queryParams = new URLSearchParams();
-    
-    if (filters.origin) {
-      queryParams.append('origin', filters.origin);
-    }
-    if (filters.destination) {
-      queryParams.append('destination', filters.destination);
-    }
-    if (filters.date) {
-      queryParams.append('date', filters.date);
-    }
+    const q = new URLSearchParams();
+    if (filters.origin)      q.append('origin',      filters.origin);
+    if (filters.destination) q.append('destination', filters.destination);
+    if (filters.date)        q.append('date',         filters.date);
 
-    const url = `${API_BASE_URL}/schedules?${queryParams}`;
-    console.log('Fetching schedules from:', url);
-    console.log('With filters:', filters);
-
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`Failed to fetch schedules: ${response.status} ${response.statusText}`);
-    }
-
-    const schedules = await response.json();
-    console.log('API returned schedules:', schedules);
-    
-    // Convert MongoDB _id to id for compatibility with existing frontend code
-    const processedSchedules = schedules.map(schedule => ({
-      ...schedule,
-      id: schedule._id || schedule.id,
-      bookedSeats: schedule.bookedSeats || []
-    }));
-    
-    console.log('Processed schedules:', processedSchedules);
-    return processedSchedules;
-  } catch (error) {
-    console.error('Error fetching schedules:', error);
-    showToast('Failed to load schedules. Please check your connection.', 'error');
+    const res = await fetch(`${API_BASE_URL}/schedules?${q}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const schedules = await res.json();
+    return schedules.map(s => ({ ...s, id: s._id || s.id, bookedSeats: s.bookedSeats || [] }));
+  } catch(e) {
+    console.error('Error fetching schedules:', e);
+    showToast('Failed to load schedules.', 'error');
     return [];
   }
 }
 
-// Get all unique cities
 async function getAllCities() {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/cities`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch cities');
-    }
-
-    const data = await response.json();
+    const res = await fetch(`${API_BASE_URL}/schedules/cities`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
     return data.cities || [];
-  } catch (error) {
-    console.error('Error fetching cities:', error);
-    return [];
-  }
+  } catch(e) { return []; }
 }
 
-// Get all unique routes from schedules
 async function getAllRoutes() {
   try {
     const schedules = await getSchedules();
-    const routesSet = new Set();
-    
-    schedules.forEach(schedule => {
-      const routeKey = getRouteKey(schedule.origin, schedule.destination);
-      routesSet.add(JSON.stringify({
-        key: routeKey,
-        origin: schedule.origin,
-        destination: schedule.destination,
-        display: `${schedule.origin} → ${schedule.destination}`
-      }));
-    });
-    
-    return Array.from(routesSet).map(r => JSON.parse(r));
-  } catch (error) {
-    console.error('Error fetching routes:', error);
-    return [];
-  }
+    const seen = new Set();
+    return schedules.reduce((acc, s) => {
+      const key = getRouteKey(s.origin, s.destination);
+      if (!seen.has(key)) {
+        seen.add(key);
+        acc.push({ key, origin: s.origin, destination: s.destination, display: `${s.origin} → ${s.destination}` });
+      }
+      return acc;
+    }, []);
+  } catch(e) { return []; }
 }
 
-// Get single schedule by ID
 async function getScheduleById(id) {
   try {
-    console.log('Fetching schedule by ID:', id);
-    const response = await fetch(`${API_BASE_URL}/schedules/${id}`);
-    
-    if (!response.ok) {
-      throw new Error('Schedule not found');
-    }
-
-    const schedule = await response.json();
-    console.log('Fetched schedule:', schedule);
-    
-    // Convert MongoDB _id to id for compatibility
-    return {
-      ...schedule,
-      id: schedule._id || schedule.id,
-      bookedSeats: schedule.bookedSeats || []
-    };
-  } catch (error) {
-    console.error('Error fetching schedule:', error);
-    showToast('Failed to load schedule details.', 'error');
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}`);
+    if (!res.ok) throw new Error('Not found');
+    const s = await res.json();
+    return { ...s, id: s._id || s.id, bookedSeats: s.bookedSeats || [] };
+  } catch(e) {
+    showToast('Failed to load schedule.', 'error');
     return null;
   }
 }
 
-// Add new schedule (Admin)
-async function addSchedule(scheduleData) {
+async function addSchedule(data) {
   try {
-    console.log('Adding schedule:', scheduleData);
-    
-    const response = await fetch(`${API_BASE_URL}/schedules`, {
+    const res = await fetch(`${API_BASE_URL}/schedules`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(scheduleData)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Server error response:', errorText);
-      let error;
-      try {
-        error = JSON.parse(errorText);
-      } catch (e) {
-        error = { message: errorText || 'Failed to create schedule' };
-      }
-      throw new Error(error.message || 'Failed to create schedule');
-    }
-
-    const schedule = await response.json();
-    console.log('Schedule created:', schedule);
-    
-    return {
-      ...schedule,
-      id: schedule._id || schedule.id,
-      bookedSeats: schedule.bookedSeats || []
-    };
-  } catch (error) {
-    console.error('Error creating schedule:', error);
-    showToast(error.message, 'error');
-    return null;
-  }
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+    const s = await res.json();
+    return { ...s, id: s._id || s.id, bookedSeats: s.bookedSeats || [] };
+  } catch(e) { showToast(e.message, 'error'); return null; }
 }
 
-// Update schedule (Admin)
 async function updateSchedule(id, updates) {
   try {
-    console.log('Updating schedule:', id, updates);
-    
-    const response = await fetch(`${API_BASE_URL}/schedules/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update schedule');
-    }
-
-    const schedule = await response.json();
-    console.log('Schedule updated:', schedule);
-    
-    return {
-      ...schedule,
-      id: schedule._id || schedule.id,
-      bookedSeats: schedule.bookedSeats || []
-    };
-  } catch (error) {
-    console.error('Error updating schedule:', error);
-    showToast(error.message, 'error');
-    return null;
-  }
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+    const s = await res.json();
+    return { ...s, id: s._id || s.id, bookedSeats: s.bookedSeats || [] };
+  } catch(e) { showToast(e.message, 'error'); return null; }
 }
 
-// Delete schedule (Admin)
 async function deleteSchedule(id) {
   try {
-    console.log('Deleting schedule:', id);
-    
-    const response = await fetch(`${API_BASE_URL}/schedules/${id}`, {
-      method: 'DELETE'
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to delete schedule');
-    }
-
-    console.log('Schedule deleted successfully');
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
     return true;
-  } catch (error) {
-    console.error('Error deleting schedule:', error);
-    showToast(error.message, 'error');
-    return false;
-  }
+  } catch(e) { showToast(e.message, 'error'); return false; }
 }
 
-// Create booking
-async function createBooking(bookingData) {
+async function createBooking(data) {
   try {
-    console.log('Creating booking:', bookingData);
-    
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
+    const res = await fetch(`${API_BASE_URL}/bookings`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(bookingData)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      return { 
-        error: result.message || 'Failed to create booking',
-        unavailableSeats: result.unavailableSeats 
-      };
-    }
-
-    console.log('Booking created:', result);
-
-    return {
-      ...result,
-      id: result._id || result.id,
-      bookingToken: result.bookingToken,
-      scheduleId: result.scheduleId._id || result.scheduleId
-    };
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    return { error: 'Failed to create booking. Please try again.' };
-  }
+    const result = await res.json();
+    if (!res.ok) return { error: result.message || 'Failed', unavailableSeats: result.unavailableSeats };
+    return { ...result, id: result._id || result.id, bookingToken: result.bookingToken };
+  } catch(e) { return { error: 'Failed to create booking.' }; }
 }
 
-// Get booking by token
 async function getBookingByToken(token) {
   try {
-    const response = await fetch(`${API_BASE_URL}/bookings/${token}`);
-    
-    if (!response.ok) {
-      return null;
-    }
-
-    const booking = await response.json();
-    return {
-      ...booking,
-      id: booking._id || booking.id,
-      scheduleId: booking.scheduleId._id || booking.scheduleId
-    };
-  } catch (error) {
-    console.error('Error fetching booking:', error);
-    return null;
-  }
+    const res = await fetch(`${API_BASE_URL}/bookings/${token}`);
+    if (!res.ok) return null;
+    const b = await res.json();
+    return { ...b, id: b._id || b.id };
+  } catch(e) { return null; }
 }
 
-// Get all bookings (Admin)
 async function getAllBookings() {
   try {
-    const response = await fetch(`${API_BASE_URL}/bookings`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch bookings');
-    }
-
-    const bookings = await response.json();
-    return bookings.map(booking => ({
-      ...booking,
-      id: booking._id || booking.id,
-      scheduleId: booking.scheduleId
-    }));
-  } catch (error) {
-    console.error('Error fetching bookings:', error);
-    return [];
-  }
+    const res = await fetch(`${API_BASE_URL}/bookings`);
+    if (!res.ok) throw new Error('Failed');
+    const bookings = await res.json();
+    return bookings.map(b => ({ ...b, id: b._id || b.id }));
+  } catch(e) { return []; }
 }
 
-// Cancel booking (Admin)
-async function cancelBooking(bookingToken) {
+async function cancelBooking(token) {
   try {
-    console.log('Cancelling booking:', bookingToken);
-    
-    const response = await fetch(`${API_BASE_URL}/bookings/${bookingToken}/cancel`, {
+    const res = await fetch(`${API_BASE_URL}/bookings/${token}/cancel`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log('Cancel booking endpoint not implemented on backend yet');
-        showToast('Cancel booking feature requires backend implementation', 'warning');
-        return false;
-      }
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to cancel booking');
-    }
-
-    console.log('Booking cancelled successfully');
+    if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
     return true;
-  } catch (error) {
-    console.error('Error cancelling booking:', error);
-    if (error.message.includes('Route not found') || error.message.includes('404')) {
-      showToast('Cancel booking endpoint not yet implemented on backend', 'warning');
-    } else {
-      showToast(error.message, 'error');
-    }
-    return false;
-  }
+  } catch(e) { showToast(e.message, 'error'); return false; }
 }
 
-// Get booking statistics (Admin)
 async function getBookingStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/bookings/stats/revenue`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch stats');
-    }
-
-    const stats = await response.json();
-    return stats;
-  } catch (error) {
-    console.error('Error fetching stats:', error);
-    return { totalRevenue: 0, totalBookings: 0 };
-  }
+    const res = await fetch(`${API_BASE_URL}/bookings/stats/revenue`);
+    if (!res.ok) throw new Error('Failed');
+    return await res.json();
+  } catch(e) { return { totalRevenue: 0, totalBookings: 0 }; }
 }
 
-// Helper function for seats.js - calculate amount for route-based pricing
-async function calculateBookingAmountAsync(scheduleId, seatNumbers) {
-  const schedule = await getScheduleById(scheduleId);
-  if (!schedule) return 0;
-  
-  let total = 0;
-  seatNumbers.forEach(seat => {
-    total += calculateSeatPriceForRoute(schedule.origin, schedule.destination, seat);
-  });
-  
-  return total;
-}
+// ── Constants for old code compatibility ──
+const TOTAL_SEATS    = 40;
+const SEATS_PER_DECK = 20;
 
-// ========================================
-// BACKWARD COMPATIBILITY
-// ========================================
+function generateAllSeats() {
+  const seats = [];
+  for (let i = 1; i <= 18; i++) seats.push(`U${i}`);
+  for (let i = 1; i <= 18; i++) seats.push(`L${i}`);
+  return seats;
+}
+const ALL_SEATS = generateAllSeats();
 
 let cachedSchedules = [];
-
-async function loadAndCacheSchedules(filters = {}) {
-  cachedSchedules = await getSchedules(filters);
+async function loadAndCacheSchedules(f = {}) {
+  cachedSchedules = await getSchedules(f);
   return cachedSchedules;
 }
 
-console.log('✅ Data.js loaded with ROUTE-BASED pricing system');
-console.log('📊 Default pricing:', getSeatPricing());
-console.log('🛣️ Route pricing enabled');
+console.log('✅ Data.js v2 loaded — AC Sleeper(36) + AC Seater+Sleeper(8+32)');

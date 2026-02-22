@@ -191,6 +191,73 @@
         width: 100%;
       }
     }
+
+    /* ── Admin per-seat map ── */
+    .admin-seat-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+    .admin-seat-row  { display: flex; align-items: center; gap: 0.5rem; }
+    .admin-aisle     { width: 1.5rem; flex-shrink: 0; }
+    .admin-seat-empty { width: 90px; flex-shrink: 0; }
+    .admin-seat-input-wrap {
+      width: 90px; flex-shrink: 0;
+      background: white; border: 1.5px solid #e5e7eb; border-radius: 8px;
+      padding: 0.3rem 0.4rem; text-align: center;
+    }
+    .admin-seat-input-wrap:hover { border-color: #8b5cf6; }
+    .admin-seat-label { font-size: 0.7rem; font-weight: 600; color: #374151; margin-bottom: 2px; }
+    .admin-seat-price-input {
+      width: 100%; border: none; outline: none; text-align: center;
+      font-size: 0.85rem; font-weight: 600; color: #1e293b;
+      background: transparent; padding: 2px 0;
+    }
+    .admin-seat-price-input::placeholder { color: #94a3b8; font-weight: 400; }
+    /* ── User deck tabs ── */
+    .deck-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .deck-tab-btn {
+      flex: 1; padding: 0.75rem 1rem; border-radius: 10px;
+      border: 2px solid #e5e7eb; background: white;
+      font-size: 0.95rem; font-weight: 600; color: #374151;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .deck-tab-btn.active {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white; border-color: transparent;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.35);
+    }
+    /* ── New seat styles ── */
+    .seat-grid-new { display: flex; flex-direction: column; gap: 0.6rem; padding: 1rem; }
+    .seat-row-new  { display: flex; align-items: center; gap: 0.5rem; }
+    .seat-empty    { width: 72px; flex-shrink: 0; }
+    .seat-type-separator {
+      text-align: center; font-size: 0.75rem; color: #9ca3af;
+      margin: 0.25rem 0; padding-top: 0.5rem;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .seat-new {
+      width: 72px; min-height: 62px; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; border-radius: 10px; border: 2px solid #e2e8f0;
+      background: white; cursor: pointer; transition: all 0.18s;
+      padding: 0.3rem;
+    }
+    .seat-new:hover:not(:disabled) { border-color: #667eea; background: #eef2ff; transform: translateY(-1px); }
+    .seat-new.seat-selected  { background: #667eea; border-color: #4f46e5; color: white; }
+    .seat-new.seat-booked    { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+    .seat-new.seat-is-sleeper { border-radius: 14px; }
+    .seat-new.seat-type-seater { background: #f0fdf4; border-color: #bbf7d0; }
+    .seat-new.seat-type-seater:hover:not(:disabled) { border-color: #22c55e; background: #dcfce7; }
+    .seat-new.seat-type-seater.seat-selected { background: #16a34a; border-color: #15803d; color: white; }
+    .seat-number { font-size: 0.7rem; font-weight: 700; line-height: 1; }
+    .seat-icon   { font-size: 1rem; line-height: 1; }
+    .seat-price  { font-size: 0.65rem; color: #64748b; line-height: 1; }
+    .seat-new.seat-selected .seat-price  { color: rgba(255,255,255,0.85); }
+    .seat-new.seat-selected .seat-number { color: white; }
+    .sold-label  { font-size: 0.6rem; color: #94a3b8; }
+    .driver-indicator {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem;
+      padding: 0.4rem 0.75rem; background: #f8fafc;
+      border-radius: 8px; width: fit-content;
+    }
   </style>
 </head>
 <body>
@@ -343,7 +410,13 @@
           <form id="schedule-form">
             <input type="hidden" id="schedule-id">
             <input type="hidden" id="bus-name" value="Shree Ram Travels">
-            <input type="hidden" id="bus-type" value="AC Sleeper (2+1)">
+            <div class="form-group">
+                <label class="form-label">🚌 Bus Type</label>
+                <select class="form-input" id="bus-type" required>
+                  <option value="AC Sleeper (36)">AC Sleeper (36 sleepers)</option>
+                  <option value="AC Seater+Sleeper (8+32)">AC Seater + Sleeper (8 seats + 32 sleepers)</option>
+                </select>
+              </div>
 
             <!-- Row 1: Origin & Destination -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
@@ -446,13 +519,14 @@
       <div id="tab-pricing" class="admin-tab-content">
         <div class="tab-header">
           <h2>Seat Pricing Configuration</h2>
-          <p class="tab-description">Set independent prices for different seat zones. Configure pricing per route or set default pricing.</p>
+          <p class="tab-description">Set pricing per route. Use deck-level defaults or override individual seats.</p>
         </div>
 
+        <!-- Route Selector (unchanged) -->
         <div class="card" style="margin-bottom:2rem;">
           <div class="card-header">
             <h3>Select Route</h3>
-            <p class="card-description">Choose a route to set custom pricing, or leave unselected to modify default pricing.</p>
+            <p class="card-description">Choose a route to configure pricing. Routes with ⭐ have custom pricing set.</p>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -463,70 +537,64 @@
               <small class="form-help">Routes marked with ⭐ have custom pricing.</small>
             </div>
             <div id="pricing-status" style="margin-top:1rem;">
-              <div class="alert alert-secondary"><strong>Select a route</strong> to set custom pricing, or modify default pricing below.</div>
+              <div class="alert alert-secondary"><strong>Select a route</strong> to configure pricing.</div>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3>Seat Zone Pricing</h3>
-            <p class="card-description">Set prices for different seat zones independently of the base price.</p>
-          </div>
-          <div class="card-body">
-            <form id="pricing-form">
-              <div class="pricing-grid">
+        <form id="pricing-form">
+
+          <!-- ══ Section 1: Deck-Level Pricing ══ -->
+          <div class="card" style="margin-bottom:2rem;border-left:4px solid #3b82f6;">
+            <div class="card-header" style="background:#eff6ff;">
+              <h3 style="color:#1d4ed8;">📋 Section 1 — Deck Default Prices</h3>
+              <p class="card-description">Set one price for all lower seats and one for all upper seats. Per-seat overrides in Section 2 take priority.</p>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
                 <div class="pricing-card pricing-card-blue">
-                  <div class="pricing-card-header"><span class="pricing-icon">🔵 🔵</span><h4>First Right (2×6)</h4></div>
+                  <div class="pricing-card-header"><span class="pricing-icon">🛏️</span><h4>Lower Deck</h4></div>
                   <div class="pricing-card-body">
-                    <label for="first-right-price">Price per seat (₹)</label>
-                    <input type="number" id="first-right-price" class="form-control pricing-input" min="0" step="1" required placeholder="120">
-                    <small class="pricing-help">Seats: 8–19 (both decks)</small>
-                    <div class="pricing-example">Example: ₹120 per seat</div>
-                  </div>
-                </div>
-                <div class="pricing-card pricing-card-gray">
-                  <div class="pricing-card-header"><span class="pricing-icon">⚪ ⚪</span><h4>First Left (1×6)</h4></div>
-                  <div class="pricing-card-body">
-                    <label for="first-left-price">Price per seat (₹)</label>
-                    <input type="number" id="first-left-price" class="form-control pricing-input" min="0" step="1" required placeholder="100">
-                    <small class="pricing-help">Seats: 1–6 (both decks)</small>
-                    <div class="pricing-example">Example: ₹100 per seat</div>
-                  </div>
-                </div>
-                <div class="pricing-card pricing-card-green">
-                  <div class="pricing-card-header"><span class="pricing-icon">🟢 🟢</span><h4>Last Left 7th Seat</h4></div>
-                  <div class="pricing-card-body">
-                    <label for="last-left-price">Price per seat (₹)</label>
-                    <input type="number" id="last-left-price" class="form-control pricing-input" min="0" step="1" required placeholder="90">
-                    <small class="pricing-help">Seats: 7 (both decks)</small>
-                    <div class="pricing-example">Example: ₹90 per seat</div>
+                    <label for="lower-deck-price">Default price per seat (₹)</label>
+                    <input type="number" id="lower-deck-price" class="form-control pricing-input" min="0" step="1" required placeholder="800" oninput="updateDeckPricePreview()">
+                    <small class="pricing-help">Applies to all L1–L22 seats unless individually overridden</small>
                   </div>
                 </div>
                 <div class="pricing-card pricing-card-orange">
-                  <div class="pricing-card-header"><span class="pricing-icon">🟠 🟠</span><h4>Last Right Sleeper</h4></div>
+                  <div class="pricing-card-header"><span class="pricing-icon">🛏️</span><h4>Upper Deck</h4></div>
                   <div class="pricing-card-body">
-                    <label for="sleeper-price">Price per seat (₹)</label>
-                    <input type="number" id="sleeper-price" class="form-control pricing-input" min="0" step="1" required placeholder="150">
-                    <small class="pricing-help">Seats: 20 – sleeper (both decks)</small>
-                    <div class="pricing-example">Example: ₹150 per seat</div>
+                    <label for="upper-deck-price">Default price per seat (₹)</label>
+                    <input type="number" id="upper-deck-price" class="form-control pricing-input" min="0" step="1" required placeholder="600" oninput="updateDeckPricePreview()">
+                    <small class="pricing-help">Applies to all U1–U18 seats unless individually overridden</small>
                   </div>
                 </div>
               </div>
-
-              <div id="pricing-preview" class="pricing-preview"></div>
-
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary">💾 Save Pricing</button>
-                <button type="button" class="btn btn-secondary" onclick="resetAllPricing()">🔄 Reset All to Defaults</button>
-                <button type="button" class="btn btn-outline" onclick="resetRoutePricing()" id="reset-route-btn" style="display:none;">↩️ Reset Route to Default</button>
-              </div>
-            </form>
+              <div id="pricing-preview" class="pricing-preview" style="margin-top:1.5rem;"></div>
+            </div>
           </div>
-        </div>
+
+          <!-- ══ Section 2: Per-Seat Map ══ -->
+          <div class="card" style="margin-bottom:2rem;border-left:4px solid #8b5cf6;">
+            <div class="card-header" style="background:#f5f3ff;">
+              <h3 style="color:#6d28d9;">🗺️ Section 2 — Per-Seat Price Override</h3>
+              <p class="card-description">Optionally set individual prices for specific seats. Leave blank to use deck defaults above.</p>
+            </div>
+            <div class="card-body">
+              <div id="per-seat-map-container">
+                <p style="color:#6b7280;text-align:center;padding:2rem 0;">Select a route above to configure per-seat prices.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Save Pricing</button>
+            <button type="button" class="btn btn-secondary" onclick="resetAllPricing()">🔄 Reset All to Defaults</button>
+            <button type="button" class="btn btn-outline" onclick="resetRoutePricing()" id="reset-route-btn" style="display:none;">↩️ Reset Route to Default</button>
+          </div>
+        </form>
 
         <div class="alert alert-info" style="margin-top:2rem;">
-          <h4>How Route-Based Pricing Works:</h4>
+          <h4>How Pricing Works:</h4>
           <ul style="margin:0.5rem 0 0 1.5rem;">
             <li><strong>Default Pricing:</strong> Applied to all routes without custom pricing</li>
             <li><strong>Route-Specific Pricing:</strong> Override defaults per route</li>
