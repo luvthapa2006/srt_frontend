@@ -120,6 +120,35 @@
     </div>
   </section>
 
+
+  <!-- Find Us / Map Section -->
+  <section style="background: var(--slate-50); padding: 6rem 0; border-top: 1px solid var(--slate-100);">
+    <div class="container px-4">
+      <div class="text-center" style="margin-bottom: 3rem;">
+        <h2 style="margin-bottom: 1rem;">Find Our Office</h2>
+        <p class="text-muted" style="font-size: 1.1rem;">📍 New Shri Ram Travels, VPO Nathuawala, Dehradun, Uttarakhand 248004</p>
+        <div style="height: 4px; width: 80px; background: var(--primary); margin: 1rem auto 0; border-radius: 2px;"></div>
+      </div>
+      <div style="border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--slate-100); max-width: 900px; margin: 0 auto;">
+        <iframe
+          src="https://maps.google.com/maps?width=900&height=400&hl=en&q=New+Shri+Ram+Travels+VPO+Nathuawala+Dehradun&t=&z=15&ie=UTF8&iwloc=B&output=embed"
+          width="100%" height="400" style="border:0; display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+      <div style="text-align:center; margin-top: 1.5rem; display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="https://maps.google.com/maps?q=New+Shri+Ram+Travels+VPO+Nathuawala+Dehradun&z=15"
+           target="_blank" class="btn btn-primary">
+          🗺️ Open in Google Maps
+        </a>
+        <a href="https://maps.google.com/maps?q=New+Shri+Ram+Travels+VPO+Nathuawala+Dehradun&z=15&dirflg=d"
+           target="_blank" class="btn btn-outline">
+          🧭 Get Directions
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container px-4">
@@ -130,9 +159,9 @@
             Connecting cities, connecting hearts. The most trusted bus operator in the region.
           </p>
           <p style="color: var(--slate-400); font-size: 0.8rem; line-height: 1.6;">
-            📍 Haridwar Bypass Rd, in front of Hotel Cygnett Paras,<br>
-            Niranjanpur, Majra, Dehradun,<br>
-            Uttarakhand 248171
+            📍 New Shri Ram Travels,<br>
+            VPO Nathuawala, Dehradun,<br>
+            Uttarakhand 248004
           </p>
         </div>
 
@@ -149,8 +178,8 @@
           <h4>Contact</h4>
           <ul style="color: var(--slate-400); font-size: 0.875rem;">
             <li>
-              <a href="mailto:mj732411@gmail.com" style="color: var(--slate-400); text-decoration: none;">
-                ✉️ mj732411@gmail.com
+              <a href="/cdn-cgi/l/email-protection#234e4914101117121263444e424a4f0d404c4e" style="color: var(--slate-400); text-decoration: none;">
+                ✉️ <span class="__cf_email__" data-cfemail="9bf6f1aca8a9afaaaadbfcf6faf2f7b5f8f4f6">[email&#160;protected]</span>
               </a>
             </li>
             <li>
@@ -172,7 +201,7 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="js/data.js"></script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script>
     async function populateCityDropdowns() {
@@ -250,7 +279,7 @@
         }
       } catch (error) {
         hideLoading();
-        resultDiv.innerHTML = `<div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:0.75rem;padding:1.5rem;text-align:center;color:#991B1B;"><strong>Error!</strong><br>Unable to track booking. Please try again.</div>`;
+        resultDiv.innerHTML = `<div style="background:#FEE2E2;border:1px solid #FECACA;border:1px solid #FECACA;border-radius:0.75rem;padding:1.5rem;text-align:center;color:#991B1B;"><strong>Error!</strong><br>Unable to track booking. Please try again.</div>`;
         showToast('Error tracking booking', 'error');
       }
     }
