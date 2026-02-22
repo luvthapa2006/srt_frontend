@@ -1,20 +1,17 @@
 // ========================================
-// SEATS.JS - Seat Selection (Slider Tab UI)
-// AC Sleeper (36):        Both decks: 6L×1 left + 6R×2 right = 18/deck
-// AC Seater+Sleeper(8+32):Lower: 6L×1 left + 4R×2 seater + 4R×2 sleeper = 22
-//                         Upper: 6L×1 left + 6R×2 right sleeper = 18
+// SEATS.JS  –  Seat Selection Page
+// Layout fix: flex rows, explicit seat widths, no merging
+// Pill slider centered
 // ========================================
 
 let currentSchedule = null;
-let selectedSeats    = [];
-let activeDeck       = 'lower'; // 'lower' | 'upper'
+let selectedSeats   = [];
+let activeDeck      = "lower";
 
-// ─────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────
+/* ── Init ── */
 function initSeatsPage() {
   const params = getQueryParams();
-  if (!params.id) { showToast('Invalid schedule','error'); navigateTo('timings.html'); return; }
+  if (!params.id) { showToast("Invalid schedule","error"); navigateTo("timings.html"); return; }
   loadSchedule(params.id);
 }
 
@@ -22,256 +19,307 @@ async function loadSchedule(id) {
   showLoading();
   currentSchedule = await getScheduleById(id);
   hideLoading();
-  if (!currentSchedule) { showToast('Schedule not found','error'); navigateTo('timings.html'); return; }
+  if (!currentSchedule) { showToast("Schedule not found","error"); navigateTo("timings.html"); return; }
   displayScheduleInfo();
-  buildDeckTabs();
+  buildDeckUI();
   renderActiveDeck();
   updateSummary();
 }
 
-// ─────────────────────────────────────────
-// SCHEDULE INFO
-// ─────────────────────────────────────────
+/* ── Schedule header ── */
 function displayScheduleInfo() {
-  const info = document.getElementById('schedule-info');
-  if (info) info.innerHTML = `
-    <h1 class="page-title">Select Seats</h1>
-    <p class="schedule-subtitle">${currentSchedule.busName} • ${currentSchedule.type}</p>`;
+  const info = document.getElementById("schedule-info");
+  if (info) info.innerHTML =
+    '<h1 class="page-title">Select Seats</h1>' +
+    '<p class="schedule-subtitle">' + currentSchedule.busName + ' &bull; ' + currentSchedule.type + '</p>';
 
-  const jd = document.getElementById('journey-details');
-  if (jd) jd.innerHTML = `
-    <h3 class="summary-title">Journey Details</h3>
-    <div class="detail-group"><label class="detail-label">Route</label>
-      <div class="detail-value">${currentSchedule.origin} → ${currentSchedule.destination}</div></div>
-    <div class="detail-group"><label class="detail-label">Departure</label>
-      <div class="detail-value">${formatDate(currentSchedule.departureTime)} at ${formatTime(currentSchedule.departureTime)}</div></div>
-    <div class="detail-group"><label class="detail-label">Bus Type</label>
-      <div class="detail-value">${currentSchedule.type}</div></div>`;
+  const jd = document.getElementById("journey-details");
+  if (jd) jd.innerHTML =
+    '<h3 class="summary-title">Journey Details</h3>' +
+    '<div class="detail-group"><label class="detail-label">Route</label>' +
+    '<div class="detail-value">' + currentSchedule.origin + ' &rarr; ' + currentSchedule.destination + '</div></div>' +
+    '<div class="detail-group"><label class="detail-label">Departure</label>' +
+    '<div class="detail-value">' + formatDate(currentSchedule.departureTime) + ' at ' + formatTime(currentSchedule.departureTime) + '</div></div>' +
+    '<div class="detail-group"><label class="detail-label">Bus Type</label>' +
+    '<div class="detail-value">' + currentSchedule.type + '</div></div>';
 }
 
-// ─────────────────────────────────────────
-// DECK TAB SLIDER
-// ─────────────────────────────────────────
-function buildDeckTabs() {
-  const container = document.getElementById('upper-deck');
-  const lowerEl   = document.getElementById('lower-deck');
-
-  // Replace the two existing deck divs with a single tabbed container
-  const wrapper = document.createElement('div');
-  wrapper.id = 'deck-tab-wrapper';
-  wrapper.innerHTML = `
-    <div class="deck-tabs">
-      <button class="deck-tab-btn active" id="tab-btn-lower" onclick="switchDeck('lower')">
-        🛏️ Lower Deck
-      </button>
-      <button class="deck-tab-btn" id="tab-btn-upper" onclick="switchDeck('upper')">
-        🛏️ Upper Deck
-      </button>
-    </div>
-    <div id="deck-render-area"></div>`;
-
-  // Insert before the first deck div
-  const parent = container.parentNode;
-  parent.insertBefore(wrapper, container);
-  container.style.display = 'none';
-  lowerEl.style.display   = 'none';
+/* ── Inject styles once ── */
+function injectStyles() {
+  if (document.getElementById("srt-seat-css")) return;
+  const el = document.createElement("style");
+  el.id = "srt-seat-css";
+  el.textContent = [
+    /* pill slider */
+    ".srt-slider-wrap{display:flex;justify-content:center;margin:0 0 1.6rem}",
+    ".srt-slider{display:inline-flex;background:#f1f5f9;border-radius:999px;padding:5px;gap:4px;",
+      "box-shadow:inset 0 2px 6px rgba(0,0,0,.12)}",
+    ".srt-tab{padding:.55rem 2rem;border-radius:999px;border:none;background:transparent;",
+      "font-size:.88rem;font-weight:600;color:#64748b;cursor:pointer;transition:all .2s;white-space:nowrap}",
+    ".srt-tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;",
+      "box-shadow:0 3px 14px rgba(102,126,234,.45)}",
+    /* legend */
+    ".srt-legend{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.4rem}",
+    ".srt-li{display:flex;align-items:center;gap:.35rem;font-size:.76rem;color:#475569}",
+    ".srt-swatch{width:15px;height:15px;border-radius:4px;border:2px solid;flex-shrink:0}",
+    ".sw-sl{background:#fff;border-color:#94a3b8}",
+    ".sw-se{background:#f0fdf4;border-color:#86efac}",
+    ".sw-ok{background:linear-gradient(135deg,#667eea,#764ba2);border-color:#4f46e5}",
+    ".sw-bk{background:#f1f5f9;border-color:#cbd5e1;opacity:.55}",
+    /* bus shell */
+    ".srt-bus{background:#f8fafc;border:2px solid #e2e8f0;border-radius:18px;",
+      "padding:1.1rem 1.3rem 1.5rem;max-width:380px;margin:0 auto}",
+    /* driver */
+    ".srt-driver{display:flex;align-items:center;justify-content:center;gap:.45rem;",
+      "background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:9px;",
+      "padding:.48rem .9rem;font-size:.72rem;font-weight:700;letter-spacing:.7px;",
+      "text-transform:uppercase;margin-bottom:1rem}",
+    /* seat ROW  –  flex so seats never collapse */
+    ".srt-row{display:flex;flex-direction:row;align-items:stretch;gap:6px;margin-bottom:6px}",
+    ".srt-aisle{width:22px;flex-shrink:0}",
+    /* seat button base */
+    ".srt-seat{flex-shrink:0;width:80px;display:flex;flex-direction:column;align-items:center;",
+      "justify-content:center;gap:3px;border:2px solid #cbd5e1;border-radius:10px;",
+      "background:#fff;cursor:pointer;transition:all .17s;padding:5px 3px;box-sizing:border-box}",
+    ".srt-seat:hover:not(:disabled){border-color:#667eea;background:#eef2ff;",
+      "transform:translateY(-2px);box-shadow:0 4px 10px rgba(102,126,234,.22)}",
+    ".srt-seat:disabled{cursor:not-allowed}",
+    /* sleeper = tall rectangle */
+    ".srt-seat.sl{min-height:90px;border-radius:12px}",
+    /* seater = shorter square, green */
+    ".srt-seat.se{min-height:66px;background:#f0fdf4;border-color:#86efac}",
+    ".srt-seat.se:hover:not(:disabled){border-color:#22c55e;background:#dcfce7}",
+    /* ghost placeholder keeps grid aligned */
+    ".srt-seat.ph{visibility:hidden;pointer-events:none}",
+    /* selected */
+    ".srt-seat.ck{background:linear-gradient(135deg,#667eea,#764ba2)!important;",
+      "border-color:transparent!important;box-shadow:0 4px 14px rgba(102,126,234,.45)}",
+    ".srt-seat.ck .sn,.srt-seat.ck .sp{color:rgba(255,255,255,.9)!important}",
+    /* booked */
+    ".srt-seat.bk{background:#f1f5f9!important;border-color:#e2e8f0!important;opacity:.58}",
+    /* inner text */
+    ".sn{font-size:.67rem;font-weight:700;color:#1e293b;line-height:1}",
+    ".si{font-size:.95rem;line-height:1}",
+    ".sp{font-size:.58rem;color:#64748b;line-height:1}",
+    ".ss{font-size:.56rem;color:#94a3b8}"
+  ].join("");
+  document.head.appendChild(el);
 }
 
+/* ── Build wrapper (runs once) ── */
+function buildDeckUI() {
+  injectStyles();
+
+  /* hide the old deck divs that were already in the HTML */
+  ["upper-deck","lower-deck"].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  /* remove any previous wrapper */
+  const old = document.getElementById("srt-deck-wrapper");
+  if (old) old.remove();
+
+  /* find a good parent: the container that held the deck divs */
+  const anchor = document.getElementById("upper-deck") || document.getElementById("lower-deck");
+  const parent = anchor ? anchor.parentNode : document.body;
+
+  const wrap = document.createElement("div");
+  wrap.id = "srt-deck-wrapper";
+  wrap.innerHTML =
+    '<div class="srt-slider-wrap">' +
+      '<div class="srt-slider">' +
+        '<button class="srt-tab active" id="srt-btn-lower" onclick="switchDeck(\'lower\')">&#128711; Lower Deck</button>' +
+        '<button class="srt-tab"        id="srt-btn-upper" onclick="switchDeck(\'upper\')">&#128711; Upper Deck</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="srt-legend">' +
+      '<div class="srt-li"><div class="srt-swatch sw-sl"></div>Sleeper</div>' +
+      '<div class="srt-li"><div class="srt-swatch sw-se"></div>Seater</div>' +
+      '<div class="srt-li"><div class="srt-swatch sw-ok"></div>Selected</div>' +
+      '<div class="srt-li"><div class="srt-swatch sw-bk"></div>Booked</div>' +
+    '</div>' +
+    '<div id="srt-render"></div>';
+
+  parent.insertBefore(wrap, anchor);
+}
+
+/* ── Switch tab ── */
 function switchDeck(deck) {
   activeDeck = deck;
-  document.getElementById('tab-btn-lower').classList.toggle('active', deck === 'lower');
-  document.getElementById('tab-btn-upper').classList.toggle('active', deck === 'upper');
+  document.getElementById("srt-btn-lower").classList.toggle("active", deck === "lower");
+  document.getElementById("srt-btn-upper").classList.toggle("active", deck === "upper");
   renderActiveDeck();
 }
 
-// ─────────────────────────────────────────
-// RENDER CURRENT DECK
-// ─────────────────────────────────────────
+/* ── Render the active deck ── */
 function renderActiveDeck() {
-  const area = document.getElementById('deck-render-area');
+  const area = document.getElementById("srt-render");
   if (!area) return;
-  const busType = currentSchedule.type || 'AC Sleeper (36)';
-  const prefix  = activeDeck === 'lower' ? 'L' : 'U';
-  area.innerHTML = renderDeck(prefix, busType);
+  const prefix  = activeDeck === "lower" ? "L" : "U";
+  const busType = currentSchedule.type || "AC Sleeper (36)";
+  area.innerHTML = buildDeckHTML(prefix, busType);
 }
 
-function renderDeck(prefix, busType) {
-  const isSleeper = busType === 'AC Sleeper (36)';
-  const isMixed   = busType === 'AC Seater+Sleeper (8+32)';
-  const isLower   = prefix === 'L';
+function buildDeckHTML(prefix, busType) {
+  const isMixed = busType === "AC Seater+Sleeper (8+32)";
+  const isLower = prefix === "L";
+  var rowsHTML = "";
 
-  let html = '<div class="seat-grid-new">';
-  html += driverIndicator();
-
-  if (isSleeper) {
-    // Both decks: 6 rows, Left 1 col (sleeper) | aisle | Right 2 cols (sleeper)
-    // Seats: left = 1-6, right = 7-18 (rows: [7,8],[9,10],[11,12],[13,14],[15,16],[17,18])
-    for (let row = 0; row < 6; row++) {
-      const leftNum  = row + 1;           // 1-6
-      const rightA   = 7 + row * 2;       // 7,9,11,13,15,17
-      const rightB   = 8 + row * 2;       // 8,10,12,14,16,18
-      html += `<div class="seat-row-new">`;
-      html += seatBtn(prefix, leftNum, 'sleeper', true);
-      html += `<div class="seat-aisle"></div>`;
-      html += seatBtn(prefix, rightA,  'sleeper', true);
-      html += seatBtn(prefix, rightB,  'sleeper', true);
-      html += `</div>`;
+  if (isMixed && isLower) {
+    /*
+      Lower deck layout (AC Seater+Sleeper 8+32):
+        Left col  : L1-L6  (sleepers, rows 0-5), empty for rows 6-7
+        Right pair: L7+L8 (seater), L9+L10 (seater), L11+L12 (seater), L13+L14 (seater)
+                    L15+L16(sleeper),L17+L18(sleeper),L19+L20(sleeper),L21+L22(sleeper)
+    */
+    for (var r = 0; r < 8; r++) {
+      var leftNum   = r < 6 ? (r + 1) : null;   // L1..L6 then empty
+      var ra        = 7  + r * 2;                // 7,9,11,13,15,17,19,21
+      var rb        = ra + 1;                    // 8,10,12,14,16,18,20,22
+      var rType     = r < 4 ? "se" : "sl";       // seater vs sleeper
+      rowsHTML += makeRowHTML(prefix, leftNum, "sl", ra, rType, rb, rType);
     }
-
-  } else if (isMixed && isLower) {
-    // Lower: 6 left sleepers | 4 right seater rows | 4 right sleeper rows  (total 22 seats)
-    const totalRows = 8; // 6 left rows, 8 right rows — left ends at row 6 with empty
-    for (let row = 0; row < 8; row++) {
-      const hasLeft  = row < 6;
-      const leftNum  = row + 1;           // L1-L6 left sleepers
-      const rightA   = 7  + row * 2;     // L7,L9,...,L21
-      const rightB   = 8  + row * 2;     // L8,L10,...,L22
-      const isSeater = row < 4;          // rows 0-3 = seater, rows 4-7 = sleeper
-      const rightType = isSeater ? 'seater' : 'sleeper';
-
-      html += `<div class="seat-row-new">`;
-      if (hasLeft) {
-        html += seatBtn(prefix, leftNum, 'sleeper', true);
-      } else {
-        html += `<div class="seat-empty"></div>`;
-      }
-      html += `<div class="seat-aisle"></div>`;
-      html += seatBtn(prefix, rightA, rightType, !isSeater);
-      html += seatBtn(prefix, rightB, rightType, !isSeater);
-      html += `</div>`;
-
-      // Separator between seaters and sleepers on right side
-      if (row === 3) {
-        html += `<div class="seat-type-separator"><span>— Sleeper section below —</span></div>`;
-      }
-    }
-
-  } else if (isMixed && !isLower) {
-    // Upper: 6 left sleepers | 6 right sleeper rows = 18 seats
-    for (let row = 0; row < 6; row++) {
-      const leftNum = row + 1;
-      const rightA  = 7  + row * 2;
-      const rightB  = 8  + row * 2;
-      html += `<div class="seat-row-new">`;
-      html += seatBtn(prefix, leftNum, 'sleeper', true);
-      html += `<div class="seat-aisle"></div>`;
-      html += seatBtn(prefix, rightA, 'sleeper', true);
-      html += seatBtn(prefix, rightB, 'sleeper', true);
-      html += `</div>`;
+  } else {
+    /*
+      AC Sleeper (36) – both decks, or Mixed upper deck:
+        Left col : 1-6  (sleepers)
+        Right pair: 7+8, 9+10, 11+12, 13+14, 15+16, 17+18  (all sleepers)
+    */
+    for (var r = 0; r < 6; r++) {
+      var ln = r + 1;
+      var ra = 7  + r * 2;
+      var rb = ra + 1;
+      rowsHTML += makeRowHTML(prefix, ln, "sl", ra, "sl", rb, "sl");
     }
   }
 
-  html += '</div>';
-  return html;
+  return '<div class="srt-bus">' + driverHTML() + rowsHTML + '</div>';
 }
 
-function driverIndicator() {
-  return `<div class="driver-indicator">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
-      <line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/>
-      <line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/>
-    </svg> Driver
-  </div>`;
+/* Build one flex row */
+function makeRowHTML(prefix, leftNum, leftClass, rNumA, rClassA, rNumB, rClassB) {
+  var leftHTML = leftNum !== null
+    ? seatHTML(prefix, leftNum, leftClass)
+    : '<button class="srt-seat sl ph" disabled></button>';
+
+  return '<div class="srt-row">' +
+           leftHTML +
+           '<div class="srt-aisle"></div>' +
+           seatHTML(prefix, rNumA, rClassA) +
+           seatHTML(prefix, rNumB, rClassB) +
+         '</div>';
 }
 
-function seatBtn(prefix, num, type, isSleeper) {
-  const seatId   = `${prefix}${num}`;
-  const isBooked = currentSchedule.bookedSeats?.includes(seatId);
-  const isSel    = selectedSeats.includes(seatId);
-  const price    = calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, seatId, currentSchedule.type);
+/* Single seat button */
+function seatHTML(prefix, num, typeClass) {
+  var id       = prefix + num;
+  var booked   = currentSchedule.bookedSeats && currentSchedule.bookedSeats.includes(id);
+  var selected = selectedSeats.includes(id);
+  var isSleep  = typeClass === "sl";
+  var price    = calculateSeatPriceForRoute(
+    currentSchedule.origin, currentSchedule.destination, id, currentSchedule.type
+  );
 
-  let cls = `seat-new seat-type-${type}`;
-  if (isBooked) cls += ' seat-booked';
-  if (isSel)    cls += ' seat-selected';
-  if (isSleeper) cls += ' seat-is-sleeper';
+  var cls = "srt-seat " + typeClass;
+  if (selected) cls += " ck";
+  if (booked)   cls += " bk";
 
-  return `
-    <button class="${cls}" data-seat="${seatId}"
-      ${isBooked ? 'disabled' : ''} onclick="toggleSeat('${seatId}')"
-      title="${seatId} ${isSleeper ? '(Sleeper)' : '(Seater)'} — ₹${price}">
-      <span class="seat-number">${seatId}</span>
-      <span class="seat-icon">${isSleeper ? '💤' : '💺'}</span>
-      ${!isBooked
-        ? `<span class="seat-price">₹${price}</span>`
-        : `<span class="sold-label">Sold</span>`}
-    </button>`;
+  var icon  = isSleep ? "&#128164;" : "&#128250;";
+  var price_html = booked
+    ? '<span class="ss">Sold</span>'
+    : '<span class="sp">&#8377;' + price + '</span>';
+
+  return '<button class="' + cls + '" ' +
+           (booked ? "disabled" : 'onclick="toggleSeat(\'' + id + '\')"') +
+           ' title="' + id + ' (' + (isSleep ? "Sleeper" : "Seater") + ') - Rs.' + price + '">' +
+           '<span class="sn">' + id + '</span>' +
+           '<span class="si">' + icon + '</span>' +
+           price_html +
+         '</button>';
 }
 
-// ─────────────────────────────────────────
-// TOGGLE SEAT
-// ─────────────────────────────────────────
+function driverHTML() {
+  return '<div class="srt-driver">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>' +
+    '<line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/>' +
+    '<line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/>' +
+    '</svg> DRIVER</div>';
+}
+
+/* ── Toggle seat ── */
 function toggleSeat(seatId) {
-  if (currentSchedule.bookedSeats?.includes(seatId)) return;
-  const idx = selectedSeats.indexOf(seatId);
+  if (currentSchedule.bookedSeats && currentSchedule.bookedSeats.includes(seatId)) return;
+  var idx = selectedSeats.indexOf(seatId);
   if (idx > -1) {
     selectedSeats.splice(idx, 1);
   } else {
-    if (selectedSeats.length >= 6) { showToast('Maximum 6 seats allowed','warning'); return; }
+    if (selectedSeats.length >= 6) { showToast("Maximum 6 seats allowed","warning"); return; }
     selectedSeats.push(seatId);
   }
   renderActiveDeck();
   updateSummary();
 }
 
-// ─────────────────────────────────────────
-// SUMMARY
-// ─────────────────────────────────────────
+/* ── Summary panel ── */
 function updateSummary() {
-  const el = document.getElementById('booking-summary');
+  var el = document.getElementById("booking-summary");
   if (!el) return;
 
   if (selectedSeats.length === 0) {
-    el.innerHTML = `<div class="empty-selection">
-      <p>No seats selected</p>
-      <p class="text-muted">Switch decks and click seats to select</p>
-    </div>`;
+    el.innerHTML =
+      '<div class="empty-selection">' +
+        '<p>No seats selected</p>' +
+        '<p class="text-muted">Switch decks and click seats to select</p>' +
+      '</div>';
     return;
   }
 
-  let total = 0;
-  const details = selectedSeats.map(sid => {
-    const price = calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type);
+  var total = 0;
+  var rows  = selectedSeats.map(function(sid) {
+    var price = calculateSeatPriceForRoute(
+      currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type
+    );
     total += price;
-    const deck = sid.charAt(0) === 'L' ? 'Lower' : 'Upper';
-    return { sid, price, deck };
-  });
+    var deck = sid.charAt(0) === "L" ? "Lower" : "Upper";
+    return '<div class="selected-seat-item">' +
+             '<span class="seat-badge">' + sid +
+               '<small style="font-weight:400;opacity:.7;margin-left:3px;">' + deck + '</small>' +
+             '</span>' +
+             '<span class="seat-item-price">&#8377;' + price + '</span>' +
+             '<button class="remove-seat-btn" onclick="toggleSeat(\'' + sid + '\')" title="Remove">&times;</button>' +
+           '</div>';
+  }).join("");
 
-  el.innerHTML = `
-    <h4 class="summary-subtitle">Selected Seats</h4>
-    <div class="selected-seats-list">
-      ${details.map(({ sid, price, deck }) => `
-        <div class="selected-seat-item">
-          <span class="seat-badge">${sid}<small style="font-weight:400;opacity:.7;margin-left:3px;">${deck}</small></span>
-          <span class="seat-item-price">₹${price}</span>
-          <button class="remove-seat-btn" onclick="toggleSeat('${sid}')" title="Remove">×</button>
-        </div>`).join('')}
-    </div>
-    <div class="summary-divider"></div>
-    <div class="total-section">
-      <span class="total-label">Total Amount</span>
-      <span class="total-amount">${formatCurrency(total)}</span>
-    </div>
-    <button class="btn btn-primary btn-lg btn-block" onclick="proceedToPayment()">
-      Proceed to Payment →
-    </button>`;
+  el.innerHTML =
+    '<h4 class="summary-subtitle">Selected Seats</h4>' +
+    '<div class="selected-seats-list">' + rows + '</div>' +
+    '<div class="summary-divider"></div>' +
+    '<div class="total-section">' +
+      '<span class="total-label">Total Amount</span>' +
+      '<span class="total-amount">' + formatCurrency(total) + '</span>' +
+    '</div>' +
+    '<button class="btn btn-primary btn-lg btn-block" onclick="proceedToPayment()">' +
+      'Proceed to Payment &rarr;' +
+    '</button>';
 }
 
-// ─────────────────────────────────────────
-// PAYMENT
-// ─────────────────────────────────────────
+/* ── Payment ── */
 function proceedToPayment() {
-  if (selectedSeats.length === 0) { showToast('Please select at least one seat','warning'); return; }
-  let total = 0;
-  selectedSeats.forEach(sid => {
-    total += calculateSeatPriceForRoute(currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type);
+  if (selectedSeats.length === 0) { showToast("Please select at least one seat","warning"); return; }
+  var total = 0;
+  selectedSeats.forEach(function(sid) {
+    total += calculateSeatPriceForRoute(
+      currentSchedule.origin, currentSchedule.destination, sid, currentSchedule.type
+    );
   });
-  navigateTo('payment.html', {
+  navigateTo("payment.html", {
     scheduleId:  currentSchedule.id,
-    seats:       selectedSeats.join(','),
+    seats:       selectedSeats.join(","),
     totalAmount: total
   });
 }
 
-document.addEventListener('DOMContentLoaded', initSeatsPage);
+document.addEventListener("DOMContentLoaded", initSeatsPage);
