@@ -225,7 +225,9 @@ function seatHTML(prefix, num, typeClass) {
   if (selected) cls += " ck";
   if (booked)   cls += " bk";
 
-  var icon  = isSleep ? "&#128164;" : "&#128250;";
+  var icon  = isSleep
+    ? '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><rect x="6" y="9" width="12" height="4" rx="1"/><line x1="2" y1="18" x2="2" y2="21"/><line x1="22" y1="18" x2="22" y2="21"/></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 3v11"/><path d="M18 3v8"/><path d="M6 14h12a2 2 0 0 1 2 2v2H4v-2a2 2 0 0 1 2-2z"/><path d="M4 18v3"/><path d="M20 18v3"/></svg>';
   var price_html = booked
     ? '<span class="ss">Sold</span>'
     : '<span class="sp">&#8377;' + price + '</span>';
