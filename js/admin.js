@@ -971,7 +971,19 @@ function updateDatesSummary() {
   }
 }
 
+function renderDowCheckboxes() {
+  const container = document.getElementById('dow-checkboxes');
+  if (!container) return;
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  container.innerHTML = days.map((d, i) => `
+    <label style="cursor:pointer;">
+      <input type="checkbox" class="dow-check" value="${i + 1}" onchange="previewDaysOfWeek()">
+      <span style="display:inline-block;padding:0.3rem 0.7rem;border:2px solid #e5e7eb;border-radius:6px;font-size:0.85rem;font-weight:600;">${d}</span>
+    </label>`).join('');
+}
+
 function initBusDatePicker() {
+  renderDowCheckboxes();
   const today = new Date().toISOString().split('T')[0];
   ['bus-date-picker','range-start','range-end','dow-start','dow-end'].forEach(id => {
     const el = document.getElementById(id);
