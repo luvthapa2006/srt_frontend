@@ -529,9 +529,10 @@ function closeBusCancelDialog() {
 async function busDeleteAction(action) {
   if (action === 'delete-all') {
     if (!confirm('Permanently delete this route and ALL its dates? This cannot be undone.')) return;
+    const scheduleIdToDelete = _cancelDialogScheduleId; // capture BEFORE closing dialog
     closeBusCancelDialog();
     showLoading();
-    const success = await deleteSchedule(_cancelDialogScheduleId);
+    const success = await deleteSchedule(scheduleIdToDelete);
     hideLoading();
     if (success) {
       await loadSchedulesTable(); await loadStats(); await loadBusListTable();
@@ -563,10 +564,11 @@ async function confirmCancelDates() {
   const checks = document.querySelectorAll('.cancel-date-check:checked');
   const dates = Array.from(checks).map(ch => ch.value);
   if (!dates.length) { showToast('Select at least one date', 'error'); return; }
+  const scheduleIdToCancel = _cancelDialogScheduleId; // capture BEFORE closing dialog
   closeBusCancelDialog();
   showLoading();
   // Cancel = set isActive false for those dates via API (store as cancelledDates on the schedule)
-  const res = await fetch(`${API_BASE}/schedules/${_cancelDialogScheduleId}/cancel-dates`, {
+  const res = await fetch(`${API_BASE}/schedules/${scheduleIdToCancel}/cancel-dates`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ dates })
@@ -914,7 +916,7 @@ let _scheduleMode = 'daterange';
 
 function setScheduleMode(mode) {
   _scheduleMode = mode;
-  ['daterange', 'specific'].forEach(m => {
+  ['daterange','specific'].forEach(m => {
     const panel = document.getElementById('mode-panel-' + m);
     const tab   = document.getElementById('mode-tab-' + m);
     if (panel) panel.style.display = m === mode ? 'block' : 'none';
@@ -935,6 +937,7 @@ function previewDateRange() {
   updateDatesSummary();
 }
 
+
 function updateDatesSummary() {
   const el = document.getElementById('dates-summary');
   if (!el) return;
@@ -949,7 +952,7 @@ function updateDatesSummary() {
 
 function initBusDatePicker() {
   const today = new Date().toISOString().split('T')[0];
-  ['bus-date-picker', 'range-start', 'range-end'].forEach(id => {
+  ['bus-date-picker','range-start','range-end'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.min = today;
   });
