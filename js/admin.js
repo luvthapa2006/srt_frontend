@@ -138,37 +138,66 @@ async function loadSchedulesTable() {
     return;
   }
 
-  tbody.innerHTML = schedules.map(schedule => {
-    const dh = schedule.durationHours || 0;
-    const dm = schedule.durationMins  || 0;
+  // Group by route identity: busName + origin + destination + departure time-of-day
+  const groups = groupSchedulesByRoute(schedules);
+
+  tbody.innerHTML = groups.map(group => {
+    const s = group.schedules[0]; // representative schedule for details
+    const dh = s.durationHours || 0;
+    const dm = s.durationMins  || 0;
     const durationStr = dh || dm
       ? `${dh > 0 ? dh + 'h ' : ''}${dm > 0 ? dm + 'm' : ''}`.trim()
       : '—';
+    const datesSorted = group.schedules
+      .map(x => new Date(x.departureTime).toISOString().split('T')[0])
+      .sort();
+    const dateRange = datesSorted.length === 1
+      ? formatDate(s.departureTime)
+      : `${formatDate(group.schedules.find(x => x.departureTime === group.schedules.reduce((a,b) => new Date(a.departureTime) < new Date(b.departureTime) ? a : b).departureTime).departureTime)} – ${formatDate(group.schedules.reduce((a,b) => new Date(a.departureTime) > new Date(b.departureTime) ? a : b).departureTime)} (${group.schedules.length} days)`;
+    const ids = group.schedules.map(x => x.id || x._id);
     return `
     <tr>
       <td>
-        <div><strong>${schedule.busName}</strong></div>
-        <div class="text-muted">${schedule.type}</div>
+        <div><strong>${s.busName}</strong></div>
+        <div class="text-muted">${s.type}</div>
       </td>
-      <td>${schedule.origin} → ${schedule.destination}</td>
-      <td style="font-size:0.8rem;color:#475569;">${schedule.pickupPoint || '—'}</td>
-      <td style="font-size:0.8rem;color:#475569;">${schedule.dropPoint   || '—'}</td>
-      <td>${formatDate(schedule.departureTime)}</td>
-      <td>${formatTime(schedule.departureTime)}</td>
+      <td>${s.origin} → ${s.destination}</td>
+      <td style="font-size:0.8rem;color:#475569;">${s.pickupPoint || '—'}</td>
+      <td style="font-size:0.8rem;color:#475569;">${s.dropPoint   || '—'}</td>
+      <td style="font-size:0.8rem;">${dateRange}</td>
+      <td>${formatTime(s.departureTime)}</td>
       <td><span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.8rem;font-weight:600;">⏱ ${durationStr}</span></td>
-      <td>${formatCurrency(schedule.price)}</td>
+      <td>${formatCurrency(s.price)}</td>
       <td>
-        <span class="badge badge-${(schedule.bookedSeats?.length || 0) > 30 ? 'warning' : 'success'}">
-          ${TOTAL_SEATS - (schedule.bookedSeats?.length || 0)} / ${TOTAL_SEATS}
-        </span>
+        <span class="badge badge-success">${group.schedules.length} day${group.schedules.length > 1 ? 's' : ''}</span>
       </td>
       <td>
         <div class="btn-group">
-          <button class="btn btn-sm btn-outline" onclick="editSchedule('${schedule.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog('${schedule.id}')">Delete / Cancel</button>
+          <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit Details</button>
+          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog(${JSON.stringify(ids)})">Delete</button>
         </div>
       </td>
-    </tr>`}).join('');
+    </tr>`;
+  }).join('');
+}
+
+// Group a flat list of schedules into route groups
+function groupSchedulesByRoute(schedules) {
+  const map = new Map();
+  schedules.forEach(s => {
+    const dep = new Date(s.departureTime);
+    const timeKey = `${dep.getHours().toString().padStart(2,'0')}:${dep.getMinutes().toString().padStart(2,'0')}`;
+    const key = `${s.busName}||${s.origin}||${s.destination}||${timeKey}`;
+    if (!map.has(key)) map.set(key, { key, schedules: [] });
+    map.get(key).schedules.push(s);
+  });
+  // Sort each group's schedules by date
+  map.forEach(g => g.schedules.sort((a,b) => new Date(a.departureTime) - new Date(b.departureTime)));
+  return Array.from(map.values()).sort((a,b) => {
+    const aFirst = new Date(a.schedules[0].departureTime);
+    const bFirst = new Date(b.schedules[0].departureTime);
+    return aFirst - bFirst;
+  });
 }
 
 // ─────────────────────────────────────────
@@ -363,8 +392,8 @@ function updateScheduleFormPricing() {
 
   const routePricing   = getRoutePricing(origin, destination);
   const isCustom       = getAllRoutePricing()[getRouteKey(origin, destination)] !== undefined;
-  const lower          = routePricing.lowerPrice ?? routePricing.firstRight ?? routePricing.firstLeft ?? 0;
-  const upper          = routePricing.upperPrice ?? routePricing.sleeper ?? routePricing.lastLeft ?? 0;
+  const lower          = routePricing.lowerPrice ?? 0;
+  const upper          = routePricing.upperPrice ?? 0;
   preview.style.display = 'block';
   preview.innerHTML = `
     <div class="pricing-info-box">
@@ -505,77 +534,107 @@ async function editSchedule(id) {
   document.getElementById('schedule-form').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── Delete / Cancel Bus Dialog ──────────────────────────────────────
-let _cancelDialogScheduleId = null;
-let _cancelDialogSelectedDates = [];
+// ── Delete Bus Dialog ──────────────────────────────────────
+// _cancelDialogIds: array of schedule IDs in this route group
+let _cancelDialogIds = [];
 
-function openBusCancelDialog(scheduleId) {
-  _cancelDialogScheduleId = scheduleId;
-  _cancelDialogSelectedDates = [];
-  const s = allBusesCache.find(x => x.id === scheduleId || x._id === scheduleId);
+function openBusCancelDialog(ids) {
+  // ids can be a JSON string (from onclick attr) or already an array
+  if (typeof ids === 'string') {
+    try { ids = JSON.parse(ids); } catch(e) { ids = [ids]; }
+  }
+  if (!Array.isArray(ids)) ids = [ids];
+  _cancelDialogIds = ids;
+
+  // Get info from first schedule in group
+  const s = allBusesCache.find(x => ids.includes(x.id) || ids.includes(x._id));
   const nameEl = document.getElementById('bus-cancel-dialog-name');
   if (nameEl && s) nameEl.textContent = `${s.busName} · ${s.origin} → ${s.destination}`;
+
+  // Hide specific-dates panel initially
   document.getElementById('cancel-dates-panel').style.display = 'none';
-  const dialog = document.getElementById('bus-cancel-dialog');
-  if (dialog) { dialog.style.display = 'flex'; }
+  document.getElementById('bus-cancel-dialog').style.display = 'flex';
 }
 
 function closeBusCancelDialog() {
   document.getElementById('bus-cancel-dialog').style.display = 'none';
-  _cancelDialogScheduleId = null;
-  _cancelDialogSelectedDates = [];
+  _cancelDialogIds = [];
 }
 
 async function busDeleteAction(action) {
   if (action === 'delete-all') {
-    if (!confirm('Permanently delete this route and ALL its dates? This cannot be undone.')) return;
-    const scheduleIdToDelete = _cancelDialogScheduleId;
+    const count = _cancelDialogIds.length;
+    if (!confirm(`Permanently delete this route and ALL ${count} date${count > 1 ? 's' : ''}? This cannot be undone.`)) return;
+    const idsToDelete = [..._cancelDialogIds];
     closeBusCancelDialog();
     showLoading();
-    const success = await deleteSchedule(scheduleIdToDelete);
+    // Delete all schedule documents in this group
+    const results = await Promise.all(idsToDelete.map(id => deleteSchedule(id)));
     hideLoading();
-    if (success) {
-      await loadSchedulesTable(); await loadStats(); await loadBusListTable();
-      showToast('Route deleted permanently', 'success');
+    const allOk = results.every(Boolean);
+    if (allOk) {
+      showToast(`Route deleted permanently (${count} date${count > 1 ? 's' : ''} removed)`, 'success');
+    } else {
+      showToast('Some dates could not be deleted', 'error');
     }
-  } else if (action === 'cancel-dates') {
-    // Show date picker panel — list upcoming scheduled dates for this route
-    const s = allBusesCache.find(x => (x.id||x._id) === _cancelDialogScheduleId);
+    await loadSchedulesTable(); await loadStats(); await loadBusListTable();
+
+  } else if (action === 'delete-specific') {
+    // Show the actual scheduled dates for this route group
     const panel = document.getElementById('cancel-dates-panel');
     const listEl = document.getElementById('cancel-dates-list');
     panel.style.display = 'block';
-    // Generate upcoming dates to show (next 30 days)
-    const upcoming = [];
-    const now = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(now); d.setDate(d.getDate() + i);
-      const ds = d.toISOString().split('T')[0];
-      upcoming.push(ds);
+
+    // Get the real scheduled dates from the cache
+    const groupSchedules = allBusesCache
+      .filter(x => _cancelDialogIds.includes(x.id) || _cancelDialogIds.includes(x._id))
+      .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+
+    if (groupSchedules.length === 0) {
+      listEl.innerHTML = '<p style="color:#6b7280;font-size:0.85rem;">No scheduled dates found.</p>';
+      return;
     }
-    listEl.innerHTML = upcoming.map(ds => {
-      const label = new Date(ds + 'T00:00').toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
-      return `<label style="cursor:pointer;"><input type="checkbox" class="cancel-date-check" value="${ds}">
-        <span style="display:inline-block;padding:0.25rem 0.6rem;border:1.5px solid #e5e7eb;border-radius:6px;font-size:0.8rem;margin:2px;">${label}</span></label>`;
+
+    listEl.innerHTML = groupSchedules.map(s => {
+      const depDate = new Date(s.departureTime);
+      const dateStr = depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      const timeStr = formatTime(s.departureTime);
+      const id = s.id || s._id;
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:0.4rem;">
+          <div>
+            <span style="font-weight:600;font-size:0.875rem;color:#1e293b;">${dateStr}</span>
+            <span style="font-size:0.78rem;color:#667eea;margin-left:0.5rem;">@ ${timeStr}</span>
+          </div>
+          <button onclick="deleteSingleDateFromGroup('${id}', this)"
+            style="padding:0.25rem 0.65rem;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;">
+            🗑 Delete
+          </button>
+        </div>`;
     }).join('');
   }
 }
 
-async function confirmCancelDates() {
-  const checks = document.querySelectorAll('.cancel-date-check:checked');
-  const dates = Array.from(checks).map(ch => ch.value);
-  if (!dates.length) { showToast('Select at least one date', 'error'); return; }
-  const scheduleIdToCancel = _cancelDialogScheduleId;
-  closeBusCancelDialog();
-  showLoading();
-  // Cancel = set isActive false for those dates via API (store as cancelledDates on the schedule)
-  const res = await fetch(`${API_BASE}/schedules/${scheduleIdToCancel}/cancel-dates`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dates })
-  }).catch(() => null);
-  hideLoading();
-  showToast(`Cancelled ${dates.length} date(s) for this route`, 'success');
-  await loadBusListTable();
+async function deleteSingleDateFromGroup(scheduleId, btn) {
+  if (!confirm('Delete this specific date? This cannot be undone.')) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  const ok = await deleteSchedule(scheduleId);
+  if (ok) {
+    // Remove this id from dialog tracking
+    _cancelDialogIds = _cancelDialogIds.filter(id => id !== scheduleId);
+    // Remove the row from the panel
+    btn.closest('div[style]').remove();
+    showToast('Date deleted', 'success');
+    // If no dates left, close dialog and reload
+    if (_cancelDialogIds.length === 0) {
+      closeBusCancelDialog();
+    }
+    await loadSchedulesTable(); await loadStats(); await loadBusListTable();
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🗑 Delete';
+  }
 }
 
 function resetScheduleForm() {
@@ -1019,7 +1078,7 @@ let allBusesCache = [];
 async function loadBusListTable() {
   const tbody = document.getElementById('buslist-table-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading…</td></tr>';
   allBusesCache = await getSchedules();
   renderBusListTable(allBusesCache);
 }
@@ -1028,69 +1087,55 @@ function renderBusListTable(schedules) {
   const tbody = document.getElementById('buslist-table-body');
   if (!tbody) return;
   if (schedules.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center">No buses found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No buses found</td></tr>';
     return;
   }
-  tbody.innerHTML = schedules.map(s => {
+
+  // Group by route so each unique route appears as ONE row
+  const groups = groupSchedulesByRoute(schedules);
+
+  tbody.innerHTML = groups.map(group => {
+    const s = group.schedules[0];
     const dh = s.durationHours || 0, dm = s.durationMins || 0;
     const dur = (dh || dm) ? `${dh > 0 ? dh+'h ' : ''}${dm > 0 ? dm+'m' : ''}`.trim() : '—';
-    const isActive = s.isActive !== false; // default true
-    const availSeats = (s.totalSeats || TOTAL_SEATS) - (s.bookedSeats?.length || 0);
+
+    // Build date range label
+    const sorted = group.schedules.slice().sort((a,b) => new Date(a.departureTime) - new Date(b.departureTime));
+    const first = sorted[0], last = sorted[sorted.length - 1];
+    const dateLabel = group.schedules.length === 1
+      ? formatDate(first.departureTime)
+      : `${formatDate(first.departureTime)} – ${formatDate(last.departureTime)}`;
+
+    const ids = group.schedules.map(x => x.id || x._id);
+
     return `
-    <tr id="busrow-${s.id}" style="opacity:${isActive ? 1 : 0.55};">
+    <tr>
       <td><div><strong>${s.busName}</strong></div><div class="text-muted" style="font-size:0.75rem;">${s.type}</div></td>
       <td>${s.origin} → ${s.destination}</td>
       <td style="font-size:0.78rem;color:#475569;">${s.pickupPoint || '—'}<br>${s.dropPoint || '—'}</td>
-      <td>${formatDate(s.departureTime)}<br><small>${formatTime(s.departureTime)}</small></td>
+      <td>
+        ${dateLabel}<br>
+        <small style="color:#667eea;font-weight:600;">${formatTime(s.departureTime)} · ${group.schedules.length} day${group.schedules.length > 1 ? 's' : ''}</small>
+      </td>
       <td><span style="background:#eff6ff;color:#3b82f6;padding:0.15rem 0.4rem;border-radius:4px;font-size:0.78rem;">⏱ ${dur}</span></td>
       <td>${formatCurrency(s.price)}</td>
-      <td><span class="badge badge-${availSeats < 5 ? 'warning' : 'success'}">${availSeats}/${s.totalSeats || TOTAL_SEATS}</span></td>
-      <td>
-        <label class="toggle-label">
-          <label class="toggle-switch">
-            <input type="checkbox" ${isActive ? 'checked' : ''} onchange="handleBusToggle('${s.id}', this)">
-            <span class="toggle-slider"></span>
-          </label>
-          <span id="bus-status-${s.id}" style="font-size:0.78rem;color:${isActive ? '#10b981' : '#9ca3af'};">${isActive ? 'Active' : 'Inactive'}</span>
-        </label>
-      </td>
       <td>
         <div class="btn-group">
-          <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog('${s.id}')">Delete / Cancel</button>
+          <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit Details</button>
+          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog(${JSON.stringify(ids).replace(/"/g, '&quot;')})">Delete</button>
         </div>
       </td>
     </tr>`;
   }).join('');
 }
 
-async function handleBusToggle(scheduleId, checkbox) {
-  const result = await toggleScheduleActive(scheduleId);
-  if (result) {
-    const row = document.getElementById(`busrow-${scheduleId}`);
-    const statusEl = document.getElementById(`bus-status-${scheduleId}`);
-    if (row) row.style.opacity = result.isActive ? '1' : '0.55';
-    if (statusEl) {
-      statusEl.textContent = result.isActive ? 'Active' : 'Inactive';
-      statusEl.style.color = result.isActive ? '#10b981' : '#9ca3af';
-    }
-    showToast(result.isActive ? 'Bus activated 🟢' : 'Bus deactivated ⭕', result.isActive ? 'success' : 'info');
-  } else {
-    // revert checkbox
-    checkbox.checked = !checkbox.checked;
-  }
-}
-
 function filterBusList() {
-  const term   = document.getElementById('buslist-search')?.value.toLowerCase() || '';
-  const type   = document.getElementById('buslist-filter-type')?.value || '';
-  const status = document.getElementById('buslist-filter-status')?.value || '';
+  const term = document.getElementById('buslist-search')?.value.toLowerCase() || '';
+  const type = document.getElementById('buslist-filter-type')?.value || '';
   const filtered = allBusesCache.filter(s => {
-    const matchText   = !term   || (s.busName + s.origin + s.destination + s.type).toLowerCase().includes(term);
-    const matchType   = !type   || s.type === type;
-    const isActive    = s.isActive !== false;
-    const matchStatus = !status || (status === 'active' ? isActive : !isActive);
-    return matchText && matchType && matchStatus;
+    const matchText = !term || (s.busName + s.origin + s.destination + s.type).toLowerCase().includes(term);
+    const matchType = !type || s.type === type;
+    return matchText && matchType;
   });
   renderBusListTable(filtered);
 }
