@@ -129,13 +129,16 @@ function displaySchedules(schedules) {
   
   console.log('📊 Displaying schedules:', schedules.length);
   
-  // Filter out any schedules whose effective departure date is cancelled
+  // Filter out: (1) cancelled dates, (2) buses that have already departed
   const now = new Date();
   schedules = schedules.filter(s => {
     const dep = new Date(s.departureTime);
     const ds  = dep.toISOString().split('T')[0];
     const cancelled = s.cancelledDates || [];
-    return !cancelled.includes(ds);
+    if (cancelled.includes(ds)) return false;
+    // Remove bus from list if its departure time has already passed
+    if (dep <= now) return false;
+    return true;
   });
 
   if (!schedules || schedules.length === 0) {
@@ -247,11 +250,10 @@ function createScheduleCard(schedule) {
   const duration = calculateDuration(schedule.departureTime, schedule.arrivalTime);
   const departureDate = new Date(schedule.departureTime);
   const isToday = isDateToday(departureDate);
-  const isPast  = isPastDeparture(departureDate);
   const nextDay = new Date(schedule.arrivalTime).toDateString() !== new Date(schedule.departureTime).toDateString();
 
   return `
-    <div class="schedule-card" data-schedule-id="${schedule.id}" style="${isPast ? 'opacity:0.55;' : ''}">
+    <div class="schedule-card" data-schedule-id="${schedule.id}">
       <div class="card-accent"></div>
 
       <div class="schedule-info">
@@ -262,9 +264,8 @@ function createScheduleCard(schedule) {
             <span style="font-size:0.8rem;color:#6b7280;background:#f8fafc;border:1px solid #e2e8f0;padding:0.15rem 0.5rem;border-radius:4px;">${schedule.type}</span>
           </div>
           <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-            ${isPast  ? '<span style="background:#fee2e2;color:#991b1b;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fecaca;">Departed</span>' : ''}
-            ${!isPast && isToday ? '<span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #bbf7d0;">Today</span>' : ''}
-            ${!isPast && availableSeats <= 5 && availableSeats > 0 ? '<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fcd34d;">Almost Full</span>' : ''}
+            ${isToday ? '<span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #bbf7d0;">Today</span>' : ''}
+            ${availableSeats <= 5 && availableSeats > 0 ? '<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fcd34d;">Almost Full</span>' : ''}
           </div>
         </div>
 
@@ -325,18 +326,13 @@ function createScheduleCard(schedule) {
             ${availableSeats === 0
               ? 'background:#f3f4f6;color:#9ca3af;cursor:not-allowed;'
               : 'background:linear-gradient(135deg,#667eea,#764ba2);color:white;'}"
-          ${availableSeats === 0 || isPast ? 'disabled' : ''}
+          ${availableSeats === 0 ? 'disabled' : ''}
         >
-          ${isPast ? 'Bus Departed' : availableSeats > 0 ? 'Select Seats →' : 'Fully Booked'}
+          ${availableSeats > 0 ? 'Select Seats →' : 'Fully Booked'}
         </button>
 
-        <div style="font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;
-          ${isPast ? 'color:#9ca3af;' : availableSeats === 0 ? 'color:#ef4444;' : availableSeats <= 5 ? 'color:#f59e0b;' : 'color:#10b981;'}">
-          ${isPast
-            ? '🕐 Already departed'
-            : availableSeats > 0
-              ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left`
-              : '❌ No seats available'}
+        <divfont-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;color:${availableSeats === 0 ? '#ef4444' : availableSeats <= 5 ? '#f59e0b' : '#10b981'};">
+          ${availableSeats > 0 ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left` : '❌ No seats available'}
         </div>
       </div>
     </div>
@@ -344,18 +340,12 @@ function createScheduleCard(schedule) {
 }
 
 
-// Helper: is this date today AND departure is still in the future?
+// Helper: is this departure on today's date?
 function isDateToday(date) {
   const today = new Date();
-  const sameDay = date.getDate()  === today.getDate() &&
-                  date.getMonth() === today.getMonth() &&
-                  date.getFullYear() === today.getFullYear();
-  return sameDay && date > today;   // only "Today" if not yet departed
-}
-
-// Helper: has this departure already passed?
-function isPastDeparture(date) {
-  return new Date(date) < new Date();
+  return date.getDate()      === today.getDate()  &&
+         date.getMonth()     === today.getMonth() &&
+         date.getFullYear()  === today.getFullYear();
 }
 
 // Select bus and navigate to seats page

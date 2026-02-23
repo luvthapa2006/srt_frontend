@@ -914,7 +914,7 @@ let _scheduleMode = 'daterange';
 
 function setScheduleMode(mode) {
   _scheduleMode = mode;
-  ['daterange','daysofweek','specific'].forEach(m => {
+  ['daterange', 'specific'].forEach(m => {
     const panel = document.getElementById('mode-panel-' + m);
     const tab   = document.getElementById('mode-tab-' + m);
     if (panel) panel.style.display = m === mode ? 'block' : 'none';
@@ -935,26 +935,6 @@ function previewDateRange() {
   updateDatesSummary();
 }
 
-function previewDaysOfWeek() {
-  const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
-  const s = document.getElementById('dow-start')?.value;
-  const e = document.getElementById('dow-end')?.value;
-  const preview = document.getElementById('dow-preview');
-  if (!checked.length || !s || !e) { if (preview) preview.textContent = ''; return; }
-  // Count matching dates
-  let count = 0;
-  const cur = new Date(s);
-  const end = new Date(e);
-  while (cur <= end) {
-    const dow = cur.getDay() || 7; // make Sunday = 7
-    if (checked.includes(dow)) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  const dayNames = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  if (preview) preview.textContent = `✅ ${count} trips on ${checked.map(d => dayNames[d]).join(', ')} between ${s} → ${e}`;
-  updateDatesSummary();
-}
-
 function updateDatesSummary() {
   const el = document.getElementById('dates-summary');
   if (!el) return;
@@ -962,30 +942,14 @@ function updateDatesSummary() {
     const s = document.getElementById('range-start')?.value;
     const e = document.getElementById('range-end')?.value;
     el.textContent = s && e ? `📅 Daily from ${s} to ${e}` : '';
-  } else if (_scheduleMode === 'daysofweek') {
-    const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
-    const dayNames = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    el.textContent = checked.length ? `🗓️ Runs every ${checked.map(d => dayNames[d]).join(', ')}` : '';
   } else {
     el.textContent = selectedBusDates.length ? `📌 ${selectedBusDates.length} specific date(s) selected` : '';
   }
 }
 
-function renderDowCheckboxes() {
-  const container = document.getElementById('dow-checkboxes');
-  if (!container) return;
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  container.innerHTML = days.map((d, i) => `
-    <label style="cursor:pointer;">
-      <input type="checkbox" class="dow-check" value="${i + 1}" onchange="previewDaysOfWeek()">
-      <span style="display:inline-block;padding:0.3rem 0.7rem;border:2px solid #e5e7eb;border-radius:6px;font-size:0.85rem;font-weight:600;">${d}</span>
-    </label>`).join('');
-}
-
 function initBusDatePicker() {
-  renderDowCheckboxes();
   const today = new Date().toISOString().split('T')[0];
-  ['bus-date-picker','range-start','range-end','dow-start','dow-end'].forEach(id => {
+  ['bus-date-picker', 'range-start', 'range-end'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.min = today;
   });
@@ -1034,21 +998,6 @@ function buildDatesFromMode() {
     const cur = new Date(s);
     while (cur <= new Date(e)) {
       dates.push(cur.toISOString().split('T')[0]);
-      cur.setDate(cur.getDate() + 1);
-    }
-    return dates;
-  }
-  if (_scheduleMode === 'daysofweek') {
-    const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
-    const s = document.getElementById('dow-start')?.value;
-    const e = document.getElementById('dow-end')?.value;
-    if (!checked.length || !s || !e) return [];
-    const dates = [];
-    const cur = new Date(s);
-    const end = new Date(e);
-    while (cur <= end) {
-      const dow = cur.getDay() || 7;
-      if (checked.includes(dow)) dates.push(cur.toISOString().split('T')[0]);
       cur.setDate(cur.getDate() + 1);
     }
     return dates;
