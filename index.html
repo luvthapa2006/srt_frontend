@@ -54,42 +54,45 @@
       from { opacity: 0; transform: translateY(-30px) scale(0.85); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    /* ── Slogan: written by the logo as it passes ── */
+    /* ── Slogan: ON the road at logo height, hidden until logo rides over it ── */
     .splash-slogan-wrap {
-      position: relative;
-      width: 100vw;
-      height: 52px;
+      position: absolute;
+      /* sit at the same vertical band as the logo */
+      bottom: 52px;
+      left: 0;
+      right: 0;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 1.8rem;
+      pointer-events: none;
+      z-index: 1; /* behind the logo (logo z-index is higher) */
       overflow: hidden;
     }
-    /* The full text sits hidden, revealed left-to-right via clip-path */
     .splash-slogan-text {
       font-family: 'Poppins', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.55);
-      letter-spacing: 0.28em;
+      font-size: 1rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.3em;
       text-transform: uppercase;
       white-space: nowrap;
-      /* Start fully clipped (0 width revealed) */
+      /* Fully hidden — revealed left-to-right as logo passes */
       clip-path: inset(0 100% 0 0);
-      transition: none;
       position: relative;
-      z-index: 2;
+      z-index: 1;
     }
-    /* Orange glow front-edge — moves with the reveal */
+    /* Bright glow at the leading edge (right under the logo front) */
     .splash-slogan-glow {
       position: absolute;
       top: 0; bottom: 0;
-      width: 60px;
-      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.55), rgba(255,107,53,0.15));
-      filter: blur(4px);
+      width: 80px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,107,53,0.6) 60%, rgba(255,200,100,0.3) 100%);
+      filter: blur(6px);
       pointer-events: none;
-      z-index: 3;
+      z-index: 2;
       opacity: 0;
+      transition: opacity 0.1s;
     }
     .splash-road-scene {
       position: relative;
@@ -216,6 +219,8 @@
       width: 210px;
       height: auto;
       display: block;
+      position: relative;
+      z-index: 10; /* above the slogan text */
       filter:
         drop-shadow(0 0 22px rgba(255,107,53,0.8))
         drop-shadow(0 0 50px rgba(255,107,53,0.4))
@@ -286,12 +291,6 @@
   <div id="splash-screen">
     <div class="splash-stars"></div>
 
-    <!-- Slogan written by the logo as it passes left to right -->
-    <div class="splash-slogan-wrap">
-      <div class="splash-slogan-text" id="sloganText">YOUR JOURNEY, OUR PRIDE</div>
-      <div class="splash-slogan-glow" id="sloganGlow"></div>
-    </div>
-
     <div class="splash-road-scene">
       <div class="splash-speed-lines">
         <span></span><span></span><span></span><span></span><span></span>
@@ -307,6 +306,12 @@
           <div class="splash-flag-wave"></div>
         </div>
         <div class="splash-flag-label">Destination</div>
+      </div>
+
+      <!-- Slogan ON the road, at logo height — hidden until logo passes over it -->
+      <div class="splash-slogan-wrap" id="sloganWrap">
+        <div class="splash-slogan-text" id="sloganText">YOUR JOURNEY, OUR PRIDE</div>
+        <div class="splash-slogan-glow" id="sloganGlow"></div>
       </div>
 
       <div class="splash-bus-wrap">
@@ -547,63 +552,62 @@
       setTimeout(function() { splash.remove(); }, 800);
     }
 
-    // ── Slogan: revealed as logo sweeps left→right, like ink being laid down ──
+    // ── Slogan reveal: tracks the actual logo element position in real-time ──
+    // The slogan text is ON the road at the same height as the logo.
+    // We read the logo's current left position every frame and reveal the
+    // slogan text up to exactly that x-position — logo uncovers text as it passes.
     (function() {
-      var textEl = document.getElementById('sloganText');
-      var glowEl = document.getElementById('sloganGlow');
-      if (!textEl || !glowEl) return;
+      var textEl  = document.getElementById('sloganText');
+      var glowEl  = document.getElementById('sloganGlow');
+      var wrapEl  = document.getElementById('sloganWrap');
+      if (!textEl || !glowEl || !wrapEl) return;
 
-      // busRace animation: 0.5s delay, then logo travels from -320px to center
-      // 38% of 3.4s = 1.292s travel time to reach center
-      // So logo hits center of screen at: 500 + 1292 = ~1792ms after load
-      // Logo pauses at center from 38%→62% of 3.4s = 1.292s pause duration
-      // Then exits: 62%→100% = another 1.292s
+      var busEl   = null; // will find .splash-bus-wrap after DOM ready
+      var started = false;
 
-      // We animate the clip-path from "0% revealed" to "100% revealed"
-      // Starting when logo enters (500ms) and finishing when logo exits (~3400ms)
-      // Total reveal window = ~2900ms
-
-      var START_MS = 520;        // just after logo enters from left
-      var END_MS   = 3350;       // just as logo exits right
-      var duration = END_MS - START_MS;
-
-      var startTime = null;
-      var rafId = null;
-
-      function easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      function getLogoRightEdge() {
+        if (!busEl) busEl = document.querySelector('.splash-bus-wrap');
+        if (!busEl) return -999;
+        var rect = busEl.getBoundingClientRect();
+        // right edge of the logo = where text has been revealed up to
+        return rect.right;
       }
 
-      function tick(now) {
-        if (!startTime) startTime = now;
-        var elapsed = now - startTime;
-        var raw = Math.min(elapsed / duration, 1);
-        // Use ease so it starts slow (logo entering), faster in middle, slows at end
-        var progress = easeInOutQuad(raw);
+      function tick() {
+        var logoRight = getLogoRightEdge();
+        var wrapRect  = wrapEl.getBoundingClientRect();
+        var textWidth = textEl.scrollWidth;
+        // Text is centered in wrapEl
+        var textLeft  = wrapRect.left + (wrapRect.width - textWidth) / 2;
 
-        // clip-path reveal: inset(0 RIGHT% 0 0) — shrink right inset from 100→0
-        var rightPct = (1 - progress) * 100;
+        // How much of the text has the logo passed over?
+        var revealed  = logoRight - textLeft;
+        var pct       = Math.max(0, Math.min(revealed / textWidth, 1));
+
+        // Reveal via clip-path
+        var rightPct  = (1 - pct) * 100;
         textEl.style.clipPath = 'inset(0 ' + rightPct.toFixed(2) + '% 0 0)';
 
-        // Glow sits at the leading edge of the reveal
-        var wrapWidth = textEl.parentElement.offsetWidth;
-        var textWidth = textEl.scrollWidth;
-        var textLeft  = (wrapWidth - textWidth) / 2;
-        var glowX = textLeft + textWidth * progress - 30;
-        glowEl.style.left = glowX + 'px';
-        glowEl.style.opacity = (raw < 0.98) ? '1' : '0';
+        // Glow: positioned at the logo's right edge, fades out when done
+        if (pct > 0 && pct < 1) {
+          glowEl.style.left   = (logoRight - wrapRect.left - 70) + 'px';
+          glowEl.style.opacity = '1';
+        } else {
+          glowEl.style.opacity = '0';
+        }
 
-        if (raw < 1) {
-          rafId = requestAnimationFrame(tick);
+        // Keep running until logo has fully exited (pct stays at 1 after that)
+        if (logoRight < window.innerWidth + 300) {
+          requestAnimationFrame(tick);
         } else {
           glowEl.style.opacity = '0';
         }
       }
 
-      // Start after logo enters
+      // Start tracking as soon as animation begins (0.5s delay on busRace)
       setTimeout(function() {
         requestAnimationFrame(tick);
-      }, START_MS);
+      }, 400);
     })();
 
     document.addEventListener('DOMContentLoaded', function() {
