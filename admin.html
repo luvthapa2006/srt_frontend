@@ -465,31 +465,84 @@
               </div>
             </div>
 
-            <!-- Row 3: Dates, Departure Time, Time Taken -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+            <!-- Row 3: Departure Time & Duration -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">📅 Bus Dates <span class="required">*</span></label>
-                <div id="bus-dates-container" style="border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;background:#fff;">
-                  <div id="selected-dates-list" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;min-height:28px;"></div>
-                  <input type="date" class="form-input" id="bus-date-picker" style="margin-bottom:0.5rem;" onchange="addBusDate(this.value); this.value=''">
-                  <small class="text-muted">Click dates to add multiple. Selected dates shown above.</small>
-                </div>
-                <input type="hidden" id="bus-dates-json" value="[]">
-              </div>
-              <div class="form-group">
-                <label class="form-label">🕐 Departure Time</label>
+                <label class="form-label">🕐 Departure Time <span class="required">*</span></label>
                 <input type="time" class="form-input" id="bus-time" required>
               </div>
               <div class="form-group">
                 <label class="form-label">⏱️ Time Taken</label>
                 <div style="display:flex;gap:0.5rem;align-items:center;">
-                  <input type="number" class="form-input" id="duration-hours"
-                         placeholder="Hrs" min="0" max="72" style="width:50%;" required>
-                  <input type="number" class="form-input" id="duration-minutes"
-                         placeholder="Min" min="0" max="59" style="width:50%;">
+                  <input type="number" class="form-input" id="duration-hours" placeholder="Hrs" min="0" max="72" style="width:50%;">
+                  <input type="number" class="form-input" id="duration-minutes" placeholder="Min" min="0" max="59" style="width:50%;">
                 </div>
                 <small class="text-muted">Hours &amp; Minutes (e.g. 8 hrs 30 min)</small>
               </div>
+            </div>
+
+            <!-- Row 4: Schedule Mode -->
+            <div class="form-group">
+              <label class="form-label">📅 Schedule Type <span class="required">*</span></label>
+              <div style="display:flex;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-daterange">
+                  <input type="radio" name="schedule-mode" value="daterange" onchange="setScheduleMode('daterange')" checked> 📆 Date Range
+                </label>
+                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-daysofweek">
+                  <input type="radio" name="schedule-mode" value="daysofweek" onchange="setScheduleMode('daysofweek')"> 🗓️ Days of Week
+                </label>
+                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-specific">
+                  <input type="radio" name="schedule-mode" value="specific" onchange="setScheduleMode('specific')"> 📌 Specific Dates
+                </label>
+              </div>
+
+              <!-- Date Range Mode -->
+              <div id="mode-panel-daterange" style="border:1px solid #e5e7eb;border-radius:8px;padding:1rem;background:#f8fafc;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                  <div>
+                    <label class="form-label" style="font-size:0.82rem;">Start Date</label>
+                    <input type="date" class="form-input" id="range-start" onchange="previewDateRange()">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size:0.82rem;">End Date</label>
+                    <input type="date" class="form-input" id="range-end" onchange="previewDateRange()">
+                  </div>
+                </div>
+                <div id="range-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
+              </div>
+
+              <!-- Days of Week Mode -->
+              <div id="mode-panel-daysofweek" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;background:#f8fafc;">
+                <p style="font-size:0.82rem;color:#6b7280;margin-bottom:0.75rem;">Bus runs on selected days every week. Pick a date range below too.</p>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+                  {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i) => `
+                  <label style="cursor:pointer;">
+                    <input type="checkbox" class="dow-check" value="${i+1}" onchange="previewDaysOfWeek()">
+                    <span style="display:inline-block;padding:0.3rem 0.7rem;border:2px solid #e5e7eb;border-radius:6px;font-size:0.85rem;font-weight:600;">${d}</span>
+                  </label>`).join('')}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                  <div>
+                    <label class="form-label" style="font-size:0.82rem;">From Date</label>
+                    <input type="date" class="form-input" id="dow-start" onchange="previewDaysOfWeek()">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size:0.82rem;">Until Date</label>
+                    <input type="date" class="form-input" id="dow-end" onchange="previewDaysOfWeek()">
+                  </div>
+                </div>
+                <div id="dow-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
+              </div>
+
+              <!-- Specific Dates Mode -->
+              <div id="mode-panel-specific" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;background:#f8fafc;">
+                <div id="selected-dates-list" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;min-height:28px;"></div>
+                <input type="date" class="form-input" id="bus-date-picker" style="max-width:220px;" onchange="addBusDate(this.value); this.value=''">
+                <small class="text-muted" style="display:block;margin-top:0.4rem;">Click to add multiple specific dates.</small>
+              </div>
+
+              <input type="hidden" id="bus-dates-json" value="[]">
+              <div id="dates-summary" style="margin-top:0.6rem;font-size:0.82rem;font-weight:600;color:#667eea;"></div>
             </div>
 
             <!-- Row 4: Price -->
@@ -660,11 +713,10 @@
                 <th>Bus Name &amp; Type</th>
                 <th>Route</th>
                 <th>Pickup / Drop</th>
-                <th>Departure</th>
+                <th>Schedule</th>
                 <th>Duration</th>
                 <th>Price</th>
                 <th>Seats</th>
-                <th>Daily Loop</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -749,5 +801,30 @@
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script src="js/admin.js"></script>
+
+  <!-- ======== DELETE/CANCEL BUS DIALOG ======== -->
+  <div id="bus-cancel-dialog" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:16px;padding:2rem;max-width:480px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+      <h3 style="font-size:1.1rem;font-weight:700;color:#1e293b;margin-bottom:0.4rem;">🚌 Delete / Cancel Bus Route</h3>
+      <p id="bus-cancel-dialog-name" style="font-size:0.88rem;color:#6b7280;margin-bottom:1.5rem;"></p>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        <button onclick="busDeleteAction('delete-all')" style="text-align:left;padding:1rem 1.25rem;border:2px solid #fee2e2;border-radius:10px;background:#fff5f5;cursor:pointer;">
+          <div style="font-weight:700;color:#dc2626;margin-bottom:0.2rem;">🗑️ Delete Route Permanently</div>
+          <div style="font-size:0.8rem;color:#6b7280;">Remove this bus route from the database and cancel all scheduled dates. Cannot be undone.</div>
+        </button>
+        <button onclick="busDeleteAction('cancel-dates')" style="text-align:left;padding:1rem 1.25rem;border:2px solid #fef3c7;border-radius:10px;background:#fffdf0;cursor:pointer;">
+          <div style="font-weight:700;color:#d97706;margin-bottom:0.2rem;">📅 Cancel Specific Dates</div>
+          <div style="font-size:0.8rem;color:#6b7280;">Keep the route but cancel it on specific upcoming dates only.</div>
+        </button>
+      </div>
+      <div id="cancel-dates-panel" style="display:none;margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem;">
+        <p style="font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:0.5rem;">Select dates to cancel:</p>
+        <div id="cancel-dates-list" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem;"></div>
+        <button onclick="confirmCancelDates()" class="btn btn-primary" style="width:100%;">Confirm Cancel Selected Dates</button>
+      </div>
+      <button onclick="closeBusCancelDialog()" style="margin-top:1rem;width:100%;padding:0.6rem;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;color:#6b7280;font-size:0.875rem;">← Go Back</button>
+    </div>
+  </div>
+
 </body>
 </html>

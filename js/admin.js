@@ -165,7 +165,7 @@ async function loadSchedulesTable() {
       <td>
         <div class="btn-group">
           <button class="btn btn-sm btn-outline" onclick="editSchedule('${schedule.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger"  onclick="deleteScheduleConfirm('${schedule.id}')">Delete</button>
+          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog('${schedule.id}')">Delete / Cancel</button>
         </div>
       </td>
     </tr>`}).join('');
@@ -382,8 +382,7 @@ function updateScheduleFormPricing() {
 
 async function handleScheduleSubmit(e) {
   e.preventDefault();
-  const busDatesJson = document.getElementById('bus-dates-json')?.value || '[]';
-  const busDates = JSON.parse(busDatesJson);
+  const busDates = buildDatesFromMode();
   const busTime  = document.getElementById('bus-time').value;
   const scheduleId = document.getElementById('schedule-id').value;
 
@@ -506,18 +505,75 @@ async function editSchedule(id) {
   document.getElementById('schedule-form').scrollIntoView({ behavior: 'smooth' });
 }
 
-async function deleteScheduleConfirm(id) {
-  if (confirm('Are you sure you want to delete this schedule?')) {
+// ── Delete / Cancel Bus Dialog ──────────────────────────────────────
+let _cancelDialogScheduleId = null;
+let _cancelDialogSelectedDates = [];
+
+function openBusCancelDialog(scheduleId) {
+  _cancelDialogScheduleId = scheduleId;
+  _cancelDialogSelectedDates = [];
+  const s = allBusesCache.find(x => x.id === scheduleId || x._id === scheduleId);
+  const nameEl = document.getElementById('bus-cancel-dialog-name');
+  if (nameEl && s) nameEl.textContent = `${s.busName} · ${s.origin} → ${s.destination}`;
+  document.getElementById('cancel-dates-panel').style.display = 'none';
+  const dialog = document.getElementById('bus-cancel-dialog');
+  if (dialog) { dialog.style.display = 'flex'; }
+}
+
+function closeBusCancelDialog() {
+  document.getElementById('bus-cancel-dialog').style.display = 'none';
+  _cancelDialogScheduleId = null;
+  _cancelDialogSelectedDates = [];
+}
+
+async function busDeleteAction(action) {
+  if (action === 'delete-all') {
+    if (!confirm('Permanently delete this route and ALL its dates? This cannot be undone.')) return;
+    closeBusCancelDialog();
     showLoading();
-    const success = await deleteSchedule(id);
+    const success = await deleteSchedule(_cancelDialogScheduleId);
     hideLoading();
     if (success) {
-      await loadSchedulesTable();
-      await loadStats();
-      await loadRouteSelector();
-      showToast('Schedule deleted!', 'success');
+      await loadSchedulesTable(); await loadStats(); await loadBusListTable();
+      showToast('Route deleted permanently', 'success');
     }
+  } else if (action === 'cancel-dates') {
+    // Show date picker panel — list upcoming scheduled dates for this route
+    const s = allBusesCache.find(x => (x.id||x._id) === _cancelDialogScheduleId);
+    const panel = document.getElementById('cancel-dates-panel');
+    const listEl = document.getElementById('cancel-dates-list');
+    panel.style.display = 'block';
+    // Generate upcoming dates to show (next 30 days)
+    const upcoming = [];
+    const now = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now); d.setDate(d.getDate() + i);
+      const ds = d.toISOString().split('T')[0];
+      upcoming.push(ds);
+    }
+    listEl.innerHTML = upcoming.map(ds => {
+      const label = new Date(ds + 'T00:00').toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+      return `<label style="cursor:pointer;"><input type="checkbox" class="cancel-date-check" value="${ds}">
+        <span style="display:inline-block;padding:0.25rem 0.6rem;border:1.5px solid #e5e7eb;border-radius:6px;font-size:0.8rem;margin:2px;">${label}</span></label>`;
+    }).join('');
   }
+}
+
+async function confirmCancelDates() {
+  const checks = document.querySelectorAll('.cancel-date-check:checked');
+  const dates = Array.from(checks).map(ch => ch.value);
+  if (!dates.length) { showToast('Select at least one date', 'error'); return; }
+  closeBusCancelDialog();
+  showLoading();
+  // Cancel = set isActive false for those dates via API (store as cancelledDates on the schedule)
+  const res = await fetch(`${API_BASE}/schedules/${_cancelDialogScheduleId}/cancel-dates`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dates })
+  }).catch(() => null);
+  hideLoading();
+  showToast(`Cancelled ${dates.length} date(s) for this route`, 'success');
+  await loadBusListTable();
 }
 
 function resetScheduleForm() {
@@ -852,11 +908,76 @@ async function resetStatsTemporary() {
 // ─────────────────────────────────────────
 // MULTI-DATE BUS PICKER
 // ─────────────────────────────────────────
+// ── Schedule Mode (Date Range / Days of Week / Specific Dates) ──────────────
 let selectedBusDates = [];
+let _scheduleMode = 'daterange';
+
+function setScheduleMode(mode) {
+  _scheduleMode = mode;
+  ['daterange','daysofweek','specific'].forEach(m => {
+    const panel = document.getElementById('mode-panel-' + m);
+    const tab   = document.getElementById('mode-tab-' + m);
+    if (panel) panel.style.display = m === mode ? 'block' : 'none';
+    if (tab)   tab.style.border = m === mode ? '2px solid #667eea' : '2px solid #e5e7eb';
+  });
+  updateDatesSummary();
+}
+
+function previewDateRange() {
+  const s = document.getElementById('range-start')?.value;
+  const e = document.getElementById('range-end')?.value;
+  const preview = document.getElementById('range-preview');
+  if (!s || !e) { if (preview) preview.textContent = ''; return; }
+  if (e < s) { if (preview) preview.textContent = '⚠️ End date must be after start date'; return; }
+  const start = new Date(s), end = new Date(e);
+  const days = Math.round((end - start) / 86400000) + 1;
+  if (preview) preview.textContent = `✅ ${days} days (${s} → ${e})`;
+  updateDatesSummary();
+}
+
+function previewDaysOfWeek() {
+  const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
+  const s = document.getElementById('dow-start')?.value;
+  const e = document.getElementById('dow-end')?.value;
+  const preview = document.getElementById('dow-preview');
+  if (!checked.length || !s || !e) { if (preview) preview.textContent = ''; return; }
+  // Count matching dates
+  let count = 0;
+  const cur = new Date(s);
+  const end = new Date(e);
+  while (cur <= end) {
+    const dow = cur.getDay() || 7; // make Sunday = 7
+    if (checked.includes(dow)) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  const dayNames = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  if (preview) preview.textContent = `✅ ${count} trips on ${checked.map(d => dayNames[d]).join(', ')} between ${s} → ${e}`;
+  updateDatesSummary();
+}
+
+function updateDatesSummary() {
+  const el = document.getElementById('dates-summary');
+  if (!el) return;
+  if (_scheduleMode === 'daterange') {
+    const s = document.getElementById('range-start')?.value;
+    const e = document.getElementById('range-end')?.value;
+    el.textContent = s && e ? `📅 Daily from ${s} to ${e}` : '';
+  } else if (_scheduleMode === 'daysofweek') {
+    const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
+    const dayNames = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    el.textContent = checked.length ? `🗓️ Runs every ${checked.map(d => dayNames[d]).join(', ')}` : '';
+  } else {
+    el.textContent = selectedBusDates.length ? `📌 ${selectedBusDates.length} specific date(s) selected` : '';
+  }
+}
 
 function initBusDatePicker() {
-  const picker = document.getElementById('bus-date-picker');
-  if (picker) picker.min = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
+  ['bus-date-picker','range-start','range-end','dow-start','dow-end'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.min = today;
+  });
+  setScheduleMode('daterange');
   renderDatePills();
 }
 
@@ -887,6 +1008,40 @@ function renderDatePills() {
   }
   const hidden = document.getElementById('bus-dates-json');
   if (hidden) hidden.value = JSON.stringify(selectedBusDates);
+  updateDatesSummary();
+}
+
+// Build the flat array of dates from current schedule mode (for form submission)
+function buildDatesFromMode() {
+  if (_scheduleMode === 'specific') return selectedBusDates;
+  if (_scheduleMode === 'daterange') {
+    const s = document.getElementById('range-start')?.value;
+    const e = document.getElementById('range-end')?.value;
+    if (!s || !e || e < s) return [];
+    const dates = [];
+    const cur = new Date(s);
+    while (cur <= new Date(e)) {
+      dates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return dates;
+  }
+  if (_scheduleMode === 'daysofweek') {
+    const checked = Array.from(document.querySelectorAll('.dow-check:checked')).map(x => parseInt(x.value));
+    const s = document.getElementById('dow-start')?.value;
+    const e = document.getElementById('dow-end')?.value;
+    if (!checked.length || !s || !e) return [];
+    const dates = [];
+    const cur = new Date(s);
+    const end = new Date(e);
+    while (cur <= end) {
+      const dow = cur.getDay() || 7;
+      if (checked.includes(dow)) dates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return dates;
+  }
+  return [];
 }
 
 // Override initScheduleForm to hook multi-date
@@ -900,7 +1055,7 @@ let allBusesCache = [];
 async function loadBusListTable() {
   const tbody = document.getElementById('buslist-table-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading…</td></tr>';
   allBusesCache = await getSchedules();
   renderBusListTable(allBusesCache);
 }
@@ -938,7 +1093,7 @@ function renderBusListTable(schedules) {
       <td>
         <div class="btn-group">
           <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger"  onclick="deleteScheduleConfirm('${s.id}')">Delete</button>
+          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog('${s.id}')">Delete / Cancel</button>
         </div>
       </td>
     </tr>`;

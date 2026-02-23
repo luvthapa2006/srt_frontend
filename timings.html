@@ -129,6 +129,15 @@ function displaySchedules(schedules) {
   
   console.log('📊 Displaying schedules:', schedules.length);
   
+  // Filter out any schedules whose effective departure date is cancelled
+  const now = new Date();
+  schedules = schedules.filter(s => {
+    const dep = new Date(s.departureTime);
+    const ds  = dep.toISOString().split('T')[0];
+    const cancelled = s.cancelledDates || [];
+    return !cancelled.includes(ds);
+  });
+
   if (!schedules || schedules.length === 0) {
     schedulesList.innerHTML = createEmptyState();
     return;
@@ -326,7 +335,7 @@ function createScheduleCard(schedule) {
           ${isPast
             ? '🕐 Already departed'
             : availableSeats > 0
-              ? \`💺 \${availableSeats} seat\${availableSeats > 1 ? 's' : ''} left\`
+              ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left`
               : '❌ No seats available'}
         </div>
       </div>
