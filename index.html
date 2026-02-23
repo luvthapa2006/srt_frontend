@@ -9,6 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tailwind.css">
+  <!-- Preload logo so splash screen shows instantly with no image flash -->
+  <link rel="preload" href="https://i.ibb.co/TqYcn7bS/shree-ram-logo-new.png" as="image" fetchpriority="high">
+  <!-- Load data.js early so API calls fire as fast as possible -->
+  <script src="js/data.js"></script>
 
   <style>
     /* ========== SPLASH SCREEN ========== */
@@ -266,7 +270,7 @@
     <div class="splash-stars"></div>
 
     <div class="splash-logo-wrap">
-      <img src="https://i.ibb.co/TqYcn7bS/shree-ram-logo-new.png" alt="Shree Ram Travels">
+      <img src="https://i.ibb.co/TqYcn7bS/shree-ram-logo-new.png" alt="Shree Ram Travels" width="220" height="110" loading="eager" decoding="sync">
       <div class="splash-tagline">Your journey, our pride</div>
     </div>
 
@@ -524,7 +528,6 @@
 
   </div><!-- end #main-content -->
 
-  <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script>
     // ─── Splash & Background Data Loading ─────────────────────────────────────
@@ -538,6 +541,10 @@
       ]);
       return citiesDataPromise;
     }
+
+    // Kick off API calls RIGHT NOW — don't wait for DOMContentLoaded
+    // By the time the splash animation ends (3.5s), data will be long ready on any decent connection
+    preloadCityData();
 
     async function populateCityDropdowns() {
       try {
@@ -576,10 +583,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      // 1. Kick off API calls immediately — runs during splash animation
-      preloadCityData();
+      // Data fetch already started above — no need to call again
 
-      // 2. Set date defaults
+      // Set date defaults
       var dateInput = document.getElementById('search-date');
       if (dateInput) {
         dateInput.min = new Date().toISOString().split('T')[0];
@@ -587,7 +593,10 @@
       }
 
       // 3. Wait for BOTH: minimum splash display time + data ready
-      var SPLASH_DURATION = 4000; // ms — gives bus animation time to complete
+      //    Bus animation is 3.4s (0.5s delay + 2.9s race). We wait exactly that.
+      //    On fast connections data is ready well before — so splash dismisses right at animation end.
+      //    On slow connections data may take longer — splash waits for it too (no loading screen shown).
+      var SPLASH_DURATION = 3500; // matches bus animation length exactly, no extra padding
 
       Promise.all([
         citiesDataPromise.catch(function() { return [[], []]; }),
