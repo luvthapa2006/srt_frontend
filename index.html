@@ -54,138 +54,66 @@
       from { opacity: 0; transform: translateY(-30px) scale(0.85); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    /* ── Slogan: ON the road at logo height, hidden until logo rides over it ── */
+    /* ── Logo race scene (no road, no flag) ── */
+    .splash-scene {
+      position: relative;
+      width: 100vw;
+      height: 140px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Slogan: sits in the middle of the scene, fully hidden initially ──
+       The logo (z-index 10) flies OVER it. As the logo's right edge passes
+       each part of the text, that part gets revealed via clip-path.        ── */
     .splash-slogan-wrap {
       position: absolute;
-      /* sit at the same vertical band as the logo */
-      bottom: 52px;
-      left: 0;
-      right: 0;
-      height: 36px;
+      left: 0; right: 0;
+      top: 50%;
+      transform: translateY(-50%);
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 1;        /* BELOW the logo */
       pointer-events: none;
-      z-index: 1; /* behind the logo (logo z-index is higher) */
-      overflow: hidden;
     }
     .splash-slogan-text {
       font-family: 'Poppins', sans-serif;
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255, 255, 255, 0.65);
       letter-spacing: 0.3em;
       text-transform: uppercase;
       white-space: nowrap;
-      /* Fully hidden — revealed left-to-right as logo passes */
-      clip-path: inset(0 100% 0 0);
-      position: relative;
-      z-index: 1;
+      clip-path: inset(0 100% 0 0);   /* start fully hidden */
     }
-    /* Bright glow at the leading edge (right under the logo front) */
     .splash-slogan-glow {
       position: absolute;
       top: 0; bottom: 0;
-      width: 80px;
-      background: linear-gradient(90deg, transparent 0%, rgba(255,107,53,0.6) 60%, rgba(255,200,100,0.3) 100%);
-      filter: blur(6px);
-      pointer-events: none;
+      width: 90px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.7), rgba(255,180,80,0.2));
+      filter: blur(8px);
       z-index: 2;
       opacity: 0;
-      transition: opacity 0.1s;
+      pointer-events: none;
     }
-    .splash-road-scene {
-      position: relative;
-      width: 100vw;
-      height: 130px;
-      display: flex;
-      align-items: flex-end;
-    }
-    .splash-road {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 48px;
-      background: #1e293b;
-      border-top: 3px solid #334155;
-    }
-    .splash-road-line {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 3px;
-      transform: translateY(-50%);
-      background: repeating-linear-gradient(90deg, #f59e0b 0px, #f59e0b 40px, transparent 40px, transparent 80px);
-      animation: roadScroll 0.28s linear infinite;
-    }
-    @keyframes roadScroll {
-      from { transform: translateY(-50%) translateX(0); }
-      to   { transform: translateY(-50%) translateX(-80px); }
-    }
-    .splash-ground {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b);
-      box-shadow: 0 0 12px rgba(245,158,11,0.5);
-    }
+
+    /* ── Logo (the moving "bus") — z-index above slogan ── */
     .splash-bus-wrap {
       position: absolute;
-      bottom: 56px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
       animation: busRace 3.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both;
     }
     @keyframes busRace {
-      0%   { left: -320px; }
+      0%   { left: -260px; }
       38%  { left: calc(50vw - 105px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
       62%  { left: calc(50vw - 105px); }
       100% { left: calc(100vw + 60px); }
     }
-    .splash-destination {
-      position: absolute;
-      right: 90px;
-      bottom: 48px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      animation: flagAppear 0.5s ease 2.6s both;
-    }
-    @keyframes flagAppear {
-      from { opacity: 0; transform: scale(0.5) translateY(12px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .splash-flag-pole {
-      width: 3px;
-      height: 52px;
-      background: #94a3b8;
-      border-radius: 2px;
-      position: relative;
-    }
-    .splash-flag-wave {
-      position: absolute;
-      top: 0;
-      left: 3px;
-      width: 36px;
-      height: 20px;
-      background: linear-gradient(135deg, #ff6b35, #ef4444);
-      border-radius: 0 4px 4px 0;
-      animation: flagWave 0.4s ease-in-out infinite alternate;
-      transform-origin: left center;
-    }
-    @keyframes flagWave {
-      from { transform: skewY(-3deg); }
-      to   { transform: skewY(4deg); }
-    }
-    .splash-flag-label {
-      margin-top: 4px;
-      font-size: 0.58rem;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
+
+    /* Speed lines — flash on fast exit */
     .splash-speed-lines {
       position: absolute;
       inset: 0;
@@ -291,30 +219,20 @@
   <div id="splash-screen">
     <div class="splash-stars"></div>
 
-    <div class="splash-road-scene">
+    <div class="splash-scene">
+      <!-- Speed lines on fast exit -->
       <div class="splash-speed-lines">
         <span></span><span></span><span></span><span></span><span></span>
       </div>
 
-      <div class="splash-road">
-        <div class="splash-road-line"></div>
-      </div>
-      <div class="splash-ground"></div>
-
-      <div class="splash-destination">
-        <div class="splash-flag-pole">
-          <div class="splash-flag-wave"></div>
-        </div>
-        <div class="splash-flag-label">Destination</div>
-      </div>
-
-      <!-- Slogan ON the road, at logo height — hidden until logo passes over it -->
+      <!-- Slogan: centred in scene, z-index BELOW logo, revealed as logo passes -->
       <div class="splash-slogan-wrap" id="sloganWrap">
         <div class="splash-slogan-text" id="sloganText">YOUR JOURNEY, OUR PRIDE</div>
         <div class="splash-slogan-glow" id="sloganGlow"></div>
       </div>
 
-      <div class="splash-bus-wrap">
+      <!-- Logo: z-index ABOVE slogan, flies left → right -->
+      <div class="splash-bus-wrap" id="busWrap">
         <div class="splash-logo-trail"></div>
         <img src="assets/icons/shree-ram-logo.png"
              class="splash-logo-mover"
@@ -552,62 +470,53 @@
       setTimeout(function() { splash.remove(); }, 800);
     }
 
-    // ── Slogan reveal: tracks the actual logo element position in real-time ──
-    // The slogan text is ON the road at the same height as the logo.
-    // We read the logo's current left position every frame and reveal the
-    // slogan text up to exactly that x-position — logo uncovers text as it passes.
+    // ── Slogan reveal: logo overlaps slogan (higher z-index) and uncovers it as it passes ──
+    // Every frame we read the logo's RIGHT edge pixel position.
+    // The slogan text is centered on screen. We clip it so only the part
+    // the logo has already passed is visible — creating the "written by the logo" effect.
     (function() {
-      var textEl  = document.getElementById('sloganText');
-      var glowEl  = document.getElementById('sloganGlow');
-      var wrapEl  = document.getElementById('sloganWrap');
-      if (!textEl || !glowEl || !wrapEl) return;
-
-      var busEl   = null; // will find .splash-bus-wrap after DOM ready
-      var started = false;
-
-      function getLogoRightEdge() {
-        if (!busEl) busEl = document.querySelector('.splash-bus-wrap');
-        if (!busEl) return -999;
-        var rect = busEl.getBoundingClientRect();
-        // right edge of the logo = where text has been revealed up to
-        return rect.right;
-      }
+      var textEl = document.getElementById('sloganText');
+      var glowEl = document.getElementById('sloganGlow');
+      var busEl  = document.getElementById('busWrap');
+      if (!textEl || !glowEl || !busEl) return;
 
       function tick() {
-        var logoRight = getLogoRightEdge();
-        var wrapRect  = wrapEl.getBoundingClientRect();
-        var textWidth = textEl.scrollWidth;
-        // Text is centered in wrapEl
-        var textLeft  = wrapRect.left + (wrapRect.width - textWidth) / 2;
+        var busRect  = busEl.getBoundingClientRect();
+        var logoRight = busRect.right;  // right edge of logo in viewport px
 
-        // How much of the text has the logo passed over?
-        var revealed  = logoRight - textLeft;
-        var pct       = Math.max(0, Math.min(revealed / textWidth, 1));
+        var textRect  = textEl.getBoundingClientRect();
+        var textLeft  = textRect.left;
+        var textWidth = textRect.width || textEl.scrollWidth;
 
-        // Reveal via clip-path
-        var rightPct  = (1 - pct) * 100;
+        // How much of the text has the logo's right edge already passed?
+        var passed = logoRight - textLeft;
+        var pct    = Math.max(0, Math.min(passed / textWidth, 1));
+
+        // Reveal exactly that fraction from the left
+        var rightPct = (1 - pct) * 100;
         textEl.style.clipPath = 'inset(0 ' + rightPct.toFixed(2) + '% 0 0)';
 
-        // Glow: positioned at the logo's right edge, fades out when done
-        if (pct > 0 && pct < 1) {
-          glowEl.style.left   = (logoRight - wrapRect.left - 70) + 'px';
+        // Glow sits right at the leading reveal edge
+        if (pct > 0.01 && pct < 0.99) {
+          var wrapRect = glowEl.parentElement.getBoundingClientRect();
+          glowEl.style.left    = (logoRight - wrapRect.left - 80) + 'px';
           glowEl.style.opacity = '1';
         } else {
           glowEl.style.opacity = '0';
         }
 
-        // Keep running until logo has fully exited (pct stays at 1 after that)
-        if (logoRight < window.innerWidth + 300) {
+        // Keep animating while logo is on screen
+        if (logoRight < window.innerWidth + 320) {
           requestAnimationFrame(tick);
         } else {
           glowEl.style.opacity = '0';
         }
       }
 
-      // Start tracking as soon as animation begins (0.5s delay on busRace)
+      // Kick off just before animation starts (busRace has 0.5s delay)
       setTimeout(function() {
         requestAnimationFrame(tick);
-      }, 400);
+      }, 380);
     })();
 
     document.addEventListener('DOMContentLoaded', function() {
