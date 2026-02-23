@@ -89,11 +89,47 @@ function adminLogout() {
   document.head.appendChild(s);
 })();
 
+// ── IST Timezone Helpers ────────────────────────────────────────────────────
+// All date/time operations use IST (UTC+5:30) to prevent timezone drift
+// when the browser or server runs in a different timezone.
+
+function toISTDateString(date) {
+  // Returns "YYYY-MM-DD" in IST
+  const d = new Date(date);
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // en-CA gives YYYY-MM-DD
+}
+
+function toISTTimeString(date) {
+  // Returns "HH:MM" in IST
+  const d = new Date(date);
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+}
+
+function buildISTDateTime(dateStr, timeStr) {
+  // Constructs an ISO string pinned to IST: "2026-02-23T17:00:00.000+05:30"
+  return `${dateStr}T${timeStr}:00.000+05:30`;
+}
+
+
+// Group a flat list of schedules into route groups
+function groupSchedulesByRoute(schedules) {
+  const map = new Map();
+  schedules.forEach(s => {
+    const dep = new Date(s.departureTime);
+    const timeKey = toISTTimeString(dep);
+    const key = `${s.busName}||${s.origin}||${s.destination}||${timeKey}`;
+    if (!map.has(key)) map.set(key, { key, schedules: [] });
+    map.get(key).schedules.push(s);
+  });
+  map.forEach(g => g.schedules.sort((a,b) => new Date(a.departureTime) - new Date(b.departureTime)));
+  return Array.from(map.values()).sort((a,b) =>
+    new Date(a.schedules[0].departureTime) - new Date(b.schedules[0].departureTime)
+  );
+}
 // ─────────────────────────────────────────
 // DASHBOARD INIT
 // ─────────────────────────────────────────
 function initAdminDashboard() {
-  loadSchedulesTable();
   loadBookingsTable();
   loadStats();
   initScheduleForm();
@@ -127,77 +163,9 @@ async function loadStats() {
 // SCHEDULES TABLE
 // ─────────────────────────────────────────
 async function loadSchedulesTable() {
-  const tbody = document.getElementById('schedules-table-body');
-  if (!tbody) return;
-
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading…</td></tr>';
-  const schedules = await getSchedules();
-
-  if (schedules.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No schedules found</td></tr>';
-    return;
-  }
-
-  // Group by route identity: busName + origin + destination + departure time-of-day
-  const groups = groupSchedulesByRoute(schedules);
-
-  tbody.innerHTML = groups.map(group => {
-    const s = group.schedules[0]; // representative schedule for details
-    const dh = s.durationHours || 0;
-    const dm = s.durationMins  || 0;
-    const durationStr = dh || dm
-      ? `${dh > 0 ? dh + 'h ' : ''}${dm > 0 ? dm + 'm' : ''}`.trim()
-      : '—';
-    const datesSorted = group.schedules
-      .map(x => new Date(x.departureTime).toISOString().split('T')[0])
-      .sort();
-    const dateRange = datesSorted.length === 1
-      ? formatDate(s.departureTime)
-      : `${formatDate(group.schedules.find(x => x.departureTime === group.schedules.reduce((a,b) => new Date(a.departureTime) < new Date(b.departureTime) ? a : b).departureTime).departureTime)} – ${formatDate(group.schedules.reduce((a,b) => new Date(a.departureTime) > new Date(b.departureTime) ? a : b).departureTime)} (${group.schedules.length} days)`;
-    const ids = group.schedules.map(x => x.id || x._id);
-    return `
-    <tr>
-      <td>
-        <div><strong>${s.busName}</strong></div>
-        <div class="text-muted">${s.type}</div>
-      </td>
-      <td>${s.origin} → ${s.destination}</td>
-      <td style="font-size:0.8rem;color:#475569;">${s.pickupPoint || '—'}</td>
-      <td style="font-size:0.8rem;color:#475569;">${s.dropPoint   || '—'}</td>
-      <td style="font-size:0.8rem;">${dateRange}</td>
-      <td>${formatTime(s.departureTime)}</td>
-      <td><span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.8rem;font-weight:600;">⏱ ${durationStr}</span></td>
-      <td>${formatCurrency(s.price)}</td>
-      <td>
-        <span class="badge badge-success">${group.schedules.length} day${group.schedules.length > 1 ? 's' : ''}</span>
-      </td>
-      <td>
-        <div class="btn-group">
-          <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit Details</button>
-          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog(${JSON.stringify(ids)})">Delete</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// Group a flat list of schedules into route groups
-function groupSchedulesByRoute(schedules) {
-  const map = new Map();
-  schedules.forEach(s => {
-    const dep = new Date(s.departureTime);
-    const timeKey = `${dep.getHours().toString().padStart(2,'0')}:${dep.getMinutes().toString().padStart(2,'0')}`;
-    const key = `${s.busName}||${s.origin}||${s.destination}||${timeKey}`;
-    if (!map.has(key)) map.set(key, { key, schedules: [] });
-    map.get(key).schedules.push(s);
-  });
-  // Sort each group's schedules by date
-  map.forEach(g => g.schedules.sort((a,b) => new Date(a.departureTime) - new Date(b.departureTime)));
-  return Array.from(map.values()).sort((a,b) => {
-    const aFirst = new Date(a.schedules[0].departureTime);
-    const bFirst = new Date(b.schedules[0].departureTime);
-    return aFirst - bFirst;
-  });
+  // schedules-table-body was removed from the Schedules tab —
+  // all schedule listing now happens in the Bus List tab via loadBusListTable()
+  await loadBusListTable();
 }
 
 // ─────────────────────────────────────────
@@ -392,8 +360,8 @@ function updateScheduleFormPricing() {
 
   const routePricing   = getRoutePricing(origin, destination);
   const isCustom       = getAllRoutePricing()[getRouteKey(origin, destination)] !== undefined;
-  const lower          = routePricing.lowerPrice ?? 0;
-  const upper          = routePricing.upperPrice ?? 0;
+  const lower = routePricing.lowerPrice ?? 0;
+  const upper = routePricing.upperPrice ?? 0;
   preview.style.display = 'block';
   preview.innerHTML = `
     <div class="pricing-info-box">
@@ -418,8 +386,8 @@ async function handleScheduleSubmit(e) {
   // If editing an existing, use old single-date approach
   if (scheduleId) {
     // For edit mode, fall back to single date (use first date from picker or today)
-    const singleDate = busDates[0] || new Date().toISOString().split('T')[0];
-    const departureDate = new Date(`${singleDate}T${busTime}`);
+    const singleDate = busDates[0] || toISTDateString(new Date());
+    const departureDate = new Date(buildISTDateTime(singleDate, busTime));
     const durationHrs  = parseInt(document.getElementById('duration-hours').value)  || 0;
     const durationMins = parseInt(document.getElementById('duration-minutes').value) || 0;
     const totalMins    = (durationHrs * 60) + durationMins;
@@ -524,34 +492,33 @@ async function editSchedule(id) {
   document.getElementById('duration-minutes').value = schedule.durationMins  || '';
 
   const d = new Date(schedule.departureTime);
-  // For edit mode: set a single date in the multi-date picker
-  selectedBusDates = [d.toISOString().split('T')[0]];
+  // For edit mode: extract date and time in IST to avoid UTC drift
+  selectedBusDates = [toISTDateString(d)];
   renderDatePills();
-  document.getElementById('bus-time').value = d.toTimeString().substring(0, 5);
+  document.getElementById('bus-time').value = toISTTimeString(d);
   document.getElementById('price').value    = schedule.price;
   document.getElementById('form-title').textContent = 'Edit Schedule';
   updateScheduleFormPricing();
   document.getElementById('schedule-form').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── Delete Bus Dialog ──────────────────────────────────────
-// _cancelDialogIds: array of schedule IDs in this route group
+// ── Delete Bus Dialog ──────────────────────────────────────────────────────
+// _cancelDialogIds holds the array of schedule IDs for the selected route group
 let _cancelDialogIds = [];
 
-function openBusCancelDialog(ids) {
-  // ids can be a JSON string (from onclick attr) or already an array
+function openBusCancelDialog(idsInput) {
+  // Accept JSON string (from onclick attr) or plain array
+  let ids = idsInput;
   if (typeof ids === 'string') {
     try { ids = JSON.parse(ids); } catch(e) { ids = [ids]; }
   }
   if (!Array.isArray(ids)) ids = [ids];
   _cancelDialogIds = ids;
 
-  // Get info from first schedule in group
   const s = allBusesCache.find(x => ids.includes(x.id) || ids.includes(x._id));
   const nameEl = document.getElementById('bus-cancel-dialog-name');
   if (nameEl && s) nameEl.textContent = `${s.busName} · ${s.origin} → ${s.destination}`;
 
-  // Hide specific-dates panel initially
   document.getElementById('cancel-dates-panel').style.display = 'none';
   document.getElementById('bus-cancel-dialog').style.display = 'flex';
 }
@@ -568,37 +535,31 @@ async function busDeleteAction(action) {
     const idsToDelete = [..._cancelDialogIds];
     closeBusCancelDialog();
     showLoading();
-    // Delete all schedule documents in this group
     const results = await Promise.all(idsToDelete.map(id => deleteSchedule(id)));
     hideLoading();
     const allOk = results.every(Boolean);
-    if (allOk) {
-      showToast(`Route deleted permanently (${count} date${count > 1 ? 's' : ''} removed)`, 'success');
-    } else {
-      showToast('Some dates could not be deleted', 'error');
-    }
-    await loadSchedulesTable(); await loadStats(); await loadBusListTable();
+    showToast(allOk ? `Route deleted (${count} date${count > 1 ? 's' : ''} removed)` : 'Some dates could not be deleted', allOk ? 'success' : 'error');
+    await loadBusListTable(); await loadStats();
 
   } else if (action === 'delete-specific') {
-    // Show the actual scheduled dates for this route group
     const panel = document.getElementById('cancel-dates-panel');
     const listEl = document.getElementById('cancel-dates-list');
     panel.style.display = 'block';
 
-    // Get the real scheduled dates from the cache
+    // Show the REAL scheduled dates from the cache for this route group
     const groupSchedules = allBusesCache
       .filter(x => _cancelDialogIds.includes(x.id) || _cancelDialogIds.includes(x._id))
       .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
 
-    if (groupSchedules.length === 0) {
+    if (!groupSchedules.length) {
       listEl.innerHTML = '<p style="color:#6b7280;font-size:0.85rem;">No scheduled dates found.</p>';
       return;
     }
 
     listEl.innerHTML = groupSchedules.map(s => {
-      const depDate = new Date(s.departureTime);
-      const dateStr = depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-      const timeStr = formatTime(s.departureTime);
+      const dateStr = new Date(s.departureTime).toLocaleDateString('en-IN',
+        { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+      const timeStr = toISTTimeString(new Date(s.departureTime));
       const id = s.id || s._id;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:0.4rem;">
@@ -621,16 +582,11 @@ async function deleteSingleDateFromGroup(scheduleId, btn) {
   btn.textContent = '…';
   const ok = await deleteSchedule(scheduleId);
   if (ok) {
-    // Remove this id from dialog tracking
     _cancelDialogIds = _cancelDialogIds.filter(id => id !== scheduleId);
-    // Remove the row from the panel
     btn.closest('div[style]').remove();
     showToast('Date deleted', 'success');
-    // If no dates left, close dialog and reload
-    if (_cancelDialogIds.length === 0) {
-      closeBusCancelDialog();
-    }
-    await loadSchedulesTable(); await loadStats(); await loadBusListTable();
+    if (_cancelDialogIds.length === 0) closeBusCancelDialog();
+    await loadBusListTable(); await loadStats();
   } else {
     btn.disabled = false;
     btn.textContent = '🗑 Delete';
@@ -1010,7 +966,7 @@ function updateDatesSummary() {
 }
 
 function initBusDatePicker() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toISTDateString(new Date()); // IST today
   ['bus-date-picker','range-start','range-end'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.min = today;
@@ -1059,7 +1015,7 @@ function buildDatesFromMode() {
     const dates = [];
     const cur = new Date(s);
     while (cur <= new Date(e)) {
-      dates.push(cur.toISOString().split('T')[0]);
+      dates.push(toISTDateString(cur));
       cur.setDate(cur.getDate() + 1);
     }
     return dates;
@@ -1071,7 +1027,7 @@ function buildDatesFromMode() {
 const _origInitScheduleForm = initScheduleForm;
 
 // ─────────────────────────────────────────
-// BUS LISTS TAB
+// BUS LISTS TAB — one row per unique route group
 // ─────────────────────────────────────────
 let allBusesCache = [];
 
@@ -1086,12 +1042,11 @@ async function loadBusListTable() {
 function renderBusListTable(schedules) {
   const tbody = document.getElementById('buslist-table-body');
   if (!tbody) return;
-  if (schedules.length === 0) {
+  if (!schedules || schedules.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">No buses found</td></tr>';
     return;
   }
 
-  // Group by route so each unique route appears as ONE row
   const groups = groupSchedulesByRoute(schedules);
 
   tbody.innerHTML = groups.map(group => {
@@ -1099,7 +1054,6 @@ function renderBusListTable(schedules) {
     const dh = s.durationHours || 0, dm = s.durationMins || 0;
     const dur = (dh || dm) ? `${dh > 0 ? dh+'h ' : ''}${dm > 0 ? dm+'m' : ''}`.trim() : '—';
 
-    // Build date range label
     const sorted = group.schedules.slice().sort((a,b) => new Date(a.departureTime) - new Date(b.departureTime));
     const first = sorted[0], last = sorted[sorted.length - 1];
     const dateLabel = group.schedules.length === 1
@@ -1107,6 +1061,7 @@ function renderBusListTable(schedules) {
       : `${formatDate(first.departureTime)} – ${formatDate(last.departureTime)}`;
 
     const ids = group.schedules.map(x => x.id || x._id);
+    const idsAttr = JSON.stringify(ids).replace(/"/g, '&quot;');
 
     return `
     <tr>
@@ -1114,15 +1069,15 @@ function renderBusListTable(schedules) {
       <td>${s.origin} → ${s.destination}</td>
       <td style="font-size:0.78rem;color:#475569;">${s.pickupPoint || '—'}<br>${s.dropPoint || '—'}</td>
       <td>
-        ${dateLabel}<br>
-        <small style="color:#667eea;font-weight:600;">${formatTime(s.departureTime)} · ${group.schedules.length} day${group.schedules.length > 1 ? 's' : ''}</small>
+        <div style="font-size:0.85rem;">${dateLabel}</div>
+        <small style="color:#667eea;font-weight:600;">${toISTTimeString(new Date(s.departureTime))} &nbsp;·&nbsp; ${group.schedules.length} day${group.schedules.length > 1 ? 's' : ''}</small>
       </td>
       <td><span style="background:#eff6ff;color:#3b82f6;padding:0.15rem 0.4rem;border-radius:4px;font-size:0.78rem;">⏱ ${dur}</span></td>
       <td>${formatCurrency(s.price)}</td>
       <td>
         <div class="btn-group">
           <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit Details</button>
-          <button class="btn btn-sm btn-danger"  onclick="openBusCancelDialog(${JSON.stringify(ids).replace(/"/g, '&quot;')})">Delete</button>
+          <button class="btn btn-sm btn-danger" onclick="openBusCancelDialog('${idsAttr}')">Delete</button>
         </div>
       </td>
     </tr>`;
@@ -1187,8 +1142,8 @@ function initCouponForm() {
   const form = document.getElementById('coupon-form');
   if (!form) return;
   // Set default dates
-  const today = new Date().toISOString().split('T')[0];
-  const nextMonth = new Date(Date.now() + 30*24*3600*1000).toISOString().split('T')[0];
+  const today = toISTDateString(new Date()); // IST today
+  const nextMonth = toISTDateString(new Date(Date.now() + 30*24*3600*1000));
   const startEl = document.getElementById('coupon-start');
   const endEl   = document.getElementById('coupon-end');
   if (startEl) startEl.value = today;
@@ -1239,8 +1194,8 @@ async function handleCouponSubmit(e) {
 
 function resetCouponForm() {
   document.getElementById('coupon-form')?.reset();
-  const today = new Date().toISOString().split('T')[0];
-  const nextMonth = new Date(Date.now() + 30*24*3600*1000).toISOString().split('T')[0];
+  const today = toISTDateString(new Date()); // IST today
+  const nextMonth = toISTDateString(new Date(Date.now() + 30*24*3600*1000));
   const startEl = document.getElementById('coupon-start');
   const endEl   = document.getElementById('coupon-end');
   if (startEl) startEl.value = today;
