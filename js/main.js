@@ -5,13 +5,13 @@
 // Utility Functions
 function formatDate(dateString) {
   const date = new Date(dateString);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' };
   return date.toLocaleDateString('en-IN', options);
 }
 
 function formatTime(dateString) {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
 }
 
 function calculateDuration(startTime, endTime) {

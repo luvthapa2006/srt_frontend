@@ -488,10 +488,7 @@
                 <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-daterange">
                   <input type="radio" name="schedule-mode" value="daterange" onchange="setScheduleMode('daterange')" checked> 📆 Date Range
                 </label>
-                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-daysofweek">
-                  <input type="radio" name="schedule-mode" value="daysofweek" onchange="setScheduleMode('daysofweek')"> 🗓️ Days of Week
-                </label>
-                <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-specific">
+<label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;padding:0.5rem 1rem;border:2px solid #e5e7eb;border-radius:8px;font-size:0.9rem;" id="mode-tab-specific">
                   <input type="radio" name="schedule-mode" value="specific" onchange="setScheduleMode('specific')"> 📌 Specific Dates
                 </label>
               </div>
@@ -511,28 +508,6 @@
                 <div id="range-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
               </div>
 
-              <!-- Days of Week Mode -->
-              <div id="mode-panel-daysofweek" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;background:#f8fafc;">
-                <p style="font-size:0.82rem;color:#6b7280;margin-bottom:0.75rem;">Bus runs on selected days every week. Pick a date range below too.</p>
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
-                  {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i) => `
-                  <label style="cursor:pointer;">
-                    <input type="checkbox" class="dow-check" value="${i+1}" onchange="previewDaysOfWeek()">
-                    <span style="display:inline-block;padding:0.3rem 0.7rem;border:2px solid #e5e7eb;border-radius:6px;font-size:0.85rem;font-weight:600;">${d}</span>
-                  </label>`).join('')}
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-                  <div>
-                    <label class="form-label" style="font-size:0.82rem;">From Date</label>
-                    <input type="date" class="form-input" id="dow-start" onchange="previewDaysOfWeek()">
-                  </div>
-                  <div>
-                    <label class="form-label" style="font-size:0.82rem;">Until Date</label>
-                    <input type="date" class="form-input" id="dow-end" onchange="previewDaysOfWeek()">
-                  </div>
-                </div>
-                <div id="dow-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
-              </div>
 
               <!-- Specific Dates Mode -->
               <div id="mode-panel-specific" style="display:none;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;background:#f8fafc;">
