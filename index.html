@@ -541,7 +541,7 @@
       //    Bus animation is 3.4s (0.5s delay + 2.9s race). We wait exactly that.
       //    On fast connections data is ready well before — so splash dismisses right at animation end.
       //    On slow connections data may take longer — splash waits for it too (no loading screen shown).
-      var SPLASH_DURATION = 3500; // matches bus animation length exactly, no extra padding
+      var SPLASH_DURATION = 5200; // bus animation (3.4s) + ~1.8s for user to read the slogan
 
       Promise.all([
         citiesDataPromise.catch(function() { return [[], []]; }),
