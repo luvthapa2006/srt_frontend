@@ -50,27 +50,19 @@
         radial-gradient(1px 1px at 340px 480px, rgba(255,255,255,0.4) 0%, transparent 100%),
         radial-gradient(1px 1px at 600px 520px, rgba(255,255,255,0.3) 0%, transparent 100%);
     }
-    .splash-logo-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.4rem;
-      margin-bottom: 3rem;
-      animation: splashLogoIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
-    }
     @keyframes splashLogoIn {
       from { opacity: 0; transform: translateY(-30px) scale(0.85); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .splash-logo-wrap img {
-      height: 110px;
-      filter: drop-shadow(0 0 24px rgba(255,107,53,0.55));
+    .splash-tagline-wrap {
+      margin-bottom: 2.5rem;
+      animation: splashLogoIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
     }
     .splash-tagline {
       font-family: 'Inter', sans-serif;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.18em;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.22em;
       text-transform: uppercase;
     }
     .splash-road-scene {
@@ -114,7 +106,7 @@
     }
     .splash-bus-wrap {
       position: absolute;
-      bottom: 52px;
+      bottom: 56px;
       animation: busRace 3.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both;
     }
     @keyframes busRace {
@@ -193,41 +185,40 @@
       from { transform: translateX(6%); }
       to   { transform: translateX(-6%); }
     }
-    .exhaust-puff {
+    /* Logo flying across as the "bus" */
+    .splash-logo-mover {
+      width: 160px;
+      height: auto;
+      display: block;
+      filter:
+        drop-shadow(0 0 22px rgba(255,107,53,0.8))
+        drop-shadow(0 0 50px rgba(255,107,53,0.4))
+        drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+      animation: logoFloat 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes logoFloat {
+      from { transform: translateY(0px) rotate(-1deg); }
+      to   { transform: translateY(-6px) rotate(1deg); }
+    }
+    /* Motion trail behind logo */
+    .splash-logo-trail {
       position: absolute;
-      top: 20px;
-      right: calc(100% + 4px);
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: rgba(148,163,184,0.25);
-      animation: exhaustPuff 0.5s ease-out infinite;
+      top: 50%;
+      right: 100%;
+      transform: translateY(-50%);
+      height: 50px;
+      width: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.06), rgba(255,107,53,0.2));
+      border-radius: 4px;
+      pointer-events: none;
+      animation: trailGrow 3.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both;
     }
-    .exhaust-puff:nth-child(2) { animation-delay: 0.17s; width: 7px; height: 7px; top: 24px; }
-    .exhaust-puff:nth-child(3) { animation-delay: 0.34s; width: 5px; height: 5px; top: 18px; }
-    @keyframes exhaustPuff {
-      0%   { opacity: 0.6; transform: translateX(0) scale(1); }
-      100% { opacity: 0; transform: translateX(-28px) scale(2.4); }
-    }
-    .bus-svg {
-      width: 210px;
-      height: 82px;
-      filter: drop-shadow(0 4px 18px rgba(255,107,53,0.4)) drop-shadow(0 0 35px rgba(255,107,53,0.12));
-    }
-    .bus-wheel {
-      animation: wheelSpin 0.22s linear infinite;
-      transform-box: fill-box;
-      transform-origin: center;
-    }
-    @keyframes wheelSpin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-    .bus-headlight {
-      animation: headlightPulse 0.7s ease-in-out infinite alternate;
-    }
-    @keyframes headlightPulse {
-      from { opacity: 0.75; }
-      to   { opacity: 1; }
+    @keyframes trailGrow {
+      0%       { width: 0; opacity: 0; }
+      15%      { width: 130px; opacity: 1; }
+      38%, 62% { width: 55px; opacity: 0.35; }
+      64%      { width: 230px; opacity: 1; }
+      100%     { width: 300px; opacity: 0.85; }
     }
     .splash-loading {
       margin-top: 2.5rem;
@@ -269,8 +260,7 @@
   <div id="splash-screen">
     <div class="splash-stars"></div>
 
-    <div class="splash-logo-wrap">
-      <img src="assets/icons/shree-ram-logo.png" alt="Shree Ram Travels" width="220" height="110" loading="eager" decoding="sync">
+    <div class="splash-tagline-wrap">
       <div class="splash-tagline">Your journey, our pride</div>
     </div>
 
@@ -292,64 +282,11 @@
       </div>
 
       <div class="splash-bus-wrap">
-        <div class="exhaust-puff"></div>
-        <div class="exhaust-puff"></div>
-        <div class="exhaust-puff"></div>
-
-        <svg class="bus-svg" viewBox="0 0 210 82" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Body -->
-          <rect x="8" y="8" width="182" height="54" rx="6" fill="#1e40af"/>
-          <!-- Roof highlight -->
-          <rect x="12" y="8" width="174" height="9" rx="4" fill="#2563eb"/>
-          <!-- Orange accent stripe -->
-          <rect x="8" y="30" width="182" height="6" fill="#ff6b35"/>
-          <!-- Front panel -->
-          <rect x="172" y="8" width="18" height="54" rx="4" fill="#1d4ed8"/>
-          <!-- Windows -->
-          <rect x="16" y="13" width="22" height="14" rx="2" fill="#93c5fd" opacity="0.92"/>
-          <rect x="44" y="13" width="22" height="14" rx="2" fill="#93c5fd" opacity="0.92"/>
-          <rect x="72" y="13" width="22" height="14" rx="2" fill="#bfdbfe" opacity="0.9"/>
-          <rect x="100" y="13" width="22" height="14" rx="2" fill="#93c5fd" opacity="0.92"/>
-          <rect x="128" y="13" width="22" height="14" rx="2" fill="#93c5fd" opacity="0.92"/>
-          <rect x="156" y="13" width="14" height="14" rx="2" fill="#93c5fd" opacity="0.7"/>
-          <!-- Windshield -->
-          <rect x="174" y="11" width="12" height="22" rx="2" fill="#7dd3fc" opacity="0.85"/>
-          <!-- Headlights -->
-          <circle class="bus-headlight" cx="189" cy="42" r="5" fill="#fef08a"/>
-          <circle class="bus-headlight" cx="189" cy="42" r="8" fill="#fef08a" opacity="0.25"/>
-          <!-- Tail lights -->
-          <rect x="8" y="16" width="5" height="9" rx="1" fill="#ef4444" opacity="0.9"/>
-          <rect x="8" y="36" width="5" height="9" rx="1" fill="#ef4444" opacity="0.7"/>
-          <!-- Door -->
-          <rect x="54" y="36" width="16" height="22" rx="1" fill="#1d4ed8"/>
-          <line x1="62" y1="36" x2="62" y2="58" stroke="#3b82f6" stroke-width="1"/>
-          <!-- Bumper -->
-          <rect x="170" y="52" width="28" height="6" rx="2" fill="#334155"/>
-          <!-- Under body -->
-          <rect x="8" y="58" width="182" height="4" rx="2" fill="#0f172a"/>
-          <!-- Wheel 1 -->
-          <g transform="translate(40,66)">
-            <circle class="bus-wheel" cx="0" cy="0" r="13" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-            <circle cx="0" cy="0" r="7" fill="#334155"/>
-            <circle cx="0" cy="0" r="2.5" fill="#94a3b8"/>
-            <line x1="-7" y1="0" x2="7" y2="0" stroke="#94a3b8" stroke-width="1.5" opacity="0.55"/>
-            <line x1="0" y1="-7" x2="0" y2="7" stroke="#94a3b8" stroke-width="1.5" opacity="0.55"/>
-            <line x1="-5" y1="-5" x2="5" y2="5" stroke="#94a3b8" stroke-width="1" opacity="0.35"/>
-            <line x1="5" y1="-5" x2="-5" y2="5" stroke="#94a3b8" stroke-width="1" opacity="0.35"/>
-          </g>
-          <!-- Wheel 2 -->
-          <g transform="translate(155,66)">
-            <circle class="bus-wheel" cx="0" cy="0" r="13" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-            <circle cx="0" cy="0" r="7" fill="#334155"/>
-            <circle cx="0" cy="0" r="2.5" fill="#94a3b8"/>
-            <line x1="-7" y1="0" x2="7" y2="0" stroke="#94a3b8" stroke-width="1.5" opacity="0.55"/>
-            <line x1="0" y1="-7" x2="0" y2="7" stroke="#94a3b8" stroke-width="1.5" opacity="0.55"/>
-            <line x1="-5" y1="-5" x2="5" y2="5" stroke="#94a3b8" stroke-width="1" opacity="0.35"/>
-            <line x1="5" y1="-5" x2="-5" y2="5" stroke="#94a3b8" stroke-width="1" opacity="0.35"/>
-          </g>
-          <!-- SRT text -->
-          <text x="95" y="52" font-family="Poppins,sans-serif" font-size="8.5" font-weight="700" fill="white" text-anchor="middle" opacity="0.88">SHREE RAM TRAVELS</text>
-        </svg>
+        <div class="splash-logo-trail"></div>
+        <img src="assets/icons/shree-ram-logo.png"
+             class="splash-logo-mover"
+             alt="Shree Ram Travels"
+             width="160" loading="eager" decoding="sync">
       </div>
     </div>
 
