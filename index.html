@@ -54,16 +54,40 @@
       from { opacity: 0; transform: translateY(-30px) scale(0.85); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .splash-tagline-wrap {
-      margin-bottom: 2.5rem;
-      animation: splashLogoIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+    /* ── Slogan letter trail ── */
+    .splash-slogan-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 2.8rem;
+      height: 28px;
+      overflow: visible;
     }
-    .splash-tagline {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 0.22em;
+    .slogan-letter {
+      display: inline-block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: transparent;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(10px) scale(0.7);
+      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1), color 0.35s ease;
+      /* Each letter glows in orange then fades to muted white — like a spark trail */
+      text-shadow: none;
+      white-space: pre;
+    }
+    .slogan-letter.lit {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      color: #ff6b35;
+      text-shadow: 0 0 12px rgba(255,107,53,0.9), 0 0 24px rgba(255,107,53,0.5);
+    }
+    .slogan-letter.faded {
+      color: rgba(255,255,255,0.45);
+      text-shadow: none;
     }
     .splash-road-scene {
       position: relative;
@@ -111,8 +135,8 @@
     }
     @keyframes busRace {
       0%   { left: -320px; }
-      38%  { left: calc(50vw - 100px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
-      62%  { left: calc(50vw - 100px); }
+      38%  { left: calc(50vw - 105px); animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
+      62%  { left: calc(50vw - 105px); }
       100% { left: calc(100vw + 60px); }
     }
     .splash-destination {
@@ -187,7 +211,7 @@
     }
     /* Logo flying across as the "bus" */
     .splash-logo-mover {
-      width: 160px;
+      width: 210px;
       height: auto;
       display: block;
       filter:
@@ -260,8 +284,9 @@
   <div id="splash-screen">
     <div class="splash-stars"></div>
 
-    <div class="splash-tagline-wrap">
-      <div class="splash-tagline">Your journey, our pride</div>
+    <!-- Slogan: letters revealed letter-by-letter as logo passes overhead -->
+    <div class="splash-slogan-wrap" id="sloganWrap">
+      <!-- Letters injected by JS -->
     </div>
 
     <div class="splash-road-scene">
@@ -286,7 +311,7 @@
         <img src="assets/icons/shree-ram-logo.png"
              class="splash-logo-mover"
              alt="Shree Ram Travels"
-             width="160" loading="eager" decoding="sync">
+             width="210" loading="eager" decoding="sync">
       </div>
     </div>
 
@@ -518,6 +543,49 @@
       content.classList.add('visible');
       setTimeout(function() { splash.remove(); }, 800);
     }
+
+    // ── Slogan letter-by-letter reveal synced with logo race ──
+    (function() {
+      var text = 'YOUR  JOURNEY ,  OUR  PRIDE';
+      var letters = text.split('');
+      var wrap = document.getElementById('sloganWrap');
+      if (!wrap) return;
+
+      // Build letter spans
+      var spans = [];
+      letters.forEach(function(ch) {
+        var s = document.createElement('span');
+        s.className = 'slogan-letter';
+        s.textContent = ch;
+        wrap.appendChild(s);
+        spans.push(s);
+      });
+
+      // The logo races from off-screen to center over ~1.3s (0.5s delay + 38% of 3.4s = ~1.79s total)
+      // We reveal letters progressively from left to right during that window
+      // Logo hits center at ~1.8s after page load, then sits until ~2.6s, then exits
+      // Reveal window: start at 0.7s, finish all letters by 1.7s → ~1s spread across all chars
+
+      var REVEAL_START = 700;   // ms after DOMContentLoaded
+      var REVEAL_END   = 1750;  // ms — all letters shown by this time
+      var FADE_DELAY   = 200;   // ms after lit before fading to white
+
+      var totalChars = spans.length;
+      var spread = REVEAL_END - REVEAL_START;
+
+      spans.forEach(function(span, i) {
+        var delay = REVEAL_START + (i / (totalChars - 1)) * spread;
+        // Light up (orange glow)
+        setTimeout(function() {
+          span.classList.add('lit');
+          // Then fade to white after a beat
+          setTimeout(function() {
+            span.classList.remove('lit');
+            span.classList.add('faded');
+          }, FADE_DELAY + i * 18);
+        }, delay);
+      });
+    })();
 
     document.addEventListener('DOMContentLoaded', function() {
       // Data fetch already started above — no need to call again
