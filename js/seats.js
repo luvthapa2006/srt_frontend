@@ -68,14 +68,14 @@ function injectStyles() {
     ".sw-bk{background:#f1f5f9;border-color:#cbd5e1;opacity:.55}",
     /* bus shell */
     ".srt-bus{background:#f8fafc;border:2px solid #e2e8f0;border-radius:18px;",
-      "padding:1.1rem 1.3rem 1.5rem;max-width:380px;margin:0 auto}",
+      "padding:1.1rem 1rem 1.5rem;max-width:380px;width:100%;margin:0 auto;box-sizing:border-box}",
     /* driver */
     ".srt-driver{display:flex;align-items:center;justify-content:center;gap:.45rem;",
       "background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:9px;",
       "padding:.48rem .9rem;font-size:.72rem;font-weight:700;letter-spacing:.7px;",
       "text-transform:uppercase;margin-bottom:1rem}",
     /* seat ROW  –  flex so seats never collapse */
-    ".srt-row{display:flex;flex-direction:row;align-items:stretch;gap:6px;margin-bottom:6px}",
+    ".srt-row{display:flex;flex-direction:row;align-items:stretch;gap:6px;margin-bottom:6px;justify-content:center}",
     ".srt-aisle{width:22px;flex-shrink:0}",
     /* seat button base */
     ".srt-seat{flex-shrink:0;width:80px;display:flex;flex-direction:column;align-items:center;",

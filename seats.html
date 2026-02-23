@@ -9,6 +9,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* Mobile seat layout alignment fixes */
+    @media (max-width: 768px) {
+      .container { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+      #srt-deck-wrapper { width: 100%; overflow-x: auto; box-sizing: border-box; }
+      .srt-bus { max-width: 100% !important; box-sizing: border-box; }
+      #schedule-info h2, #schedule-info h3 { font-size: 1.4rem !important; }
+    }
+    @media (max-width: 480px) {
+      .container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+      .srt-seat { width: 62px !important; }
+    }
+  </style>
 </head>
 <body>
   <!-- Navbar -->
@@ -30,22 +43,22 @@
 
   <!-- Main Content -->
   <div class="min-h-screen" style="background: var(--slate-50);">
-    <div class="container px-4 py-8">
+    <div class="container px-4 py-8" style="box-sizing: border-box;">
       <button class="btn btn-outline mb-8" onclick="goBack()" style="padding-left: 0;">
         ← Back to Schedules
       </button>
 
       <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
         <!-- Seat Selection Area -->
-        <div style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: var(--shadow); border: 1px solid var(--slate-100);">
+        <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: var(--shadow); border: 1px solid var(--slate-100); box-sizing: border-box; width: 100%; overflow-x: hidden;">
           <!-- Header -->
-          <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div id="schedule-info">
+          <div style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center;">
+            <div id="schedule-info" style="width: 100%; text-align: left;">
               <!-- Populated by JavaScript -->
             </div>
             
             <!-- Legend -->
-            <div class="seat-legend">
+            <div class="seat-legend" style="justify-content: center; width: 100%;">
               <div class="legend-item">
                 <div class="legend-box legend-available"></div>
                 <span>Available</span>
