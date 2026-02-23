@@ -54,40 +54,42 @@
       from { opacity: 0; transform: translateY(-30px) scale(0.85); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    /* ── Slogan letter trail ── */
+    /* ── Slogan: written by the logo as it passes ── */
     .splash-slogan-wrap {
+      position: relative;
+      width: 100vw;
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0;
-      margin-bottom: 2.8rem;
-      height: 28px;
-      overflow: visible;
+      margin-bottom: 1.8rem;
+      overflow: hidden;
     }
-    .slogan-letter {
-      display: inline-block;
+    /* The full text sits hidden, revealed left-to-right via clip-path */
+    .splash-slogan-text {
       font-family: 'Poppins', sans-serif;
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      color: transparent;
-      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.28em;
       text-transform: uppercase;
+      white-space: nowrap;
+      /* Start fully clipped (0 width revealed) */
+      clip-path: inset(0 100% 0 0);
+      transition: none;
+      position: relative;
+      z-index: 2;
+    }
+    /* Orange glow front-edge — moves with the reveal */
+    .splash-slogan-glow {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 60px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.55), rgba(255,107,53,0.15));
+      filter: blur(4px);
+      pointer-events: none;
+      z-index: 3;
       opacity: 0;
-      transform: translateY(10px) scale(0.7);
-      transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1), color 0.35s ease;
-      /* Each letter glows in orange then fades to muted white — like a spark trail */
-      text-shadow: none;
-      white-space: pre;
-    }
-    .slogan-letter.lit {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      color: #ff6b35;
-      text-shadow: 0 0 12px rgba(255,107,53,0.9), 0 0 24px rgba(255,107,53,0.5);
-    }
-    .slogan-letter.faded {
-      color: rgba(255,255,255,0.45);
-      text-shadow: none;
     }
     .splash-road-scene {
       position: relative;
@@ -284,9 +286,10 @@
   <div id="splash-screen">
     <div class="splash-stars"></div>
 
-    <!-- Slogan: letters revealed letter-by-letter as logo passes overhead -->
-    <div class="splash-slogan-wrap" id="sloganWrap">
-      <!-- Letters injected by JS -->
+    <!-- Slogan written by the logo as it passes left to right -->
+    <div class="splash-slogan-wrap">
+      <div class="splash-slogan-text" id="sloganText">YOUR JOURNEY, OUR PRIDE</div>
+      <div class="splash-slogan-glow" id="sloganGlow"></div>
     </div>
 
     <div class="splash-road-scene">
@@ -544,47 +547,63 @@
       setTimeout(function() { splash.remove(); }, 800);
     }
 
-    // ── Slogan letter-by-letter reveal synced with logo race ──
+    // ── Slogan: revealed as logo sweeps left→right, like ink being laid down ──
     (function() {
-      var text = 'YOUR  JOURNEY ,  OUR  PRIDE';
-      var letters = text.split('');
-      var wrap = document.getElementById('sloganWrap');
-      if (!wrap) return;
+      var textEl = document.getElementById('sloganText');
+      var glowEl = document.getElementById('sloganGlow');
+      if (!textEl || !glowEl) return;
 
-      // Build letter spans
-      var spans = [];
-      letters.forEach(function(ch) {
-        var s = document.createElement('span');
-        s.className = 'slogan-letter';
-        s.textContent = ch;
-        wrap.appendChild(s);
-        spans.push(s);
-      });
+      // busRace animation: 0.5s delay, then logo travels from -320px to center
+      // 38% of 3.4s = 1.292s travel time to reach center
+      // So logo hits center of screen at: 500 + 1292 = ~1792ms after load
+      // Logo pauses at center from 38%→62% of 3.4s = 1.292s pause duration
+      // Then exits: 62%→100% = another 1.292s
 
-      // The logo races from off-screen to center over ~1.3s (0.5s delay + 38% of 3.4s = ~1.79s total)
-      // We reveal letters progressively from left to right during that window
-      // Logo hits center at ~1.8s after page load, then sits until ~2.6s, then exits
-      // Reveal window: start at 0.7s, finish all letters by 1.7s → ~1s spread across all chars
+      // We animate the clip-path from "0% revealed" to "100% revealed"
+      // Starting when logo enters (500ms) and finishing when logo exits (~3400ms)
+      // Total reveal window = ~2900ms
 
-      var REVEAL_START = 700;   // ms after DOMContentLoaded
-      var REVEAL_END   = 1750;  // ms — all letters shown by this time
-      var FADE_DELAY   = 200;   // ms after lit before fading to white
+      var START_MS = 520;        // just after logo enters from left
+      var END_MS   = 3350;       // just as logo exits right
+      var duration = END_MS - START_MS;
 
-      var totalChars = spans.length;
-      var spread = REVEAL_END - REVEAL_START;
+      var startTime = null;
+      var rafId = null;
 
-      spans.forEach(function(span, i) {
-        var delay = REVEAL_START + (i / (totalChars - 1)) * spread;
-        // Light up (orange glow)
-        setTimeout(function() {
-          span.classList.add('lit');
-          // Then fade to white after a beat
-          setTimeout(function() {
-            span.classList.remove('lit');
-            span.classList.add('faded');
-          }, FADE_DELAY + i * 18);
-        }, delay);
-      });
+      function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      }
+
+      function tick(now) {
+        if (!startTime) startTime = now;
+        var elapsed = now - startTime;
+        var raw = Math.min(elapsed / duration, 1);
+        // Use ease so it starts slow (logo entering), faster in middle, slows at end
+        var progress = easeInOutQuad(raw);
+
+        // clip-path reveal: inset(0 RIGHT% 0 0) — shrink right inset from 100→0
+        var rightPct = (1 - progress) * 100;
+        textEl.style.clipPath = 'inset(0 ' + rightPct.toFixed(2) + '% 0 0)';
+
+        // Glow sits at the leading edge of the reveal
+        var wrapWidth = textEl.parentElement.offsetWidth;
+        var textWidth = textEl.scrollWidth;
+        var textLeft  = (wrapWidth - textWidth) / 2;
+        var glowX = textLeft + textWidth * progress - 30;
+        glowEl.style.left = glowX + 'px';
+        glowEl.style.opacity = (raw < 0.98) ? '1' : '0';
+
+        if (raw < 1) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          glowEl.style.opacity = '0';
+        }
+      }
+
+      // Start after logo enters
+      setTimeout(function() {
+        requestAnimationFrame(tick);
+      }, START_MS);
     })();
 
     document.addEventListener('DOMContentLoaded', function() {
