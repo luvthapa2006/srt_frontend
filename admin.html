@@ -53,8 +53,9 @@
       box-shadow: 0 4px 16px rgba(102,126,234,0.4);
     }
 
-    /* ── blurred page body behind modal ── */
-    body.modal-open .admin-page-content { filter: blur(4px); pointer-events: none; }
+    /* ── Hide page content COMPLETELY until authenticated — no dashboard flash ── */
+    .admin-page-content { visibility: hidden; }
+    body.admin-authed .admin-page-content { visibility: visible; }
 
     /* ── Route Selector ── */
     #route-selector {
@@ -369,7 +370,7 @@
           <ul class="nav-links" id="mobile-menu">
             <li><a href="index.html"   class="nav-link">Home</a></li>
             <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
-            <li><a href="admin.html"   class="nav-link active">Admin</a></li>
+
             <li><button class="btn btn-sm btn-outline" onclick="adminLogout()">Logout</button></li>
           </ul>
         </div>

@@ -30,6 +30,7 @@ function initAdminPage() {
 // ─────────────────────────────────────────
 function showLoginModal() {
   isAuthenticated = false;
+  document.body.classList.remove('admin-authed');
   const modal = document.getElementById('admin-login-modal');
   if (modal) {
     modal.classList.add('active');
@@ -58,6 +59,7 @@ function handleAdminLogin(e) {
 
   if (password === correct) {
     isAuthenticated = true;
+    document.body.classList.add('admin-authed');
     hideLoginModal();
     initAdminDashboard();
     showToast('Welcome back!', 'success');
