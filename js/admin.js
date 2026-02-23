@@ -310,8 +310,8 @@ function downloadExcel(bookings) {
       b.phone,
       schedule?.busName || 'N/A',
       schedule ? `${schedule.origin} → ${schedule.destination}` : 'N/A',
-      dep ? dep.toLocaleDateString('en-IN') : 'N/A',
-      dep ? dep.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+      dep ? dep.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A',
+      dep ? dep.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : 'N/A',
       b.seatNumbers.join(', '),
       b.totalAmount,
       b.status,
@@ -1013,10 +1013,15 @@ function buildDatesFromMode() {
     const e = document.getElementById('range-end')?.value;
     if (!s || !e || e < s) return [];
     const dates = [];
-    const cur = new Date(s);
-    while (cur <= new Date(e)) {
-      dates.push(toISTDateString(cur));
-      cur.setDate(cur.getDate() + 1);
+    // Iterate using pure string comparison (YYYY-MM-DD sorts lexicographically)
+    // to avoid ANY browser timezone drift with Date objects.
+    let cur = s;
+    while (cur <= e) {
+      dates.push(cur);
+      // Advance by one day: parse as IST midnight, add 24h, get IST date string
+      const d = new Date(cur + 'T00:00:00.000+05:30');
+      d.setUTCDate(d.getUTCDate() + 1);
+      cur = toISTDateString(d);
     }
     return dates;
   }
