@@ -363,6 +363,8 @@ function updateScheduleFormPricing() {
 
   const routePricing   = getRoutePricing(origin, destination);
   const isCustom       = getAllRoutePricing()[getRouteKey(origin, destination)] !== undefined;
+  const lower          = routePricing.lowerPrice ?? routePricing.firstRight ?? routePricing.firstLeft ?? 0;
+  const upper          = routePricing.upperPrice ?? routePricing.sleeper ?? routePricing.lastLeft ?? 0;
   preview.style.display = 'block';
   preview.innerHTML = `
     <div class="pricing-info-box">
@@ -371,10 +373,8 @@ function updateScheduleFormPricing() {
         ${isCustom ? '<span class="badge badge-success">Custom</span>' : '<span class="badge badge-secondary">Default</span>'}
       </div>
       <div class="pricing-grid">
-        <div class="pricing-item"><span class="pricing-label">🔵 First Right:</span><span class="pricing-value">${formatCurrency(routePricing.firstRight)}</span></div>
-        <div class="pricing-item"><span class="pricing-label">⚪ First Left:</span><span class="pricing-value">${formatCurrency(routePricing.firstLeft)}</span></div>
-        <div class="pricing-item"><span class="pricing-label">🟢 Last Left:</span><span class="pricing-value">${formatCurrency(routePricing.lastLeft)}</span></div>
-        <div class="pricing-item"><span class="pricing-label">🟠 Sleeper:</span><span class="pricing-value">${formatCurrency(routePricing.sleeper)}</span></div>
+        <div class="pricing-item"><span class="pricing-label">💺 Lower Deck:</span><span class="pricing-value">${formatCurrency(lower)}</span></div>
+        <div class="pricing-item"><span class="pricing-label">🛏️ Upper Deck:</span><span class="pricing-value">${formatCurrency(upper)}</span></div>
       </div>
       <div class="pricing-note"><small>${isCustom ? 'This route has custom pricing.' : 'Using default pricing. Set custom pricing in the Pricing tab.'}</small></div>
     </div>`;
@@ -529,7 +529,7 @@ function closeBusCancelDialog() {
 async function busDeleteAction(action) {
   if (action === 'delete-all') {
     if (!confirm('Permanently delete this route and ALL its dates? This cannot be undone.')) return;
-    const scheduleIdToDelete = _cancelDialogScheduleId; // capture BEFORE closing dialog
+    const scheduleIdToDelete = _cancelDialogScheduleId;
     closeBusCancelDialog();
     showLoading();
     const success = await deleteSchedule(scheduleIdToDelete);
@@ -564,7 +564,7 @@ async function confirmCancelDates() {
   const checks = document.querySelectorAll('.cancel-date-check:checked');
   const dates = Array.from(checks).map(ch => ch.value);
   if (!dates.length) { showToast('Select at least one date', 'error'); return; }
-  const scheduleIdToCancel = _cancelDialogScheduleId; // capture BEFORE closing dialog
+  const scheduleIdToCancel = _cancelDialogScheduleId;
   closeBusCancelDialog();
   showLoading();
   // Cancel = set isActive false for those dates via API (store as cancelledDates on the schedule)

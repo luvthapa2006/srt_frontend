@@ -23,7 +23,9 @@ function calculateDuration(startTime, endTime) {
 }
 
 function formatCurrency(amount) {
-  return `₹${amount.toLocaleString('en-IN')}`;
+  const num = parseFloat(amount);
+  if (isNaN(num)) return '₹—';
+  return `₹${num.toLocaleString('en-IN')}`;
 }
 
 // Toast Notifications
