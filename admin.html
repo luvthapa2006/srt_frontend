@@ -193,6 +193,26 @@
       }
     }
 
+    /* ── Bus list table: prevent overflow, wrap long pickup/drop text ── */
+    #buslist-table-body td {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      vertical-align: top;
+      padding-top: 0.7rem;
+    }
+    #tab-buslists .table {
+      table-layout: fixed;
+      width: 100%;
+    }
+    #tab-buslists .table th:nth-child(1) { width: 14%; }
+    #tab-buslists .table th:nth-child(2) { width: 12%; }
+    #tab-buslists .table th:nth-child(3) { width: 22%; }
+    #tab-buslists .table th:nth-child(4) { width: 18%; }
+    #tab-buslists .table th:nth-child(5) { width: 9%;  }
+    #tab-buslists .table th:nth-child(6) { width: 8%;  }
+    #tab-buslists .table th:nth-child(7) { width: 17%; }
+
     /* ── Admin per-seat map ── */
     .admin-seat-grid { display: flex; flex-direction: column; gap: 0.5rem; }
     .admin-seat-row  { display: flex; align-items: center; gap: 0.5rem; }
@@ -506,18 +526,6 @@
                   </div>
                 </div>
                 <div id="range-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
-              </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-                  <div>
-                    <label class="form-label" style="font-size:0.82rem;">From Date</label>
-                    <input type="date" class="form-input" id="dow-start" onchange="previewDaysOfWeek()">
-                  </div>
-                  <div>
-                    <label class="form-label" style="font-size:0.82rem;">Until Date</label>
-                    <input type="date" class="form-input" id="dow-end" onchange="previewDaysOfWeek()">
-                  </div>
-                </div>
-                <div id="dow-preview" style="margin-top:0.6rem;font-size:0.82rem;color:#6b7280;"></div>
               </div>
 
               <!-- Specific Dates Mode -->
