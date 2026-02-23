@@ -470,50 +470,58 @@
       setTimeout(function() { splash.remove(); }, 800);
     }
 
-    // ── Slogan reveal: logo overlaps slogan (higher z-index) and uncovers it as it passes ──
-    // Every frame we read the logo's RIGHT edge pixel position.
-    // The slogan text is centered on screen. We clip it so only the part
-    // the logo has already passed is visible — creating the "written by the logo" effect.
+    // ── Slogan reveal: appears ONLY after logo has fully passed over it ──
+    // Step 1: Logo enters from left, stops at center (over the slogan) → slogan hidden
+    // Step 2: Logo halts at center → slogan still hidden under the logo
+    // Step 3: Logo exits right → once logo's LEFT edge has cleared the slogan's RIGHT edge,
+    //         the full slogan fades/expands in at once — like the logo revealed it by passing
     (function() {
       var textEl = document.getElementById('sloganText');
       var glowEl = document.getElementById('sloganGlow');
       var busEl  = document.getElementById('busWrap');
       if (!textEl || !glowEl || !busEl) return;
 
+      var revealed = false;
+
+      // Keep slogan fully hidden while logo is over it
+      textEl.style.clipPath  = 'inset(0 100% 0 0)';
+      textEl.style.transition = 'none';
+
       function tick() {
-        var busRect  = busEl.getBoundingClientRect();
-        var logoRight = busRect.right;  // right edge of logo in viewport px
+        var busRect   = busEl.getBoundingClientRect();
+        var logoLeft  = busRect.left;   // left edge of logo
+        var logoRight = busRect.right;  // right edge of logo
 
         var textRect  = textEl.getBoundingClientRect();
-        var textLeft  = textRect.left;
-        var textWidth = textRect.width || textEl.scrollWidth;
+        var textRight = textRect.right;
 
-        // How much of the text has the logo's right edge already passed?
-        var passed = logoRight - textLeft;
-        var pct    = Math.max(0, Math.min(passed / textWidth, 1));
+        // Only reveal once the logo's LEFT edge has fully cleared the text's RIGHT edge
+        // i.e. the logo has completely passed and is now to the right of all the text
+        if (!revealed && logoLeft > textRight + 10) {
+          revealed = true;
 
-        // Reveal exactly that fraction from the left
-        var rightPct = (1 - pct) * 100;
-        textEl.style.clipPath = 'inset(0 ' + rightPct.toFixed(2) + '% 0 0)';
+          // Snap reveal the full text with a smooth expand + glow flash
+          textEl.style.transition = 'clip-path 0.45s cubic-bezier(0.22,1,0.36,1)';
+          textEl.style.clipPath   = 'inset(0 0% 0 0)';
 
-        // Glow sits right at the leading reveal edge
-        if (pct > 0.01 && pct < 0.99) {
+          // Flash the glow across the full text width then fade it out
           var wrapRect = glowEl.parentElement.getBoundingClientRect();
-          glowEl.style.left    = (logoRight - wrapRect.left - 80) + 'px';
+          glowEl.style.left    = (textRect.left - wrapRect.left - 40) + 'px';
+          glowEl.style.width   = (textRect.width + 80) + 'px';
           glowEl.style.opacity = '1';
-        } else {
-          glowEl.style.opacity = '0';
+          setTimeout(function() {
+            glowEl.style.transition = 'opacity 0.5s ease';
+            glowEl.style.opacity    = '0';
+          }, 300);
         }
 
-        // Keep animating while logo is on screen
-        if (logoRight < window.innerWidth + 320) {
+        // Keep polling until revealed
+        if (!revealed) {
           requestAnimationFrame(tick);
-        } else {
-          glowEl.style.opacity = '0';
         }
       }
 
-      // Kick off just before animation starts (busRace has 0.5s delay)
+      // Start polling when logo animation begins (0.5s delay on busRace)
       setTimeout(function() {
         requestAnimationFrame(tick);
       }, 380);
