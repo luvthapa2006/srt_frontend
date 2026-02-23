@@ -1,476 +1,409 @@
-// ========================================
-// TIMINGS.JS - Bus Timings List Page Logic (WORKING VERSION)
-// ========================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Timings - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
 
-let currentFilters = {};
-let allSchedules = [];
+  <style>
+    /* ══════════════════════════════════════
+       PAGE HEADER – rich gradient with route info
+    ══════════════════════════════════════ */
+    .timings-hero {
+      background: linear-gradient(135deg, #1e293b 0%, #312e81 60%, #4c1d95 100%);
+      padding: 2.5rem 0 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* decorative circles */
+    .timings-hero::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: rgba(102,126,234,0.15);
+      border-radius: 50%;
+      top: -150px; right: -80px;
+      pointer-events: none;
+    }
+    .timings-hero::after {
+      content: '';
+      position: absolute;
+      width: 250px; height: 250px;
+      background: rgba(167,139,250,0.1);
+      border-radius: 50%;
+      bottom: -100px; left: 5%;
+      pointer-events: none;
+    }
 
-// Initialize page
-async function initTimingsPage() {
-  console.log('🚀 Initializing Timings Page...');
-  
-  // Get filter params from URL
-  const params = getQueryParams();
-  currentFilters = {
-    origin: params.origin || '',
-    destination: params.destination || '',
-    date: params.date || ''
-  };
-  
-  console.log('📋 Current filters:', currentFilters);
-  
-  // Display filters info
-  displayFilterInfo();
-  
-  // Setup filter controls if they exist
-  setupFilterControls();
-  
-  // Load and display schedules
-  await loadSchedules();
-}
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
 
-// Setup filter controls
-function setupFilterControls() {
-  // Sort dropdown
-  const sortSelect = document.getElementById('sort-select');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      sortSchedules(e.target.value);
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #c4b5fd;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 0.3rem 0.8rem;
+      border-radius: 99px;
+      margin-bottom: 1rem;
+    }
+
+    #filter-info h1 {
+      color: white;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 800;
+      margin: 0 0 0.5rem;
+      line-height: 1.2;
+    }
+    #filter-info p {
+      color: #a5b4fc;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* route pill badges */
+    .route-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+    .route-pill {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .route-arrow {
+      color: #a5b4fc;
+      font-size: 1rem;
+    }
+    .route-pill-date {
+      background: rgba(99,102,241,0.35);
+      border: 1px solid rgba(129,140,248,0.4);
+      color: #c4b5fd;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.85rem;
+      border-radius: 99px;
+    }
+
+    /* ══════════════════════════════════════
+       FILTERS BAR
+    ══════════════════════════════════════ */
+    .filters-bar {
+      max-width: 1200px;
+      margin: 0 auto 1.5rem;
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-type-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.45rem 1rem;
+      border-radius: 99px;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+
+    .sort-controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .sort-label {
+      font-size: 0.82rem;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    .sort-select {
+      padding: 0.45rem 0.85rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.82rem;
+      color: #374151;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .sort-select:focus { border-color: #667eea; }
+
+    .refresh-btn {
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      font-size: 0.82rem;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.18s;
+    }
+    .refresh-btn:hover { border-color: #667eea; color: #667eea; }
+
+    /* ══════════════════════════════════════
+       SCHEDULE GROUP HEADINGS
+    ══════════════════════════════════════ */
+    .schedule-group { margin-bottom: 2.5rem; }
+
+    .schedule-group-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .time-icon { font-size: 1.4rem; }
+
+    .schedule-group-content { display: grid; gap: 1rem; }
+
+    /* ══════════════════════════════════════
+       BUS CARD
+    ══════════════════════════════════════ */
+    .schedule-card {
+      display: flex;
+      gap: 0;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border: 1px solid #f1f5f9;
+      transition: all 0.25s ease;
+      overflow: hidden;
+    }
+    .schedule-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.11);
+      transform: translateY(-2px);
+      border-color: #e0e7ff;
+    }
+
+    /* left accent bar */
+    .card-accent {
+      width: 5px;
+      background: linear-gradient(180deg, #667eea, #764ba2);
+      flex-shrink: 0;
+    }
+
+    .schedule-info { flex: 1; padding: 1.25rem 1.5rem; }
+    .schedule-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 190px;
+      gap: 0.6rem;
+      padding: 1.25rem 1.5rem;
+      border-left: 1px solid #f1f5f9;
+      background: #fafbff;
+    }
+
+    /* skeleton */
+    .skeleton-card { padding: 1.5rem; background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .skeleton {
+      background: linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .skeleton-text { height: 1.1rem; margin-bottom: 0.7rem; width: 100%; }
+    .skeleton-text.short { width: 55%; }
+    .skeleton-button { height: 2.4rem; width: 140px; margin-top: 0.75rem; border-radius: 8px; }
+
+    /* empty state */
+    .empty-state { text-align:center; padding:4rem 2rem; background:white; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media(max-width:768px){
+      .schedule-card { flex-direction: column; }
+      .card-accent { width: 100%; height: 5px; }
+      .schedule-cta { width:100%; min-width:auto; border-left:none; border-top:1px solid #f1f5f9; flex-direction:row; justify-content:space-between; align-items:center; padding:1rem 1.25rem; }
+      .filters-bar { flex-direction:column; align-items:flex-start; gap:0.75rem; }
+      .sort-controls { width:100%; justify-content:flex-end; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       NAVBAR — matches the rest of the site
+  ══════════════════════════════════════ -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="assets/icons/shree-ram-logo.png"
+               alt="Shree Ram Travels" style="height:50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html"   class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link active">Bus Timings</a></li>
+          <li><a href="index.html#track" class="nav-link">Track Booking</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO HEADER
+  ══════════════════════════════════════ -->
+  <div class="timings-hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">🚌 Live Bus Schedules</div>
+      <div id="filter-info">
+        <h1>All Available Buses</h1>
+        <p>Browse and book from our available routes</p>
+      </div>
+      <div class="route-pills" id="route-pills" style="display:none;">
+        <!-- populated by JS when route filters are present -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       FILTERS BAR
+  ══════════════════════════════════════ -->
+  <div style="max-width:1200px;margin:1.5rem auto 0;padding:0 1.5rem;">
+    <div class="filters-bar" style="padding:0;margin:0;">
+      <div class="filter-type-btns">
+        <button onclick="filterByBusType('all')"        class="filter-btn active" id="filter-all">All Buses</button>
+        <button onclick="filterByBusType('AC Sleeper')" class="filter-btn" id="filter-sleeper">AC Sleeper</button>
+        <button onclick="filterByBusType('AC Seater')"  class="filter-btn" id="filter-seater">AC Seater</button>
+        <button onclick="filterByBusType('Non-AC')"     class="filter-btn" id="filter-nonac">Non-AC</button>
+      </div>
+
+      <div class="sort-controls">
+        <span class="sort-label">Sort by:</span>
+        <select id="sort-select" class="sort-select" onchange="sortSchedules(this.value)">
+          <option value="departure">Departure Time</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="duration">Journey Duration</option>
+          <option value="seats">Available Seats</option>
+        </select>
+        <button onclick="refreshSchedules()" class="refresh-btn">🔄 Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCHEDULES LIST
+  ══════════════════════════════════════ -->
+  <div style="max-width:1200px;margin:1.5rem auto 4rem;padding:0 1.5rem;">
+    <div id="schedules-list"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/timings.js"></script>
+
+  <!-- Override displayFilterInfo to populate the nicer hero -->
+  <script>
+    const _origDisplayFilterInfo = displayFilterInfo;
+
+    // Patch after timings.js loads
+    window.addEventListener('load', () => {
+      // Re-patch displayFilterInfo with the richer version
+      window.displayFilterInfo = function() {
+        const h1  = document.querySelector('#filter-info h1');
+        const sub = document.querySelector('#filter-info p');
+        const pills = document.getElementById('route-pills');
+
+        if (currentFilters.origin && currentFilters.destination) {
+          if (h1)  h1.textContent  = `${currentFilters.origin} → ${currentFilters.destination}`;
+          if (sub) sub.textContent = 'Showing available buses for your route';
+
+          if (pills) {
+            pills.style.display = 'flex';
+            pills.innerHTML = `
+              <div class="route-pill">
+                <span>📍 ${currentFilters.origin}</span>
+                <span class="route-arrow">→</span>
+                <span>📍 ${currentFilters.destination}</span>
+              </div>
+              ${currentFilters.date
+                ? `<div class="route-pill-date">📅 ${new Date(currentFilters.date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</div>`
+                : ''}
+            `;
+          }
+        } else {
+          if (h1)  h1.textContent  = 'All Available Buses';
+          if (sub) sub.textContent = 'Browse and book from our available routes';
+          if (pills) pills.style.display = 'none';
+        }
+      };
+
+      // Re-run with correct data
+      if (typeof displayFilterInfo === 'function') displayFilterInfo();
     });
-  }
-}
 
-// Display filter information
-function displayFilterInfo() {
-  const filterInfo = document.getElementById('filter-info');
-  if (!filterInfo) return;
-  
-  if (currentFilters.origin && currentFilters.destination) {
-    let infoText = `Showing results for ${currentFilters.origin} to ${currentFilters.destination}`;
-    if (currentFilters.date) {
-      infoText += ` on ${formatDate(currentFilters.date)}`;
-    }
-    filterInfo.innerHTML = `<h1 class="page-title" style="margin: 0; color: white;">${infoText}</h1>`;
-  } else {
-    filterInfo.innerHTML = `<h1 class="page-title" style="margin: 0; color: white;">All Available Buses</h1>`;
-  }
-}
-
-// Load schedules from API
-async function loadSchedules() {
-  const schedulesList = document.getElementById('schedules-list');
-  
-  if (!schedulesList) {
-    console.error('❌ schedules-list element not found in DOM');
-    return;
-  }
-  
-  // Show loading state
-  schedulesList.innerHTML = createLoadingSkeleton();
-  
-  try {
-    console.log('🔄 Fetching schedules with filters:', currentFilters);
-    
-    // Fetch schedules from API
-    allSchedules = await getSchedules(currentFilters);
-    
-    console.log('✅ Received schedules:', allSchedules.length);
-    console.log('📊 Schedules data:', allSchedules);
-    
-    // Display schedules
-    displaySchedules(allSchedules);
-    
-  } catch (error) {
-    console.error('❌ Error loading schedules:', error);
-    
-    schedulesList.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">⚠️</div>
-        <h3>Error Loading Buses</h3>
-        <p>${error.message || 'Failed to load bus schedules. Please check your connection.'}</p>
-        <button onclick="loadSchedules()" class="btn btn-primary">
-          🔄 Try Again
-        </button>
-      </div>
-    `;
-  }
-}
-
-// Create loading skeleton
-function createLoadingSkeleton() {
-  return `
-    <div class="loading-container">
-      <div class="schedule-card skeleton-card">
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-text short"></div>
-        <div class="skeleton skeleton-button"></div>
-      </div>
-      <div class="schedule-card skeleton-card">
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-text short"></div>
-        <div class="skeleton skeleton-button"></div>
-      </div>
-      <div class="schedule-card skeleton-card">
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-text short"></div>
-        <div class="skeleton skeleton-button"></div>
-      </div>
-    </div>
-  `;
-}
-
-// Display schedules
-function displaySchedules(schedules) {
-  const schedulesList = document.getElementById('schedules-list');
-  if (!schedulesList) {
-    console.error('❌ schedules-list element not found');
-    return;
-  }
-  
-  console.log('📊 Displaying schedules:', schedules.length);
-  
-  // Filter out any schedules whose effective departure date is cancelled
-  const now = new Date();
-  schedules = schedules.filter(s => {
-    const dep = new Date(s.departureTime);
-    const ds  = dep.toISOString().split('T')[0];
-    const cancelled = s.cancelledDates || [];
-    return !cancelled.includes(ds);
-  });
-
-  if (!schedules || schedules.length === 0) {
-    schedulesList.innerHTML = createEmptyState();
-    return;
-  }
-  
-  // Group schedules by time of day
-  const groupedSchedules = groupSchedulesByTimeOfDay(schedules);
-  
-  let html = '';
-  
-  // Morning buses (6 AM - 12 PM)
-  if (groupedSchedules.morning.length > 0) {
-    html += createScheduleGroup('🌅', 'Morning Buses (6 AM - 12 PM)', groupedSchedules.morning);
-  }
-  
-  // Afternoon buses (12 PM - 6 PM)
-  if (groupedSchedules.afternoon.length > 0) {
-    html += createScheduleGroup('☀️', 'Afternoon Buses (12 PM - 6 PM)', groupedSchedules.afternoon);
-  }
-  
-  // Evening buses (6 PM - 12 AM)
-  if (groupedSchedules.evening.length > 0) {
-    html += createScheduleGroup('🌆', 'Evening Buses (6 PM - 12 AM)', groupedSchedules.evening);
-  }
-  
-  // Night buses (12 AM - 6 AM)
-  if (groupedSchedules.night.length > 0) {
-    html += createScheduleGroup('🌙', 'Night Buses (12 AM - 6 AM)', groupedSchedules.night);
-  }
-  
-  schedulesList.innerHTML = html;
-  
-  console.log('✅ Schedules displayed successfully');
-}
-
-// Create schedule group
-function createScheduleGroup(icon, title, schedules) {
-  return `
-    <div class="schedule-group" style="margin-bottom: 2rem;">
-      <h3 class="schedule-group-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb;">
-        <span class="time-icon" style="font-size: 1.5rem;">${icon}</span>
-        ${title}
-      </h3>
-      <div class="schedule-group-content" style="display: grid; gap: 1.5rem;">
-        ${schedules.map(schedule => createScheduleCard(schedule)).join('')}
-      </div>
-    </div>
-  `;
-}
-
-// Group schedules by time of day
-function groupSchedulesByTimeOfDay(schedules) {
-  const grouped = {
-    morning: [],
-    afternoon: [],
-    evening: [],
-    night: []
-  };
-  
-  schedules.forEach(schedule => {
-    const date = new Date(schedule.departureTime);
-    const hour = date.getHours();
-    
-    if (hour >= 6 && hour < 12) {
-      grouped.morning.push(schedule);
-    } else if (hour >= 12 && hour < 18) {
-      grouped.afternoon.push(schedule);
-    } else if (hour >= 18 && hour < 24) {
-      grouped.evening.push(schedule);
-    } else {
-      grouped.night.push(schedule);
-    }
-  });
-  
-  console.log('📊 Grouped schedules:', {
-    morning: grouped.morning.length,
-    afternoon: grouped.afternoon.length,
-    evening: grouped.evening.length,
-    night: grouped.night.length
-  });
-  
-  return grouped;
-}
-
-// Create empty state
-function createEmptyState() {
-  return `
-    <div class="empty-state" style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-      <div class="empty-icon" style="font-size: 4rem; margin-bottom: 1rem;">🚌</div>
-      <h3 style="font-size: 1.5rem; font-weight: 600; color: #1f2937; margin-bottom: 0.5rem;">No Buses Found</h3>
-      <p style="color: #6b7280; margin-bottom: 1.5rem;">We couldn't find any buses matching your search criteria.</p>
-      <div class="empty-state-actions" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-        <button onclick="clearFilters()" class="btn btn-primary">
-          Clear Filters
-        </button>
-        <button onclick="navigateTo('index.html')" class="btn btn-outline">
-          Back to Search
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-// Create schedule card HTML with inline styles for guaranteed display
-function createScheduleCard(schedule) {
-  const availableSeats = TOTAL_SEATS - (schedule.bookedSeats?.length || 0);
-  const duration = calculateDuration(schedule.departureTime, schedule.arrivalTime);
-  const departureDate = new Date(schedule.departureTime);
-  const isToday = isDateToday(departureDate);
-  const isPast  = isPastDeparture(departureDate);
-  const nextDay = new Date(schedule.arrivalTime).toDateString() !== new Date(schedule.departureTime).toDateString();
-
-  return `
-    <div class="schedule-card" data-schedule-id="${schedule.id}" style="${isPast ? 'opacity:0.55;' : ''}">
-      <div class="card-accent"></div>
-
-      <div class="schedule-info">
-        <!-- Bus name + badges -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
-          <div>
-            <h3 style="font-size:1.15rem;font-weight:700;color:#1e293b;margin:0 0 0.2rem;">${schedule.busName}</h3>
-            <span style="font-size:0.8rem;color:#6b7280;background:#f8fafc;border:1px solid #e2e8f0;padding:0.15rem 0.5rem;border-radius:4px;">${schedule.type}</span>
-          </div>
-          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-            ${isPast  ? '<span style="background:#fee2e2;color:#991b1b;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fecaca;">Departed</span>' : ''}
-            ${!isPast && isToday ? '<span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #bbf7d0;">Today</span>' : ''}
-            ${!isPast && availableSeats <= 5 && availableSeats > 0 ? '<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:99px;border:1px solid #fcd34d;">Almost Full</span>' : ''}
-          </div>
-        </div>
-
-        <!-- Route timeline -->
-        <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0;">
-          <!-- Departure -->
-          <div style="text-align:left;min-width:80px;">
-            <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${formatTime(schedule.departureTime)}</div>
-            <div style="font-size:0.82rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">${schedule.origin}</div>
-            <div style="font-size:0.72rem;color:#9ca3af;">${formatDate(schedule.departureTime)}</div>
-          </div>
-
-          <!-- Connector -->
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.35rem;">
-            <div style="width:100%;height:2px;background:linear-gradient(to right,#667eea,#764ba2);border-radius:2px;"></div>
-            <div style="display:flex;align-items:center;gap:0.25rem;font-size:0.75rem;color:#6b7280;background:#f3f4f6;padding:0.2rem 0.6rem;border-radius:99px;white-space:nowrap;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${duration}
-            </div>
-          </div>
-
-          <!-- Arrival -->
-          <div style="text-align:right;min-width:80px;">
-            <div style="font-size:1.3rem;font-weight:800;color:#1e293b;">${formatTime(schedule.arrivalTime)}</div>
-            <div style="font-size:0.82rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">${schedule.destination}</div>
-            ${nextDay
-              ? `<div style="font-size:0.72rem;color:#f59e0b;font-weight:600;">+1 Day · ${formatDate(schedule.arrivalTime)}</div>`
-              : `<div style="font-size:0.72rem;color:#9ca3af;">${formatDate(schedule.arrivalTime)}</div>`
-            }
-          </div>
-        </div>
-
-        <!-- Amenities -->
-        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.5rem;">
-          ${['📶 WiFi','🔌 Charging','💧 Water'].map(a => `<span style="padding:0.2rem 0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:0.72rem;color:#6b7280;">${a}</span>`).join('')}
-          ${schedule.type.includes('AC') ? '<span style="padding:0.2rem 0.5rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;font-size:0.72rem;color:#3b82f6;">❄️ AC</span>' : ''}
-        </div>
-
-        <!-- Pick Up / Drop points -->
-        ${(schedule.pickupPoint || schedule.dropPoint) ? `
-        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed #e5e7eb;">
-          ${schedule.pickupPoint ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#10b981;">📍</span><div><span style="font-weight:600;color:#374151;">Pick Up:</span> ${schedule.pickupPoint}</div></div>` : ''}
-          ${schedule.dropPoint   ? `<div style="font-size:0.75rem;color:#475569;display:flex;align-items:flex-start;gap:0.3rem;"><span style="color:#ef4444;">📍</span><div><span style="font-weight:600;color:#374151;">Drop:</span> ${schedule.dropPoint}</div></div>` : ''}
-        </div>` : ''}
-      </div>
-
-      <!-- CTA panel -->
-      <div class="schedule-cta">
-        <div style="text-align:center;">
-          <span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:0.2rem;">Starting from</span>
-          <div style="font-size:1.7rem;font-weight:800;color:#667eea;">${formatCurrency(schedule.price)}</div>
-          <span style="font-size:0.72rem;color:#9ca3af;">per seat</span>
-        </div>
-
-        <button
-          onclick="selectBus('${schedule.id}')"
-          style="width:100%;padding:0.75rem 1.25rem;border-radius:8px;border:none;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;
-            ${availableSeats === 0
-              ? 'background:#f3f4f6;color:#9ca3af;cursor:not-allowed;'
-              : 'background:linear-gradient(135deg,#667eea,#764ba2);color:white;'}"
-          ${availableSeats === 0 || isPast ? 'disabled' : ''}
-        >
-          ${isPast ? 'Bus Departed' : availableSeats > 0 ? 'Select Seats →' : 'Fully Booked'}
-        </button>
-
-        <div style="font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;
-          ${isPast ? 'color:#9ca3af;' : availableSeats === 0 ? 'color:#ef4444;' : availableSeats <= 5 ? 'color:#f59e0b;' : 'color:#10b981;'}">
-          ${isPast
-            ? '🕐 Already departed'
-            : availableSeats > 0
-              ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left`
-              : '❌ No seats available'}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-
-// Helper: is this date today AND departure is still in the future?
-function isDateToday(date) {
-  const today = new Date();
-  const sameDay = date.getDate()  === today.getDate() &&
-                  date.getMonth() === today.getMonth() &&
-                  date.getFullYear() === today.getFullYear();
-  return sameDay && date > today;   // only "Today" if not yet departed
-}
-
-// Helper: has this departure already passed?
-function isPastDeparture(date) {
-  return new Date(date) < new Date();
-}
-
-// Select bus and navigate to seats page
-function selectBus(scheduleId) {
-  console.log('🎫 Selecting bus:', scheduleId);
-  
-  if (!scheduleId) {
-    showToast('Invalid bus selection', 'error');
-    return;
-  }
-  
-  // Store selected schedule in session storage for quick access
-  const schedule = allSchedules.find(s => s.id === scheduleId);
-  if (schedule) {
-    sessionStorage.setItem('selectedSchedule', JSON.stringify(schedule));
-  }
-  
-  navigateTo('seats.html', { id: scheduleId });
-}
-
-// Clear filters
-function clearFilters() {
-  currentFilters = {};
-  navigateTo('timings.html');
-}
-
-// Sort schedules
-function sortSchedules(sortBy) {
-  console.log('🔄 Sorting by:', sortBy);
-  
-  if (!allSchedules || allSchedules.length === 0) {
-    return;
-  }
-  
-  let sortedSchedules = [...allSchedules];
-  
-  switch(sortBy) {
-    case 'price-low':
-      sortedSchedules.sort((a, b) => a.price - b.price);
-      showToast('Sorted by: Price (Low to High)', 'info');
-      break;
-      
-    case 'price-high':
-      sortedSchedules.sort((a, b) => b.price - a.price);
-      showToast('Sorted by: Price (High to Low)', 'info');
-      break;
-      
-    case 'departure':
-      sortedSchedules.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
-      showToast('Sorted by: Departure Time', 'info');
-      break;
-      
-    case 'duration':
-      sortedSchedules.sort((a, b) => {
-        const durationA = new Date(a.arrivalTime) - new Date(a.departureTime);
-        const durationB = new Date(b.arrivalTime) - new Date(b.departureTime);
-        return durationA - durationB;
+    // Filter button active state
+    function setActiveFilter(id) {
+      ['filter-all','filter-sleeper','filter-seater','filter-nonac'].forEach(b => {
+        document.getElementById(b)?.classList.remove('active');
       });
-      showToast('Sorted by: Journey Duration', 'info');
-      break;
-      
-    case 'seats':
-      sortedSchedules.sort((a, b) => {
-        const seatsA = TOTAL_SEATS - (a.bookedSeats?.length || 0);
-        const seatsB = TOTAL_SEATS - (b.bookedSeats?.length || 0);
-        return seatsB - seatsA;
-      });
-      showToast('Sorted by: Available Seats', 'info');
-      break;
-      
-    default:
-      return;
-  }
-  
-  allSchedules = sortedSchedules;
-  displaySchedules(allSchedules);
-}
+      document.getElementById(id)?.classList.add('active');
+    }
 
-// Filter schedules by bus type
-function filterByBusType(type) {
-  console.log('🔍 Filtering by bus type:', type);
-  
-  if (type === 'all') {
-    loadSchedules();
-    return;
-  }
-  
-  const filtered = allSchedules.filter(schedule => 
-    schedule.type.toLowerCase().includes(type.toLowerCase())
-  );
-  
-  displaySchedules(filtered);
-  showToast(`Showing ${filtered.length} ${type} buses`, 'info');
-}
+    const _origFilter = filterByBusType;
+    window.filterByBusType = function(type) {
+      const map = { all:'filter-all', 'AC Sleeper':'filter-sleeper', 'AC Seater':'filter-seater', 'Non-AC':'filter-nonac' };
+      setActiveFilter(map[type] || 'filter-all');
+      _origFilter(type);
+    };
+  </script>
 
-// Refresh schedules
-async function refreshSchedules() {
-  showToast('Refreshing bus schedules...', 'info');
-  await loadSchedules();
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTimingsPage);
-} else {
-  initTimingsPage();
-}
-
-// Debug function - call this from console if needed
-window.debugTimings = function() {
-  console.log('🔍 Debug Info:');
-  console.log('Current Filters:', currentFilters);
-  console.log('All Schedules:', allSchedules);
-  console.log('Schedules List Element:', document.getElementById('schedules-list'));
-  console.log('Filter Info Element:', document.getElementById('filter-info'));
-};
-
-console.log('✅ Timings.js loaded - Use window.debugTimings() for debugging');
+</body>
+</html>
