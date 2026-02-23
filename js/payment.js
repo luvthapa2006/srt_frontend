@@ -5,6 +5,84 @@
 
 let bookingDetails   = null;
 let confirmedBooking = null;
+let appliedCoupon    = null;  // { code, discount, finalAmount }
+
+// ----------------------------------------
+// Coupon application
+// ----------------------------------------
+async function applyCoupon() {
+  const code = document.getElementById('coupon-input')?.value?.trim()?.toUpperCase();
+  const resultEl = document.getElementById('coupon-result');
+  if (!code) { if (resultEl) resultEl.innerHTML = '<div class="coupon-error">Please enter a coupon code</div>'; return; }
+
+  const applyBtn = document.getElementById('apply-coupon-btn');
+  if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = 'Checking…'; }
+
+  const result = await validateCoupon(code, bookingDetails.totalAmount);
+
+  if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Apply'; }
+
+  if (result.valid) {
+    appliedCoupon = result;
+    if (resultEl) {
+      resultEl.innerHTML = `
+        <div class="coupon-success">
+          ✅ Coupon <strong>${result.code}</strong> applied!
+          <span style="float:right;cursor:pointer;color:#6b7280;" onclick="removeCoupon()">✕ Remove</span>
+        </div>`;
+    }
+    updateTotalWithDiscount(result);
+    showToast(`Coupon applied! 🎉`, 'success');
+  } else {
+    appliedCoupon = null;
+    if (resultEl) resultEl.innerHTML = `<div class="coupon-error">❌ ${result.message || 'Invalid coupon'}</div>`;
+  }
+}
+
+function removeCoupon() {
+  appliedCoupon = null;
+  const resultEl = document.getElementById('coupon-result');
+  if (resultEl) resultEl.innerHTML = '';
+  const input = document.getElementById('coupon-input');
+  if (input) input.value = '';
+  // Restore original total in summary
+  const totalEl = document.querySelector('.total-amount');
+  if (totalEl) totalEl.textContent = formatCurrency(bookingDetails.totalAmount);
+  const discountRow = document.getElementById('discount-row');
+  if (discountRow) discountRow.remove();
+}
+
+function updateTotalWithDiscount(couponResult) {
+  const summarySection = document.getElementById('booking-summary-section');
+  if (!summarySection) return;
+
+  // Find or update total amount display
+  const totalEl = summarySection.querySelector('.total-amount');
+  if (!totalEl) return;
+
+  const originalAmount = bookingDetails.totalAmount;
+  const discount = couponResult.discount;
+  const finalAmount = couponResult.finalAmount;
+
+  // Remove old discount row if any
+  const oldRow = document.getElementById('discount-row');
+  if (oldRow) oldRow.remove();
+
+  // Animate original price strike-through
+  totalEl.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;">
+      <div class="price-strike-wrap" style="color:#9ca3af;font-size:0.9rem;">
+        <span>${formatCurrency(originalAmount)}</span>
+        <div class="price-strike-line"></div>
+      </div>
+      <div style="color:#10b981;font-size:1.3rem;font-weight:800;">${formatCurrency(finalAmount)}</div>
+      <div class="savings-badge">🎉 Hurray! You saved ${formatCurrency(discount)}</div>
+    </div>`;
+
+  // Update pay button text
+  const payBtn = document.getElementById('pay-btn');
+  if (payBtn) payBtn.textContent = `Pay ${formatCurrency(finalAmount)} →`;
+}
 
 // ----------------------------------------
 // Page init
@@ -133,7 +211,7 @@ function displayBookingSummary(schedule) {
 
         <div class="detail-row total">
           <span class="detail-label">Total Amount</span>
-          <span class="detail-value total-amount">${formatCurrency(bookingDetails.totalAmount)}</span>
+          <span class="detail-value total-amount" id="total-amount-display">${formatCurrency(bookingDetails.totalAmount)}</span>
         </div>
       </div>
     </div>
@@ -170,7 +248,10 @@ async function handlePaymentSubmit(e) {
     customerName: document.getElementById('name').value.trim(),
     email:        document.getElementById('email').value.trim(),
     phone:        document.getElementById('phone').value.trim(),
-    ...bookingDetails
+    ...bookingDetails,
+    // Use discounted total if coupon applied
+    totalAmount:  appliedCoupon ? appliedCoupon.finalAmount : bookingDetails.totalAmount,
+    couponCode:   appliedCoupon ? appliedCoupon.code : null
   };
 
   showLoading();
@@ -198,6 +279,11 @@ async function handlePaymentSubmit(e) {
 
     const { paymentSessionId, orderId, bookingToken, env } = result.data;
     console.log('✅ Order created:', orderId, '| token:', bookingToken);
+
+    // Record coupon usage
+    if (appliedCoupon?.code) {
+      await useCoupon(appliedCoupon.code);
+    }
 
     // Store so we can retrieve on return
     sessionStorage.setItem('pendingBookingToken', bookingToken);

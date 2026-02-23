@@ -207,18 +207,23 @@
     async function populateCityDropdowns() {
       try {
         showLoading();
-        const cities = await getAllCities();
+        const [origins, destinations] = await Promise.all([
+          getOriginCities(),
+          getDestinationCities()
+        ]);
         const originSelect = document.getElementById('search-origin');
         const destinationSelect = document.getElementById('search-destination');
-        originSelect.innerHTML = '<option value="">Select Origin City</option>';
-        destinationSelect.innerHTML = '<option value="">Select Destination City</option>';
-        cities.forEach(city => {
-          const o1 = document.createElement('option');
-          o1.value = city; o1.textContent = city;
-          originSelect.appendChild(o1);
-          const o2 = document.createElement('option');
-          o2.value = city; o2.textContent = city;
-          destinationSelect.appendChild(o2);
+        originSelect.innerHTML = '<option value="">From City</option>';
+        destinationSelect.innerHTML = '<option value="">To City</option>';
+        origins.forEach(city => {
+          const o = document.createElement('option');
+          o.value = city; o.textContent = city;
+          originSelect.appendChild(o);
+        });
+        destinations.forEach(city => {
+          const o = document.createElement('option');
+          o.value = city; o.textContent = city;
+          destinationSelect.appendChild(o);
         });
         hideLoading();
       } catch (error) {

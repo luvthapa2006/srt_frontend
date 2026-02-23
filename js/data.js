@@ -210,6 +210,24 @@ async function getAllCities() {
   } catch(e) { return []; }
 }
 
+async function getOriginCities() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/schedules/origins`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    return data.cities || [];
+  } catch(e) { return []; }
+}
+
+async function getDestinationCities() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/schedules/destinations`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    return data.cities || [];
+  } catch(e) { return []; }
+}
+
 async function getAllRoutes() {
   try {
     const schedules = await getSchedules();
@@ -340,3 +358,62 @@ async function loadAndCacheSchedules(f = {}) {
 }
 
 console.log('✅ Data.js v2 loaded — AC Sleeper(36) + AC Seater+Sleeper(8+32)');
+
+// ── Coupon API ──
+async function validateCoupon(code, totalAmount) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, totalAmount })
+    });
+    return await res.json();
+  } catch(e) { return { error: 'Failed to validate coupon' }; }
+}
+
+async function useCoupon(code) {
+  try {
+    await fetch(`${API_BASE_URL}/coupons/use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+  } catch(e) {}
+}
+
+async function getAllCoupons() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/coupons`);
+    if (!res.ok) throw new Error('Failed');
+    return await res.json();
+  } catch(e) { return []; }
+}
+
+async function createCoupon(data) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message);
+    return result;
+  } catch(e) { showToast(e.message, 'error'); return null; }
+}
+
+async function deleteCoupon(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/coupons/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed');
+    return true;
+  } catch(e) { showToast('Failed to delete coupon', 'error'); return false; }
+}
+
+async function toggleScheduleActive(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}/toggle-active`, { method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed');
+    return await res.json();
+  } catch(e) { showToast('Failed to toggle status', 'error'); return null; }
+}

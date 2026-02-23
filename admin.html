@@ -258,6 +258,22 @@
       padding: 0.4rem 0.75rem; background: #f8fafc;
       border-radius: 8px; width: fit-content;
     }
+    /* Toggle slider */
+    .toggle-switch { position:relative; display:inline-block; width:50px; height:26px; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+      background:#ccc; border-radius:26px; transition:.3s; }
+    .toggle-slider:before { position:absolute; content:""; height:18px; width:18px;
+      left:4px; bottom:4px; background:white; border-radius:50%; transition:.3s; }
+    input:checked + .toggle-slider { background:#10b981; }
+    input:checked + .toggle-slider:before { transform: translateX(24px); }
+    .toggle-label { display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; }
+    /* Date pills */
+    .date-pill { display:inline-flex; align-items:center; gap:0.3rem; background:#eff6ff;
+      color:#3b82f6; border-radius:16px; padding:0.2rem 0.65rem; font-size:0.8rem;
+      font-weight:600; border:1px solid #bfdbfe; }
+    .date-pill button { background:none; border:none; cursor:pointer; color:#ef4444;
+      font-size:0.9rem; line-height:1; padding:0; margin-left:0.1rem; }
   </style>
 </head>
 <body>
@@ -401,6 +417,8 @@
         <button class="admin-tab-btn active" onclick="switchAdminTab('schedules', event)">Bus Schedules</button>
         <button class="admin-tab-btn"        onclick="switchAdminTab('bookings', event)">Bookings</button>
         <button class="admin-tab-btn"        onclick="switchAdminTab('pricing', event)">Pricing</button>
+        <button class="admin-tab-btn"        onclick="switchAdminTab('buslists', event)">Bus Lists</button>
+        <button class="admin-tab-btn"        onclick="switchAdminTab('coupons', event)">Coupons</button>
       </div>
 
       <!-- Tab: Schedules -->
@@ -446,11 +464,16 @@
               </div>
             </div>
 
-            <!-- Row 3: Date, Departure Time, Time Taken -->
+            <!-- Row 3: Dates, Departure Time, Time Taken -->
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">📅 Bus Date</label>
-                <input type="date" class="form-input" id="bus-date" required>
+                <label class="form-label">📅 Bus Dates <span class="required">*</span></label>
+                <div id="bus-dates-container" style="border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;background:#fff;">
+                  <div id="selected-dates-list" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;min-height:28px;"></div>
+                  <input type="date" class="form-input" id="bus-date-picker" style="margin-bottom:0.5rem;" onchange="addBusDate(this.value); this.value=''">
+                  <small class="text-muted">Click dates to add multiple. Selected dates shown above.</small>
+                </div>
+                <input type="hidden" id="bus-dates-json" value="[]">
               </div>
               <div class="form-group">
                 <label class="form-label">🕐 Departure Time</label>
@@ -604,6 +627,117 @@
             <li><strong>Automatic Application:</strong> Applied when customers select seats</li>
             <li><strong>Independent Zones:</strong> Each zone has a fixed price regardless of bus type</li>
           </ul>
+        </div>
+      </div>
+
+      <!-- Tab: Bus Lists -->
+      <div id="tab-buslists" class="admin-tab-content">
+        <div class="tab-header">
+          <h2>🚌 Bus Lists</h2>
+          <p class="tab-description">Manage all buses — search, filter, and toggle active status for recurring daily schedules.</p>
+        </div>
+
+        <div class="card mb-4" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+          <input type="text" class="form-input" id="buslist-search" placeholder="🔍 Search by bus name, route, type…" style="max-width:340px;" oninput="filterBusList()">
+          <select class="form-input" id="buslist-filter-type" style="max-width:220px;" onchange="filterBusList()">
+            <option value="">All Bus Types</option>
+            <option value="AC Sleeper (36)">AC Sleeper (36)</option>
+            <option value="AC Seater+Sleeper (8+32)">AC Seater+Sleeper (8+32)</option>
+          </select>
+          <select class="form-input" id="buslist-filter-status" style="max-width:160px;" onchange="filterBusList()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <button class="btn btn-outline" onclick="loadBusListTable()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Bus Name &amp; Type</th>
+                <th>Route</th>
+                <th>Pickup / Drop</th>
+                <th>Departure</th>
+                <th>Duration</th>
+                <th>Price</th>
+                <th>Seats</th>
+                <th>Daily Loop</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="buslist-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Coupons -->
+      <div id="tab-coupons" class="admin-tab-content">
+        <div class="tab-header">
+          <h2>🎟️ Coupons</h2>
+          <p class="tab-description">Create and manage discount coupons for passengers.</p>
+        </div>
+
+        <div class="card mb-8">
+          <h3 class="summary-title" id="coupon-form-title">➕ Add New Coupon</h3>
+          <form id="coupon-form">
+            <input type="hidden" id="coupon-id">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">🏷️ Coupon Code <span class="required">*</span></label>
+                <input type="text" class="form-input" id="coupon-code" placeholder="e.g. SAVE200" required style="text-transform:uppercase;">
+                <small class="text-muted">Users will enter this code at checkout</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label">📝 Description</label>
+                <input type="text" class="form-input" id="coupon-description" placeholder="e.g. Flat ₹200 off on all routes">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">💸 Discount Type <span class="required">*</span></label>
+                <select class="form-input" id="coupon-type" required onchange="updateCouponPreview()">
+                  <option value="flat">Flat Amount (₹)</option>
+                  <option value="percentage">Percentage (%)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔢 Discount Value <span class="required">*</span></label>
+                <input type="number" class="form-input" id="coupon-value" placeholder="e.g. 200" min="0" required oninput="updateCouponPreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">🔁 Max Usage</label>
+                <input type="number" class="form-input" id="coupon-max-usage" placeholder="Leave blank for unlimited" min="1">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">📅 Valid From <span class="required">*</span></label>
+                <input type="date" class="form-input" id="coupon-start" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">📅 Valid Until <span class="required">*</span></label>
+                <input type="date" class="form-input" id="coupon-end" required>
+              </div>
+            </div>
+            <div id="coupon-preview" style="padding:1rem;background:#f0fdf4;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;color:#166534;display:none;"></div>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary">💾 Save Coupon</button>
+              <button type="button" class="btn btn-secondary" onclick="resetCouponForm()">🔄 Reset</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Code</th><th>Description</th><th>Discount</th><th>Valid Period</th><th>Usage</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="coupons-table-body"></tbody>
+          </table>
         </div>
       </div>
 

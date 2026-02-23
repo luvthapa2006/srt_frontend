@@ -12,6 +12,21 @@
 
   <!-- Cashfree JS SDK (test + production unified) -->
   <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <style>
+    @keyframes priceStrike { from { width:0 } to { width:100% } }
+    @keyframes bounce { 0%,100% { transform:scale(1) } 50% { transform:scale(1.08) } }
+    @keyframes fadeInDown { from { opacity:0; transform:translateY(-10px) } to { opacity:1; transform:translateY(0) } }
+    .price-strike-wrap { position:relative; display:inline-block; }
+    .price-strike-line { position:absolute; top:50%; left:0; height:2px; background:#ef4444;
+      width:0; animation:priceStrike 0.5s ease-out 0.2s forwards; }
+    .savings-badge { display:inline-block; background:linear-gradient(135deg,#10b981,#059669);
+      color:white; padding:0.5rem 1rem; border-radius:24px; font-weight:700; font-size:0.9rem;
+      margin-top:0.5rem; animation:fadeInDown 0.4s ease 0.7s both, bounce 0.6s ease 1.1s; }
+    .coupon-success { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
+      padding:0.75rem; color:#166534; font-size:0.85rem; animation:fadeInDown 0.3s ease; }
+    .coupon-error { background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+      padding:0.75rem; color:#dc2626; font-size:0.85rem; }
+  </style>
 </head>
 <body>
 
@@ -72,7 +87,17 @@
                 🔒 Payments secured by <strong>Cashfree</strong> – 256-bit SSL encrypted
               </div>
 
-              <button type="submit" class="btn btn-primary btn-lg btn-block">
+              <!-- Coupon Code Section -->
+              <div id="coupon-section" style="margin-bottom:1rem;padding:1rem;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;">
+                <label style="font-size:0.85rem;font-weight:600;color:#92400e;display:block;margin-bottom:0.5rem;">🎟️ Have a coupon code?</label>
+                <div style="display:flex;gap:0.5rem;">
+                  <input type="text" id="coupon-input" class="form-input" placeholder="Enter coupon code" style="text-transform:uppercase;flex:1;letter-spacing:1px;">
+                  <button type="button" class="btn btn-outline" id="apply-coupon-btn" onclick="applyCoupon()" style="white-space:nowrap;background:#f59e0b;color:white;border-color:#f59e0b;">Apply</button>
+                </div>
+                <div id="coupon-result" style="margin-top:0.5rem;"></div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg btn-block" id="pay-btn">
                 Pay Now →
               </button>
             </form>

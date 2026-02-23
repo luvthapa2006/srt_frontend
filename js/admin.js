@@ -97,6 +97,8 @@ function initAdminDashboard() {
   initScheduleForm();
   initPricingForm();
   loadRouteSelector();
+  initBusDatePicker();
+  initCouponForm();
 }
 
 // ─────────────────────────────────────────
@@ -378,16 +380,54 @@ function updateScheduleFormPricing() {
 
 async function handleScheduleSubmit(e) {
   e.preventDefault();
-  const busDate = document.getElementById('bus-date').value;
-  const busTime = document.getElementById('bus-time').value;
-  const departureDate = new Date(`${busDate}T${busTime}`);
+  const busDatesJson = document.getElementById('bus-dates-json')?.value || '[]';
+  const busDates = JSON.parse(busDatesJson);
+  const busTime  = document.getElementById('bus-time').value;
+  const scheduleId = document.getElementById('schedule-id').value;
 
-  // Calculate arrival time from duration fields
+  // If editing an existing, use old single-date approach
+  if (scheduleId) {
+    // For edit mode, fall back to single date (use first date from picker or today)
+    const singleDate = busDates[0] || new Date().toISOString().split('T')[0];
+    const departureDate = new Date(`${singleDate}T${busTime}`);
+    const durationHrs  = parseInt(document.getElementById('duration-hours').value)  || 0;
+    const durationMins = parseInt(document.getElementById('duration-minutes').value) || 0;
+    const totalMins    = (durationHrs * 60) + durationMins;
+    const arrivalDate  = new Date(departureDate.getTime() + (totalMins || 30) * 60000);
+    const origin       = document.getElementById('origin').value.trim();
+    const destination  = document.getElementById('destination').value.trim();
+    const basePriceRaw = document.getElementById('price').value;
+    const basePrice    = basePriceRaw !== '' ? parseInt(basePriceRaw) : null;
+    const formData = {
+      busName: document.getElementById('bus-name').value.trim(),
+      type: document.getElementById('bus-type').value,
+      origin, destination,
+      pickupPoint:   document.getElementById('pickup-point').value.trim(),
+      dropPoint:     document.getElementById('drop-point').value.trim(),
+      durationHours: durationHrs, durationMins,
+      departureTime: departureDate.toISOString(),
+      arrivalTime:   arrivalDate.toISOString(),
+      price: basePrice || 0
+    };
+    showLoading();
+    const result = await updateSchedule(scheduleId, formData);
+    hideLoading();
+    if (result) {
+      showToast('Schedule updated!', 'success');
+      resetScheduleFormState();
+      await loadSchedulesTable(); await loadStats(); await loadRouteSelector();
+    }
+    return;
+  }
+
+  // New schedule — require at least one date
+  if (!busDates.length) {
+    showToast('Please select at least one bus date', 'error'); return;
+  }
+  if (!busTime) { showToast('Please set a departure time', 'error'); return; }
+
   const durationHrs  = parseInt(document.getElementById('duration-hours').value)  || 0;
   const durationMins = parseInt(document.getElementById('duration-minutes').value) || 0;
-  const totalMins    = (durationHrs * 60) + durationMins;
-  const arrivalDate  = new Date(departureDate.getTime() + (totalMins || 30) * 60000);
-
   const origin       = document.getElementById('origin').value.trim();
   const destination  = document.getElementById('destination').value.trim();
   const basePriceRaw = document.getElementById('price').value;
@@ -396,51 +436,45 @@ async function handleScheduleSubmit(e) {
   const formData = {
     busName:       document.getElementById('bus-name').value.trim(),
     type:          document.getElementById('bus-type').value,
-    origin,
-    destination,
+    origin, destination,
     pickupPoint:   document.getElementById('pickup-point').value.trim(),
     dropPoint:     document.getElementById('drop-point').value.trim(),
     durationHours: durationHrs,
-    durationMins:  durationMins,
-    departureTime: departureDate.toISOString(),
-    arrivalTime:   arrivalDate.toISOString(),
-    price:         basePrice || 0
+    durationMins,
+    price:         basePrice || 0,
+    busDates,
+    busTime
   };
-  const scheduleId = document.getElementById('schedule-id').value;
 
   showLoading();
-  let result;
-  if (scheduleId) {
-    result = await updateSchedule(scheduleId, formData);
-    if (result) showToast('Schedule updated!', 'success');
-  } else {
-    result = await addSchedule(formData);
-    if (result) showToast('Schedule added!', 'success');
-  }
+  const result = await addSchedule(formData);
   hideLoading();
 
   if (result) {
-    // If a base price was entered, auto-apply it to all seats on this route
+    const count = result.count || 1;
+    showToast(`${count} schedule${count > 1 ? 's' : ''} added! 🎉`, 'success');
+
     if (basePrice && basePrice > 0) {
       const existing = getRoutePricing(origin, destination);
       setRoutePricing(origin, destination, {
-        lowerPrice: basePrice,
-        upperPrice: basePrice,
-        perSeat:    existing.perSeat || {}
+        lowerPrice: basePrice, upperPrice: basePrice, perSeat: existing.perSeat || {}
       });
-      showToast('Base price Rs.' + basePrice + ' applied to all seats on ' + origin + ' to ' + destination, 'info');
     }
 
-    e.target.reset();
-    document.getElementById('schedule-id').value = '';
-    document.getElementById('bus-name').value    = 'Shree Ram Travels';
-    document.getElementById('bus-type').value    = 'AC Sleeper (36)';
-    document.getElementById('form-title').textContent = 'Add New Schedule';
-    document.getElementById('schedule-pricing-preview').style.display = 'none';
-    await loadSchedulesTable();
-    await loadStats();
-    await loadRouteSelector();
+    resetScheduleFormState();
+    await loadSchedulesTable(); await loadStats(); await loadRouteSelector();
   }
+}
+
+function resetScheduleFormState() {
+  document.getElementById('schedule-form')?.reset();
+  document.getElementById('schedule-id').value   = '';
+  document.getElementById('bus-name').value       = 'Shree Ram Travels';
+  document.getElementById('bus-type').value       = 'AC Sleeper (36)';
+  document.getElementById('form-title').textContent = 'Add New Schedule';
+  document.getElementById('schedule-pricing-preview').style.display = 'none';
+  selectedBusDates = [];
+  renderDatePills();
 }
 
 async function editSchedule(id) {
@@ -460,7 +494,9 @@ async function editSchedule(id) {
   document.getElementById('duration-minutes').value = schedule.durationMins  || '';
 
   const d = new Date(schedule.departureTime);
-  document.getElementById('bus-date').value = d.toISOString().split('T')[0];
+  // For edit mode: set a single date in the multi-date picker
+  selectedBusDates = [d.toISOString().split('T')[0]];
+  renderDatePills();
   document.getElementById('bus-time').value = d.toTimeString().substring(0, 5);
   document.getElementById('price').value    = schedule.price;
   document.getElementById('form-title').textContent = 'Edit Schedule';
@@ -486,13 +522,15 @@ function resetScheduleForm() {
   document.getElementById('schedule-form').reset();
   document.getElementById('schedule-id').value      = '';
   document.getElementById('bus-name').value         = 'Shree Ram Travels';
-  document.getElementById('bus-type').value         = 'AC Sleeper (2+1)';
+  document.getElementById('bus-type').value         = 'AC Sleeper (36)';
   document.getElementById('pickup-point').value     = '';
   document.getElementById('drop-point').value       = '';
   document.getElementById('duration-hours').value   = '';
   document.getElementById('duration-minutes').value = '';
   document.getElementById('form-title').textContent = 'Add New Schedule';
   document.getElementById('schedule-pricing-preview').style.display = 'none';
+  selectedBusDates = [];
+  renderDatePills();
 }
 
 // ─────────────────────────────────────────
@@ -745,6 +783,8 @@ function switchAdminTab(tabName, event) {
   if (event?.target) event.target.classList.add('active');
   if (tabName === 'pricing')  loadRouteSelector();
   if (tabName === 'bookings') loadBookingsTable();
+  if (tabName === 'buslists') loadBusListTable();
+  if (tabName === 'coupons')  loadCouponsTable();
 }
 
 
@@ -804,6 +844,251 @@ async function resetStatsTemporary() {
       document.getElementById('stat-bookings').textContent = '0';
     }
     hideLoading();
+  }
+}
+
+// ─────────────────────────────────────────
+// MULTI-DATE BUS PICKER
+// ─────────────────────────────────────────
+let selectedBusDates = [];
+
+function initBusDatePicker() {
+  const picker = document.getElementById('bus-date-picker');
+  if (picker) picker.min = new Date().toISOString().split('T')[0];
+  renderDatePills();
+}
+
+function addBusDate(dateStr) {
+  if (!dateStr) return;
+  if (!selectedBusDates.includes(dateStr)) {
+    selectedBusDates.push(dateStr);
+    selectedBusDates.sort();
+    renderDatePills();
+  }
+}
+
+function removeBusDate(dateStr) {
+  selectedBusDates = selectedBusDates.filter(d => d !== dateStr);
+  renderDatePills();
+}
+
+function renderDatePills() {
+  const container = document.getElementById('selected-dates-list');
+  if (!container) return;
+  if (selectedBusDates.length === 0) {
+    container.innerHTML = '<span style="color:#9ca3af;font-size:0.8rem;">No dates selected yet</span>';
+  } else {
+    container.innerHTML = selectedBusDates.map(d => {
+      const display = new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+      return `<span class="date-pill">${display}<button type="button" onclick="removeBusDate('${d}')" title="Remove">×</button></span>`;
+    }).join('');
+  }
+  const hidden = document.getElementById('bus-dates-json');
+  if (hidden) hidden.value = JSON.stringify(selectedBusDates);
+}
+
+// Override initScheduleForm to hook multi-date
+const _origInitScheduleForm = initScheduleForm;
+
+// ─────────────────────────────────────────
+// BUS LISTS TAB
+// ─────────────────────────────────────────
+let allBusesCache = [];
+
+async function loadBusListTable() {
+  const tbody = document.getElementById('buslist-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="9" class="text-center">Loading…</td></tr>';
+  allBusesCache = await getSchedules();
+  renderBusListTable(allBusesCache);
+}
+
+function renderBusListTable(schedules) {
+  const tbody = document.getElementById('buslist-table-body');
+  if (!tbody) return;
+  if (schedules.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">No buses found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = schedules.map(s => {
+    const dh = s.durationHours || 0, dm = s.durationMins || 0;
+    const dur = (dh || dm) ? `${dh > 0 ? dh+'h ' : ''}${dm > 0 ? dm+'m' : ''}`.trim() : '—';
+    const isActive = s.isActive !== false; // default true
+    const availSeats = (s.totalSeats || TOTAL_SEATS) - (s.bookedSeats?.length || 0);
+    return `
+    <tr id="busrow-${s.id}" style="opacity:${isActive ? 1 : 0.55};">
+      <td><div><strong>${s.busName}</strong></div><div class="text-muted" style="font-size:0.75rem;">${s.type}</div></td>
+      <td>${s.origin} → ${s.destination}</td>
+      <td style="font-size:0.78rem;color:#475569;">${s.pickupPoint || '—'}<br>${s.dropPoint || '—'}</td>
+      <td>${formatDate(s.departureTime)}<br><small>${formatTime(s.departureTime)}</small></td>
+      <td><span style="background:#eff6ff;color:#3b82f6;padding:0.15rem 0.4rem;border-radius:4px;font-size:0.78rem;">⏱ ${dur}</span></td>
+      <td>${formatCurrency(s.price)}</td>
+      <td><span class="badge badge-${availSeats < 5 ? 'warning' : 'success'}">${availSeats}/${s.totalSeats || TOTAL_SEATS}</span></td>
+      <td>
+        <label class="toggle-label">
+          <label class="toggle-switch">
+            <input type="checkbox" ${isActive ? 'checked' : ''} onchange="handleBusToggle('${s.id}', this)">
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="bus-status-${s.id}" style="font-size:0.78rem;color:${isActive ? '#10b981' : '#9ca3af'};">${isActive ? 'Active' : 'Inactive'}</span>
+        </label>
+      </td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline" onclick="editSchedule('${s.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger"  onclick="deleteScheduleConfirm('${s.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function handleBusToggle(scheduleId, checkbox) {
+  const result = await toggleScheduleActive(scheduleId);
+  if (result) {
+    const row = document.getElementById(`busrow-${scheduleId}`);
+    const statusEl = document.getElementById(`bus-status-${scheduleId}`);
+    if (row) row.style.opacity = result.isActive ? '1' : '0.55';
+    if (statusEl) {
+      statusEl.textContent = result.isActive ? 'Active' : 'Inactive';
+      statusEl.style.color = result.isActive ? '#10b981' : '#9ca3af';
+    }
+    showToast(result.isActive ? 'Bus activated 🟢' : 'Bus deactivated ⭕', result.isActive ? 'success' : 'info');
+  } else {
+    // revert checkbox
+    checkbox.checked = !checkbox.checked;
+  }
+}
+
+function filterBusList() {
+  const term   = document.getElementById('buslist-search')?.value.toLowerCase() || '';
+  const type   = document.getElementById('buslist-filter-type')?.value || '';
+  const status = document.getElementById('buslist-filter-status')?.value || '';
+  const filtered = allBusesCache.filter(s => {
+    const matchText   = !term   || (s.busName + s.origin + s.destination + s.type).toLowerCase().includes(term);
+    const matchType   = !type   || s.type === type;
+    const isActive    = s.isActive !== false;
+    const matchStatus = !status || (status === 'active' ? isActive : !isActive);
+    return matchText && matchType && matchStatus;
+  });
+  renderBusListTable(filtered);
+}
+
+// ─────────────────────────────────────────
+// COUPONS TAB
+// ─────────────────────────────────────────
+async function loadCouponsTable() {
+  const tbody = document.getElementById('coupons-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading…</td></tr>';
+  const coupons = await getAllCoupons();
+  if (coupons.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No coupons yet. Create one above!</td></tr>';
+    return;
+  }
+  const now = new Date();
+  tbody.innerHTML = coupons.map(c => {
+    const expired = new Date(c.endDate) < now;
+    const notYet  = new Date(c.startDate) > now;
+    let statusBadge;
+    if (!c.isActive) statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Disabled</span>';
+    else if (expired) statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Expired</span>';
+    else if (notYet)  statusBadge = '<span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Upcoming</span>';
+    else statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Active ✓</span>';
+
+    const discountDisplay = c.discountType === 'flat'
+      ? `₹${c.discountValue} off`
+      : `${c.discountValue}% off`;
+    const usageDisplay = c.maxUsage ? `${c.usageCount}/${c.maxUsage}` : `${c.usageCount}/∞`;
+    return `
+    <tr>
+      <td><strong style="font-size:1rem;letter-spacing:1px;">${c.code}</strong></td>
+      <td style="font-size:0.85rem;color:#475569;">${c.description || '—'}</td>
+      <td><span style="background:#f0fdf4;color:#166534;padding:0.2rem 0.5rem;border-radius:4px;font-weight:600;">${discountDisplay}</span></td>
+      <td style="font-size:0.82rem;">${new Date(c.startDate).toLocaleDateString('en-IN')} – ${new Date(c.endDate).toLocaleDateString('en-IN')}</td>
+      <td style="font-size:0.85rem;">${usageDisplay}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-danger" onclick="deleteCouponConfirm('${c._id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function initCouponForm() {
+  const form = document.getElementById('coupon-form');
+  if (!form) return;
+  // Set default dates
+  const today = new Date().toISOString().split('T')[0];
+  const nextMonth = new Date(Date.now() + 30*24*3600*1000).toISOString().split('T')[0];
+  const startEl = document.getElementById('coupon-start');
+  const endEl   = document.getElementById('coupon-end');
+  if (startEl) startEl.value = today;
+  if (endEl)   endEl.value   = nextMonth;
+  form.addEventListener('submit', handleCouponSubmit);
+}
+
+function updateCouponPreview() {
+  const type  = document.getElementById('coupon-type')?.value;
+  const value = document.getElementById('coupon-value')?.value;
+  const prev  = document.getElementById('coupon-preview');
+  if (!prev) return;
+  if (value && Number(value) > 0) {
+    const display = type === 'flat' ? `₹${value} flat discount` : `${value}% percentage discount`;
+    prev.style.display = 'block';
+    prev.innerHTML = `🎉 Customers will get <strong>${display}</strong> on their booking total.`;
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+async function handleCouponSubmit(e) {
+  e.preventDefault();
+  const code        = document.getElementById('coupon-code').value.trim().toUpperCase();
+  const description = document.getElementById('coupon-description').value.trim();
+  const discountType  = document.getElementById('coupon-type').value;
+  const discountValue = document.getElementById('coupon-value').value;
+  const startDate   = document.getElementById('coupon-start').value;
+  const endDate     = document.getElementById('coupon-end').value;
+  const maxUsage    = document.getElementById('coupon-max-usage').value;
+
+  if (!code || !discountValue || !startDate || !endDate) {
+    showToast('Please fill all required fields', 'error'); return;
+  }
+  if (new Date(startDate) > new Date(endDate)) {
+    showToast('End date must be after start date', 'error'); return;
+  }
+
+  showLoading();
+  const result = await createCoupon({ code, description, discountType, discountValue, startDate, endDate, maxUsage });
+  hideLoading();
+  if (result) {
+    showToast(`Coupon "${code}" created! 🎟️`, 'success');
+    resetCouponForm();
+    loadCouponsTable();
+  }
+}
+
+function resetCouponForm() {
+  document.getElementById('coupon-form')?.reset();
+  const today = new Date().toISOString().split('T')[0];
+  const nextMonth = new Date(Date.now() + 30*24*3600*1000).toISOString().split('T')[0];
+  const startEl = document.getElementById('coupon-start');
+  const endEl   = document.getElementById('coupon-end');
+  if (startEl) startEl.value = today;
+  if (endEl)   endEl.value   = nextMonth;
+  const prev = document.getElementById('coupon-preview');
+  if (prev) prev.style.display = 'none';
+}
+
+async function deleteCouponConfirm(id) {
+  if (confirm('Delete this coupon? This cannot be undone.')) {
+    showLoading();
+    const ok = await deleteCoupon(id);
+    hideLoading();
+    if (ok) { showToast('Coupon deleted', 'success'); loadCouponsTable(); }
   }
 }
 
