@@ -331,7 +331,7 @@ function createScheduleCard(schedule) {
           ${availableSeats > 0 ? 'Select Seats →' : 'Fully Booked'}
         </button>
 
-        <divfont-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;color:${availableSeats === 0 ? '#ef4444' : availableSeats <= 5 ? '#f59e0b' : '#10b981'};">
+        <div style="font-size:0.78rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;color:${availableSeats === 0 ? '#ef4444' : availableSeats <= 5 ? '#f59e0b' : '#10b981'};">
           ${availableSeats > 0 ? `💺 ${availableSeats} seat${availableSeats > 1 ? 's' : ''} left` : '❌ No seats available'}
         </div>
       </div>
