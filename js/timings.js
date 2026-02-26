@@ -141,6 +141,18 @@ function displaySchedules(schedules) {
     return true;
   });
 
+  // Deduplicate by busName + departureTime + origin + destination
+  // (prevents showing same bus multiple times when it was added with multi-date and
+  //  also picked up by the recurring query, or when the same date was added more than once)
+  const seen = new Set();
+  schedules = schedules.filter(s => {
+    const dep = new Date(s.departureTime);
+    const key = `${s.busName}|${s.origin}|${s.destination}|${dep.toISOString().slice(0,16)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   if (!schedules || schedules.length === 0) {
     schedulesList.innerHTML = createEmptyState();
     return;
