@@ -1116,18 +1116,22 @@ async function loadCouponsTable() {
   tbody.innerHTML = coupons.map(c => {
     const expired = new Date(c.endDate) < now;
     const notYet  = new Date(c.startDate) > now;
+    // Treat as inactive if expired (even if DB still says isActive=true)
+    const effectivelyActive = c.isActive && !expired;
     let statusBadge;
-    if (!c.isActive) statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Disabled</span>';
-    else if (expired) statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Expired</span>';
-    else if (notYet)  statusBadge = '<span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Upcoming</span>';
-    else statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Active ✓</span>';
+    if (expired)           statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">⏰ Expired</span>';
+    else if (!c.isActive)  statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Disabled</span>';
+    else if (notYet)       statusBadge = '<span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Upcoming</span>';
+    else                   statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Active ✓</span>';
 
     const discountDisplay = c.discountType === 'flat'
       ? `₹${c.discountValue} off`
       : `${c.discountValue}% off`;
     const usageDisplay = c.maxUsage ? `${c.usageCount}/${c.maxUsage}` : `${c.usageCount}/∞`;
+    // Show row with reduced opacity if expired
+    const rowStyle = expired ? 'opacity:0.55;' : '';
     return `
-    <tr>
+    <tr style="${rowStyle}">
       <td><strong style="font-size:1rem;letter-spacing:1px;">${c.code}</strong></td>
       <td style="font-size:0.85rem;color:#475569;">${c.description || '—'}</td>
       <td><span style="background:#f0fdf4;color:#166534;padding:0.2rem 0.5rem;border-radius:4px;font-weight:600;">${discountDisplay}</span></td>
@@ -1136,11 +1140,28 @@ async function loadCouponsTable() {
       <td>${statusBadge}</td>
       <td>
         <div class="btn-group">
+          ${!expired ? `<button class="btn btn-sm" style="background:${effectivelyActive ? '#fef3c7' : '#d1fae5'};color:${effectivelyActive ? '#92400e' : '#065f46'};border:1px solid currentColor;" onclick="toggleCouponActive('${c._id}', ${effectivelyActive})">${effectivelyActive ? 'Disable' : 'Enable'}</button>` : ''}
           <button class="btn btn-sm btn-danger" onclick="deleteCouponConfirm('${c._id}')">Delete</button>
         </div>
       </td>
     </tr>`;
   }).join('');
+}
+
+async function toggleCouponActive(id, currentlyActive) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/coupons/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: !currentlyActive })
+    });
+    if (res.ok) {
+      showToast(currentlyActive ? 'Coupon disabled' : 'Coupon enabled', 'success');
+      loadCouponsTable();
+    }
+  } catch (e) {
+    showToast('Failed to update coupon', 'error');
+  }
 }
 
 function initCouponForm() {
