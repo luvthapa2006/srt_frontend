@@ -1114,12 +1114,24 @@ async function loadCouponsTable() {
   }
   const now = new Date();
   tbody.innerHTML = coupons.map(c => {
-    const expired = new Date(c.endDate) < now;
-    const notYet  = new Date(c.startDate) > now;
+    const endDate   = new Date(c.endDate);
+    const startDate = new Date(c.startDate);
+    // Compare at end of IST day — coupon is expired only after 23:59:59 of the end date
+    const expired = endDate < now;
+    const notYet  = startDate > now;
     // Treat as inactive if expired (even if DB still says isActive=true)
     const effectivelyActive = c.isActive && !expired;
+
+    // Days remaining label
+    let daysLabel = '';
+    if (!expired && !notYet && c.isActive) {
+      const msLeft = endDate - now;
+      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 3) daysLabel = `<div style="font-size:0.7rem;color:#dc2626;margin-top:2px;">⚠ ${daysLeft} day${daysLeft===1?'':'s'} left</div>`;
+    }
+
     let statusBadge;
-    if (expired)           statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">⏰ Expired</span>';
+    if (expired)           statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;font-weight:600;">⏰ Expired</span>';
     else if (!c.isActive)  statusBadge = '<span style="background:#fee2e2;color:#dc2626;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Disabled</span>';
     else if (notYet)       statusBadge = '<span style="background:#eff6ff;color:#3b82f6;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Upcoming</span>';
     else                   statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.78rem;">Active ✓</span>';
@@ -1128,14 +1140,19 @@ async function loadCouponsTable() {
       ? `₹${c.discountValue} off`
       : `${c.discountValue}% off`;
     const usageDisplay = c.maxUsage ? `${c.usageCount}/${c.maxUsage}` : `${c.usageCount}/∞`;
-    // Show row with reduced opacity if expired
-    const rowStyle = expired ? 'opacity:0.55;' : '';
+    // Show row with reduced opacity and strikethrough code if expired
+    const rowStyle = expired ? 'opacity:0.5;' : '';
+    const codeStyle = expired ? 'font-size:1rem;letter-spacing:1px;text-decoration:line-through;color:#9ca3af;' : 'font-size:1rem;letter-spacing:1px;';
     return `
     <tr style="${rowStyle}">
-      <td><strong style="font-size:1rem;letter-spacing:1px;">${c.code}</strong></td>
+      <td><strong style="${codeStyle}">${c.code}</strong></td>
       <td style="font-size:0.85rem;color:#475569;">${c.description || '—'}</td>
       <td><span style="background:#f0fdf4;color:#166534;padding:0.2rem 0.5rem;border-radius:4px;font-weight:600;">${discountDisplay}</span></td>
-      <td style="font-size:0.82rem;">${new Date(c.startDate).toLocaleDateString('en-IN')} – ${new Date(c.endDate).toLocaleDateString('en-IN')}</td>
+      <td style="font-size:0.82rem;">
+        ${startDate.toLocaleDateString('en-IN')} – ${endDate.toLocaleDateString('en-IN')}
+        ${daysLabel}
+        ${expired ? '<div style="font-size:0.7rem;color:#92400e;margin-top:2px;">Expired on ' + endDate.toLocaleDateString('en-IN') + '</div>' : ''}
+      </td>
       <td style="font-size:0.85rem;">${usageDisplay}</td>
       <td>${statusBadge}</td>
       <td>
