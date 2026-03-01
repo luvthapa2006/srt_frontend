@@ -175,12 +175,12 @@ async function loadBookingsTable() {
   const tbody = document.getElementById('bookings-table-body');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="text-center">Loading…</td></tr>';
   const bookings = await getAllBookings();
   allBookingsCache = bookings; // cache for export
 
   if (bookings.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">No bookings found</td></tr>';
     return;
   }
 
@@ -198,6 +198,11 @@ async function loadBookingsTable() {
           ${schedule
             ? `<div><strong>${schedule.busName}</strong></div><div class="text-muted">${schedule.origin} → ${schedule.destination}</div>`
             : 'N/A'}
+        </td>
+        <td style="white-space:nowrap;font-size:0.82rem;color:#374151;">
+          ${schedule && schedule.departureTime
+            ? `<div>${formatDate(schedule.departureTime)}</div><div style="color:#667eea;font-weight:600;">${toISTTimeString(new Date(schedule.departureTime))}</div>`
+            : (booking.createdAt ? `<div>${formatDate(booking.createdAt)}</div>` : '—')}
         </td>
         <td>${booking.seatNumbers.map(s => `<span class="seat-badge-sm">${s}</span>`).join(' ')}</td>
         <td>${formatCurrency(booking.totalAmount)}</td>
