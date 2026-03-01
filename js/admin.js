@@ -255,6 +255,12 @@ function closeExportModal() {
   document.getElementById('export-modal').classList.remove('active');
 }
 
+// Close edit modal on outside click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('edit-schedule-modal');
+  if (modal && e.target === modal) closeEditModal();
+});
+
 function executeExport() {
   const exportType = document.querySelector('input[name="export-type"]:checked')?.value || 'all';
 
@@ -481,25 +487,70 @@ async function editSchedule(id) {
   hideLoading();
   if (!schedule) { showToast('Schedule not found', 'error'); return; }
 
-  document.getElementById('schedule-id').value   = schedule.id;
-  document.getElementById('bus-name').value      = schedule.busName;
-  document.getElementById('bus-type').value      = schedule.type;
-  document.getElementById('origin').value        = schedule.origin;
-  document.getElementById('destination').value   = schedule.destination;
-  document.getElementById('pickup-point').value  = schedule.pickupPoint  || '';
-  document.getElementById('drop-point').value    = schedule.dropPoint    || '';
-  document.getElementById('duration-hours').value   = schedule.durationHours || '';
-  document.getElementById('duration-minutes').value = schedule.durationMins  || '';
+  // Populate the edit modal fields
+  document.getElementById('edit-schedule-id').value        = schedule.id || schedule._id;
+  document.getElementById('edit-bus-type').value           = schedule.type;
+  document.getElementById('edit-origin').value             = schedule.origin;
+  document.getElementById('edit-destination').value        = schedule.destination;
+  document.getElementById('edit-pickup-point').value       = schedule.pickupPoint  || '';
+  document.getElementById('edit-drop-point').value         = schedule.dropPoint    || '';
+  document.getElementById('edit-duration-hours').value     = schedule.durationHours || '';
+  document.getElementById('edit-duration-minutes').value   = schedule.durationMins  || '';
+  document.getElementById('edit-price').value              = schedule.price || '';
 
+  // Departure date & time in IST
   const d = new Date(schedule.departureTime);
-  // For edit mode: extract date and time in IST to avoid UTC drift
-  selectedBusDates = [toISTDateString(d)];
-  renderDatePills();
-  document.getElementById('bus-time').value = toISTTimeString(d);
-  document.getElementById('price').value    = schedule.price;
-  document.getElementById('form-title').textContent = 'Edit Schedule';
-  updateScheduleFormPricing();
-  document.getElementById('schedule-form').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('edit-departure-date').value = toISTDateString(d);
+  document.getElementById('edit-departure-time').value = toISTTimeString(d);
+
+  // Open modal
+  const modal = document.getElementById('edit-schedule-modal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-schedule-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function saveEditModal(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-schedule-id').value;
+  if (!id) { showToast('Missing schedule ID', 'error'); return; }
+
+  const dateVal = document.getElementById('edit-departure-date').value;
+  const timeVal = document.getElementById('edit-departure-time').value;
+  if (!dateVal || !timeVal) { showToast('Please set departure date and time', 'error'); return; }
+
+  const departureTime = new Date(buildISTDateTime(dateVal, timeVal));
+
+  const payload = {
+    busName:       'Shree Ram Travels',
+    type:          document.getElementById('edit-bus-type').value,
+    origin:        document.getElementById('edit-origin').value.trim(),
+    destination:   document.getElementById('edit-destination').value.trim(),
+    pickupPoint:   document.getElementById('edit-pickup-point').value.trim(),
+    dropPoint:     document.getElementById('edit-drop-point').value.trim(),
+    durationHours: parseInt(document.getElementById('edit-duration-hours').value) || 0,
+    durationMins:  parseInt(document.getElementById('edit-duration-minutes').value) || 0,
+    price:         parseFloat(document.getElementById('edit-price').value) || 0,
+    departureTime: departureTime.toISOString(),
+  };
+
+  try {
+    showLoading();
+    await updateSchedule(id, payload);
+    hideLoading();
+    closeEditModal();
+    showToast('Schedule updated successfully!', 'success');
+    await loadBusListTable();
+    await loadStats();
+  } catch (err) {
+    hideLoading();
+    showToast('Failed to update schedule. Please try again.', 'error');
+    console.error('Edit save error:', err);
+  }
 }
 
 // ── Delete Bus Dialog ──────────────────────────────────────────────────────

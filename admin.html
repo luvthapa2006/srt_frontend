@@ -805,5 +805,91 @@
     </div>
   </div>
 
+
+  <!-- ══════════════════════════════════════
+       EDIT SCHEDULE MODAL
+  ══════════════════════════════════════ -->
+  <div id="edit-schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;">
+    <div style="background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <h3 style="font-size:1.2rem;font-weight:700;color:#1e293b;margin:0;">✏️ Edit Schedule</h3>
+        <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:1.4rem;color:#6b7280;line-height:1;">&times;</button>
+      </div>
+
+      <form id="edit-schedule-form" onsubmit="saveEditModal(event)">
+        <input type="hidden" id="edit-schedule-id">
+
+        <!-- Bus Type -->
+        <div class="form-group">
+          <label class="form-label">🚌 Bus Type</label>
+          <select class="form-input" id="edit-bus-type" required>
+            <option value="AC Sleeper (36)">AC Sleeper (36 sleepers)</option>
+            <option value="AC Seater+Sleeper (8+32)">AC Seater + Sleeper (8 seats + 32 sleepers)</option>
+          </select>
+        </div>
+
+        <!-- Origin & Destination -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">🏙️ Origin City</label>
+            <input type="text" class="form-input" id="edit-origin" placeholder="e.g. Dehradun" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🏙️ Destination City</label>
+            <input type="text" class="form-input" id="edit-destination" placeholder="e.g. Delhi" required>
+          </div>
+        </div>
+
+        <!-- Pickup & Drop -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">📍 Pick Up Point</label>
+            <input type="text" class="form-input" id="edit-pickup-point" placeholder="e.g. ISBT Dehradun, Gate 3">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📍 Drop Point</label>
+            <input type="text" class="form-input" id="edit-drop-point" placeholder="e.g. Kashmere Gate ISBT">
+          </div>
+        </div>
+
+        <!-- Departure Date & Time -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">📅 Departure Date</label>
+            <input type="date" class="form-input" id="edit-departure-date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🕐 Departure Time</label>
+            <input type="time" class="form-input" id="edit-departure-time" required>
+          </div>
+        </div>
+
+        <!-- Duration -->
+        <div class="form-group">
+          <label class="form-label">⏱️ Duration</label>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="number" class="form-input" id="edit-duration-hours" placeholder="Hrs" min="0" max="72" style="width:50%;">
+            <input type="number" class="form-input" id="edit-duration-minutes" placeholder="Min" min="0" max="59" style="width:50%;">
+          </div>
+          <small class="text-muted">Hours &amp; Minutes</small>
+        </div>
+
+        <!-- Price -->
+        <div class="form-group">
+          <label class="form-label">💰 Base Price (₹)</label>
+          <input type="number" class="form-input" id="edit-price" min="0" placeholder="e.g. 1200">
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.25rem;">
+          <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>
