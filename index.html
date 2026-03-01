@@ -467,6 +467,7 @@
       splash.classList.add('fade-out');
       content.classList.add('visible');
       setTimeout(function() { splash.remove(); }, 800);
+      sessionStorage.setItem('splashShown', '1');
     }
 
     // ── Slogan reveal: appears ONLY after logo has fully passed over it ──
@@ -534,6 +535,18 @@
       if (dateInput) {
         dateInput.min = new Date().toISOString().split('T')[0];
         dateInput.value = new Date().toISOString().split('T')[0];
+      }
+
+      // If splash was already shown this browser session, skip it immediately
+      if (sessionStorage.getItem('splashShown')) {
+        var splash = document.getElementById('splash-screen');
+        var content = document.getElementById('main-content');
+        if (splash) splash.remove();
+        if (content) content.classList.add('visible');
+        citiesDataPromise.catch(function() { return [[], []]; }).then(function() {
+          populateCityDropdowns();
+        });
+        return;
       }
 
       // 3. Wait for BOTH: minimum splash display time + data ready
