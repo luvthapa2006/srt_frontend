@@ -1,17 +1,17 @@
 // ========================================
-// PAYMENT.JS  –  Cashfree Payment Gateway
-// Uses Cashfree JS SDK (drop-in checkout)
+// PAYMENT.JS  –  PhonePe Payment Gateway
+// PhonePe Standard Checkout V2
+// Uses full-page redirect (no JS SDK)
 // ========================================
 
-let bookingDetails   = null;
-let confirmedBooking = null;
-let appliedCoupon    = null;  // { code, discount, finalAmount }
+let bookingDetails = null;
+let appliedCoupon  = null;  // { code, discount, finalAmount }
 
 // ----------------------------------------
 // Coupon application
 // ----------------------------------------
 async function applyCoupon() {
-  const code = document.getElementById('coupon-input')?.value?.trim()?.toUpperCase();
+  const code     = document.getElementById('coupon-input')?.value?.trim()?.toUpperCase();
   const resultEl = document.getElementById('coupon-result');
   if (!code) { if (resultEl) resultEl.innerHTML = '<div class="coupon-error">Please enter a coupon code</div>'; return; }
 
@@ -19,7 +19,6 @@ async function applyCoupon() {
   if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = 'Checking…'; }
 
   const result = await validateCoupon(code, bookingDetails.totalAmount);
-
   if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Apply'; }
 
   if (result.valid) {
@@ -32,7 +31,7 @@ async function applyCoupon() {
         </div>`;
     }
     updateTotalWithDiscount(result);
-    showToast(`Coupon applied! 🎉`, 'success');
+    showToast('Coupon applied! 🎉', 'success');
   } else {
     appliedCoupon = null;
     if (resultEl) resultEl.innerHTML = `<div class="coupon-error">❌ ${result.message || 'Invalid coupon'}</div>`;
@@ -45,43 +44,35 @@ function removeCoupon() {
   if (resultEl) resultEl.innerHTML = '';
   const input = document.getElementById('coupon-input');
   if (input) input.value = '';
-  // Restore original total in summary
   const totalEl = document.querySelector('.total-amount');
   if (totalEl) totalEl.textContent = formatCurrency(bookingDetails.totalAmount);
   const discountRow = document.getElementById('discount-row');
   if (discountRow) discountRow.remove();
+  const payBtn = document.getElementById('pay-btn');
+  if (payBtn) payBtn.textContent = `Pay ${formatCurrency(bookingDetails.totalAmount)} →`;
 }
 
 function updateTotalWithDiscount(couponResult) {
   const summarySection = document.getElementById('booking-summary-section');
   if (!summarySection) return;
-
-  // Find or update total amount display
   const totalEl = summarySection.querySelector('.total-amount');
   if (!totalEl) return;
 
-  const originalAmount = bookingDetails.totalAmount;
-  const discount = couponResult.discount;
-  const finalAmount = couponResult.finalAmount;
-
-  // Remove old discount row if any
   const oldRow = document.getElementById('discount-row');
   if (oldRow) oldRow.remove();
 
-  // Animate original price strike-through
   totalEl.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;">
       <div class="price-strike-wrap" style="color:#9ca3af;font-size:0.9rem;">
-        <span>${formatCurrency(originalAmount)}</span>
+        <span>${formatCurrency(bookingDetails.totalAmount)}</span>
         <div class="price-strike-line"></div>
       </div>
-      <div style="color:#10b981;font-size:1.3rem;font-weight:800;">${formatCurrency(finalAmount)}</div>
-      <div class="savings-badge">🎉 Hurray! You saved ${formatCurrency(discount)}</div>
+      <div style="color:#10b981;font-size:1.3rem;font-weight:800;">${formatCurrency(couponResult.finalAmount)}</div>
+      <div class="savings-badge">🎉 Hurray! You saved ${formatCurrency(couponResult.discount)}</div>
     </div>`;
 
-  // Update pay button text
   const payBtn = document.getElementById('pay-btn');
-  if (payBtn) payBtn.textContent = `Pay ${formatCurrency(finalAmount)} →`;
+  if (payBtn) payBtn.textContent = `Pay ${formatCurrency(couponResult.finalAmount)} →`;
 }
 
 // ----------------------------------------
@@ -90,13 +81,12 @@ function updateTotalWithDiscount(couponResult) {
 async function initPaymentPage() {
   const params = getQueryParams();
 
-  // Returning from Cashfree redirect → verify payment
+  // Returning from PhonePe redirect → verify payment
   if (params.order_id && params.booking_token) {
     await verifyAndShowResult(params.order_id, params.booking_token);
     return;
   }
 
-  // Normal entry from seats page
   if (!params.scheduleId || !params.seats || !params.totalAmount) {
     showToast('Invalid booking details', 'error');
     navigateTo('index.html');
@@ -127,7 +117,6 @@ async function initPaymentPage() {
 // Verify payment after redirect return
 // ----------------------------------------
 async function verifyAndShowResult(orderId, bookingToken) {
-  // Hide form, show confirmation area
   const formContainer         = document.getElementById('payment-form-container');
   const confirmationContainer = document.getElementById('confirmation-container');
   if (formContainer)         formContainer.style.display         = 'none';
@@ -141,7 +130,7 @@ async function verifyAndShowResult(orderId, bookingToken) {
 
   try {
     showLoading();
-    const res = await fetch(`${API_BASE_URL}/cashfree/verify-payment`, {
+    const res = await fetch(`${API_BASE_URL}/phonepe/verify-payment`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ orderId, bookingToken })
@@ -151,7 +140,6 @@ async function verifyAndShowResult(orderId, bookingToken) {
     const result = await res.json();
 
     if (result.success && result.status === 'PAID') {
-      confirmedBooking = result.booking;
       showConfirmationScreen(result.booking);
     } else {
       showPaymentFailed(result.message || 'Payment was not completed.');
@@ -164,7 +152,7 @@ async function verifyAndShowResult(orderId, bookingToken) {
 }
 
 // ----------------------------------------
-// Display booking summary (right-hand card)
+// Display booking summary
 // ----------------------------------------
 function displayBookingSummary(schedule) {
   const summarySection = document.getElementById('booking-summary-section');
@@ -173,30 +161,25 @@ function displayBookingSummary(schedule) {
   summarySection.innerHTML = `
     <div class="summary-card">
       <h3 class="summary-title">Booking Summary</h3>
-
       <div class="summary-details">
         <div class="detail-row">
           <span class="detail-label">Bus</span>
           <span class="detail-value">${schedule.busName}</span>
         </div>
-
         <div class="detail-row">
           <span class="detail-label">Route</span>
           <span class="detail-value">${schedule.origin} → ${schedule.destination}</span>
         </div>
-
         <div class="detail-row">
           <span class="detail-label">Departure</span>
           <span class="detail-value">${formatDate(schedule.departureTime)} at ${formatTime(schedule.departureTime)}</span>
         </div>
-
         <div class="detail-row">
           <span class="detail-label">Selected Seats</span>
           <span class="detail-value">
             ${bookingDetails.seatNumbers.map(s => `<span class="seat-badge">${s}</span>`).join(' ')}
           </span>
         </div>
-
         <div class="detail-row breakdown">
           <span class="detail-label">Seat Breakdown</span>
           <div class="breakdown-items">
@@ -206,9 +189,7 @@ function displayBookingSummary(schedule) {
             }).join('')}
           </div>
         </div>
-
         <div class="summary-divider"></div>
-
         <div class="detail-row total">
           <span class="detail-label">Total Amount</span>
           <span class="detail-value total-amount" id="total-amount-display">${formatCurrency(bookingDetails.totalAmount)}</span>
@@ -219,7 +200,7 @@ function displayBookingSummary(schedule) {
 }
 
 // ----------------------------------------
-// Wire up the passenger-details form
+// Wire up the form
 // ----------------------------------------
 function setupPaymentForm() {
   const form = document.getElementById('payment-form');
@@ -227,7 +208,6 @@ function setupPaymentForm() {
 
   form.addEventListener('submit', handlePaymentSubmit);
 
-  // Numeric-only phone input
   const phoneInput = document.getElementById('phone');
   if (phoneInput) {
     phoneInput.addEventListener('input', e => {
@@ -237,7 +217,7 @@ function setupPaymentForm() {
 }
 
 // ----------------------------------------
-// Form submit → call backend → open Cashfree
+// Form submit → backend → redirect to PhonePe
 // ----------------------------------------
 async function handlePaymentSubmit(e) {
   e.preventDefault();
@@ -249,15 +229,14 @@ async function handlePaymentSubmit(e) {
     email:        document.getElementById('email').value.trim(),
     phone:        document.getElementById('phone').value.trim(),
     ...bookingDetails,
-    // Use discounted total if coupon applied
-    totalAmount:  appliedCoupon ? appliedCoupon.finalAmount : bookingDetails.totalAmount,
-    couponCode:   appliedCoupon ? appliedCoupon.code : null
+    totalAmount: appliedCoupon ? appliedCoupon.finalAmount : bookingDetails.totalAmount,
+    couponCode:  appliedCoupon ? appliedCoupon.code : null
   };
 
   showLoading();
 
   try {
-    const res = await fetch(`${API_BASE_URL}/cashfree/create-order`, {
+    const res = await fetch(`${API_BASE_URL}/phonepe/create-order`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload)
@@ -268,8 +247,6 @@ async function handlePaymentSubmit(e) {
 
     if (!result.success) {
       showToast(result.message || 'Could not create order. Try again.', 'error');
-
-      // Seats snatched? Send user back to pick different ones
       if (result.unavailableSeats) {
         showToast(`Seats ${result.unavailableSeats.join(', ')} are no longer available.`, 'error');
         setTimeout(() => navigateTo('seats.html', { id: payload.scheduleId }), 2000);
@@ -277,74 +254,27 @@ async function handlePaymentSubmit(e) {
       return;
     }
 
-    const { paymentSessionId, orderId, bookingToken, env } = result.data;
-    console.log('✅ Order created:', orderId, '| token:', bookingToken);
+    const { redirectUrl, orderId, bookingToken } = result.data;
+    console.log('✅ PhonePe order created:', orderId, '| token:', bookingToken);
 
     // Record coupon usage
     if (appliedCoupon?.code) {
       await useCoupon(appliedCoupon.code);
     }
 
-    // Store so we can retrieve on return
+    // Store for fallback retrieval
     sessionStorage.setItem('pendingBookingToken', bookingToken);
     sessionStorage.setItem('pendingOrderId', orderId);
 
-    // Open Cashfree checkout
-    openCashfreeCheckout(paymentSessionId, orderId, bookingToken, env);
+    // Redirect user to PhonePe Pay Page
+    showToast('Redirecting to PhonePe…', 'info');
+    setTimeout(() => { window.location.href = redirectUrl; }, 400);
 
   } catch (err) {
     console.error('❌ Create-order error:', err);
     hideLoading();
     showToast('Payment initiation failed. Please try again.', 'error');
   }
-}
-
-// ----------------------------------------
-// Launch Cashfree Drop-in / Redirect
-// ----------------------------------------
-function openCashfreeCheckout(paymentSessionId, orderId, bookingToken, env) {
-  // Check if Cashfree SDK is loaded
-  if (typeof Cashfree === 'undefined') {
-    console.warn('Cashfree SDK not loaded, falling back to redirect.');
-    cashfreeFallbackRedirect(paymentSessionId, orderId, bookingToken, env);
-    return;
-  }
-
-  const frontendUrl = window.location.origin;
-  const returnUrl   = `${frontendUrl}/payment.html?order_id=${orderId}&booking_token=${bookingToken}`;
-
-  const cashfree = Cashfree({
-    mode: env === 'PROD' ? 'production' : 'sandbox'
-  });
-
-  cashfree.checkout({
-    paymentSessionId,
-    redirectTarget: '_self',
-    returnUrl
-  }).then(result => {
-    if (result.error) {
-      console.error('Cashfree checkout error:', result.error);
-      showToast('Payment failed: ' + result.error.message, 'error');
-    }
-    // On success the SDK redirects automatically via returnUrl
-  });
-}
-
-// ----------------------------------------
-// Fallback: redirect to Cashfree hosted page
-// ----------------------------------------
-function cashfreeFallbackRedirect(paymentSessionId, orderId, bookingToken, env) {
-  const baseUrl   = env === 'PROD'
-    ? 'https://payments.cashfree.com'
-    : 'https://payments-test.cashfree.com';
-
-  const frontendUrl = window.location.origin;
-  const returnUrl   = encodeURIComponent(`${frontendUrl}/payment.html?order_id=${orderId}&booking_token=${bookingToken}`);
-
-  showToast('Redirecting to payment gateway…', 'info');
-  setTimeout(() => {
-    window.location.href = `${baseUrl}/order/#${paymentSessionId}`;
-  }, 500);
 }
 
 // ----------------------------------------
@@ -370,7 +300,7 @@ function showConfirmationScreen(booking) {
 
         <div>
           <span style="display:block;color:#6b7280;font-size:0.75rem;text-transform:uppercase;margin-bottom:0.25rem;">Booking Token</span>
-          <span style="font-weight:700;font-size:1.1rem;color:#1f2937;" id="booking-token-display">${booking.bookingToken}</span>
+          <span style="font-weight:700;font-size:1.1rem;color:#1f2937;">${booking.bookingToken}</span>
           <button onclick="copyToClipboard('${booking.bookingToken}')" style="margin-left:0.5rem;background:none;border:none;cursor:pointer;color:#667eea;" title="Copy">📋</button>
         </div>
 
@@ -394,17 +324,14 @@ function showConfirmationScreen(booking) {
           <span style="display:block;color:#6b7280;font-size:0.75rem;text-transform:uppercase;margin-bottom:0.25rem;">Bus</span>
           <span style="font-weight:600;">${schedule.busName}</span>
         </div>
-
         <div>
           <span style="display:block;color:#6b7280;font-size:0.75rem;text-transform:uppercase;margin-bottom:0.25rem;">Route</span>
           <span style="font-weight:600;">${schedule.origin} → ${schedule.destination}</span>
         </div>
-
         <div>
           <span style="display:block;color:#6b7280;font-size:0.75rem;text-transform:uppercase;margin-bottom:0.25rem;">Departure</span>
           <span style="font-weight:600;">${formatDate(schedule.departureTime)} at ${formatTime(schedule.departureTime)}</span>
-        </div>
-        ` : ''}
+        </div>` : ''}
 
         <div>
           <span style="display:block;color:#6b7280;font-size:0.75rem;text-transform:uppercase;margin-bottom:0.25rem;">Contact</span>
@@ -451,11 +378,5 @@ function showPaymentFailed(reason) {
 // ----------------------------------------
 document.addEventListener('DOMContentLoaded', initPaymentPage);
 
-// Print styles for ticket
-window.addEventListener('beforeprint', () => {
-  document.body.classList.add('printing');
-});
-
-window.addEventListener('afterprint', () => {
-  document.body.classList.remove('printing');
-});
+window.addEventListener('beforeprint', () => { document.body.classList.add('printing'); });
+window.addEventListener('afterprint',  () => { document.body.classList.remove('printing'); });

@@ -10,8 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tailwind.css">
 
-  <!-- Cashfree JS SDK (test + production unified) -->
-  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <!-- PhonePe uses full-page redirect – no JS SDK needed -->
   <style>
     @keyframes priceStrike { from { width:0 } to { width:100% } }
     @keyframes bounce { 0%,100% { transform:scale(1) } 50% { transform:scale(1.08) } }
@@ -81,9 +80,9 @@
                        placeholder="10-digit mobile number" required maxlength="10">
               </div>
 
-              <!-- Cashfree secure payment badge -->
-              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding:0.75rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.8rem;color:#166534;">
-                🔒 Payments secured by <strong>Cashfree</strong> – 256-bit SSL encrypted
+              <!-- PhonePe secure payment badge -->
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding:0.75rem;background:#f5f0ff;border:1px solid #c4b5fd;border-radius:8px;font-size:0.8rem;color:#5b21b6;">
+                🔒 Payments secured by <strong>PhonePe</strong> – 256-bit SSL encrypted
               </div>
 
               <!-- Coupon Code Section -->
