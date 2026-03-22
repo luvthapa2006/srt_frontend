@@ -4,7 +4,7 @@
 // Pricing: lower deck price, upper deck price, per-seat overrides
 // ========================================
 
-const API_BASE_URL = 'https://srt-backend-a5m9.onrender.com/api';
+const API_BASE_URL = 'https://srt-backend-4mz6.onrender.com/api';
 
 // ── Bus type constants ──
 const BUS_TYPE_SLEEPER   = 'AC Sleeper (36)';
