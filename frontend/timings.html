@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Timings - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* ── Page header gradient ── */
+    .timings-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+      padding: 2rem 0 1.5rem;
+      color: white;
+    }
+
+    /* ── Filter / sort bar ── */
+    .filter-bar {
+      background: white;
+      border-bottom: 1px solid var(--slate-100);
+      padding: 0.75rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .filter-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 0.35rem 1rem;
+      border-radius: 99px;
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .filter-chip:hover,
+    .filter-chip.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+    .sort-select {
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--slate-200);
+      font-size: 0.82rem;
+      background: white;
+      color: var(--slate-700);
+      cursor: pointer;
+      outline: none;
+      margin-left: auto;
+    }
+    .sort-select:focus { border-color: #667eea; }
+
+    /* ── Skeleton loading ── */
+    .loading-container { display: grid; gap: 1.5rem; }
+    .skeleton-card { min-height: 140px; }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-text  { height: 16px; margin-bottom: 10px; }
+    .skeleton-text.short { width: 50%; }
+    .skeleton-button { height: 40px; width: 120px; margin-top: 12px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--slate-500);
+    }
+    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-state h3 { font-size: 1.5rem; font-weight: 700; color: var(--slate-700); margin-bottom: 0.5rem; }
+    .empty-state p  { margin-bottom: 1.5rem; }
+    .empty-state-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Card accent bar ── */
+    .card-accent {
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      flex-shrink: 0;
+    }
+    @media (min-width: 768px) {
+      .card-accent {
+        width: 4px;
+        height: auto;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .schedule-cta {
+        border-left: none !important;
+        border-top: 1px solid var(--slate-100);
+        min-width: unset !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="assets/icons/shree-ram-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link active">Bus Timings</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero / filter info -->
+  <div class="timings-hero">
+    <div class="container">
+      <div id="filter-info">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky filter / sort bar -->
+  <div class="filter-bar">
+    <div class="container">
+      <div class="filter-bar-inner">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--slate-500);">Filter:</span>
+        <button class="filter-chip active" onclick="filterByBusType('all')">All</button>
+        <button class="filter-chip" onclick="filterByBusType('AC')">AC</button>
+        <button class="filter-chip" onclick="filterByBusType('Sleeper')">Sleeper</button>
+        <button class="filter-chip" onclick="filterByBusType('Seater')">Seater</button>
+
+        <select id="sort-select" class="sort-select">
+          <option value="">Sort by…</option>
+          <option value="departure">Departure Time</option>
+          <option value="price-low">Price: Low → High</option>
+          <option value="price-high">Price: High → Low</option>
+          <option value="duration">Journey Duration</option>
+          <option value="seats">Available Seats</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="min-h-screen" style="background: var(--slate-50); padding: 2rem 0;">
+    <div class="container">
+
+      <!-- Back link -->
+      <div style="margin-bottom: 1.5rem;">
+        <button class="btn btn-outline" onclick="history.back()" style="padding-left: 0;">
+          ← Back to Search
+        </button>
+        <button class="btn btn-outline" onclick="clearFilters()" style="margin-left: 0.75rem;">
+          Clear Filters
+        </button>
+      </div>
+
+      <!-- Schedules list -->
+      <div id="schedules-list" class="schedules-list">
+        <!-- Populated by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer style="background: var(--slate-800); color: white; padding: 2rem 0; margin-top: 3rem;">
+    <div class="container" style="text-align: center;">
+      <p style="color: var(--slate-400); font-size: 0.875rem; margin: 0;">
+        © 2025 Shree Ram Travels. All rights reserved. |
+        <a href="terms.html" style="color: var(--slate-400); text-decoration: none;">Terms &amp; Conditions</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/timings.js"></script>
+
+  <script>
+    // Highlight active filter chip
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

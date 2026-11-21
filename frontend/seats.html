@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Seats - Shree Ram Travels</title>
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* Mobile seat layout alignment fixes */
+    @media (max-width: 768px) {
+      .container { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+      #srt-deck-wrapper { width: 100%; overflow-x: auto; box-sizing: border-box; }
+      .srt-bus { max-width: 100% !important; box-sizing: border-box; }
+      #schedule-info h2, #schedule-info h3 { font-size: 1.4rem !important; }
+    }
+    @media (max-width: 480px) {
+      .container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+      .srt-seat { width: 62px !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="index.html" class="nav-brand">
+          <img src="assets/icons/shree-ram-logo.png" alt="Shree Ram Travels" style="height: 50px;">
+        </a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <ul class="nav-links" id="mobile-menu">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="timings.html" class="nav-link">Bus Timings</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="min-h-screen" style="background: var(--slate-50);">
+    <div class="container px-4 py-8" style="box-sizing: border-box;">
+      <button class="btn btn-outline mb-8" onclick="goBack()" style="padding-left: 0;">
+        ← Back to Schedules
+      </button>
+
+      <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+        <!-- Seat Selection Area -->
+        <div style="background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: var(--shadow); border: 1px solid var(--slate-100); box-sizing: border-box; width: 100%; overflow-x: hidden;">
+          <!-- Header -->
+          <div style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center;">
+            <div id="schedule-info" style="width: 100%; text-align: left;">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <!-- Legend -->
+            <div class="seat-legend" style="justify-content: center; width: 100%;">
+              <div class="legend-item">
+                <div class="legend-box legend-available"></div>
+                <span>Available</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-box legend-selected"></div>
+                <span>Selected</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-box legend-booked"></div>
+                <span>Booked</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seat Layout -->
+          <div class="seat-layout-container">
+            <div class="seat-deck" id="upper-deck">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="seat-deck" id="lower-deck">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Summary Sidebar -->
+        <div class="summary-sidebar">
+          <div class="summary-card">
+            <div id="journey-details">
+              <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="summary-divider"></div>
+            
+            <div id="booking-summary">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/seats.js"></script>
+</body>
+</html>
