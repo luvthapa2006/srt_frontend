@@ -296,6 +296,21 @@
     .date-pill button { background:none; border:none; cursor:pointer; color:#ef4444;
       font-size:0.9rem; line-height:1; padding:0; margin-left:0.1rem; }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
+  <style>
+    .nav-brand .text-logo {
+      font-family: 'Righteous', 'Poppins', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      line-height: 1;
+      color: #FF6B35;
+    }
+    .nav-brand .text-logo b { color: #0f172a; font-weight: 400; }
+    @media (max-width: 640px) { .nav-brand .text-logo { font-size: 1.05rem; } }
+  </style>
 </head>
 <body>
 
@@ -384,7 +399,7 @@
       <div class="container">
         <div class="nav-content">
           <a href="index.html" class="nav-brand">
-            <img src="assets/icons/shree-ram-logo.png" alt="Shree Ram Travels" style="height:50px;">
+            <span class="text-logo">NEW <b>SHRI RAM</b> TRAVELS</span>
           </a>
           <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
           <ul class="nav-links" id="mobile-menu">
